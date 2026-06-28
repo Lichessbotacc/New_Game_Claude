@@ -1,2201 +1,1798 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Myrmex — Ameisenkolonie</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Bloons TD Arena</title>
 <style>
-  :root{
-    --soil-void:   #160e09;
-    --soil-panel:  #2a1c12;
-    --soil-panel-2:#342417;
-    --soil-panel-3:#1f140d;
-    --tunnel:      #6b4a30;
-    --tunnel-lit:  #8a6440;
-    --hairline:    #4a3422;
-    --hairline-lit:#5e4530;
-    --leaf:        #8bab57;
-    --leaf-dim:    #5c7438;
-    --fungus:      #e3a35c;
-    --fungus-dim:  #a9712f;
-    --water:       #6fa8b8;
-    --water-dim:   #3f6c7a;
-    --cream:       #f3e8d3;
-    --cream-dim:   #c9b896;
-    --cream-faint: #8a7a60;
-    --alert:       #c8593c;
-    --alert-dim:   #8a3c28;
-    --gold:        #d9b35b;
-    --gold-dim:    #a9863f;
-    --science:     #8e7bc4;
-    --science-dim: #5f4f8c;
-    --shadow-deep: rgba(0,0,0,0.45);
-    --r-card: 10px;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:
-      radial-gradient(ellipse at 50% -10%, #241509 0%, var(--soil-void) 55%);
-    color:var(--cream);
-    font-family:'Work Sans', sans-serif;
-    min-height:100vh;
-    -webkit-font-smoothing:antialiased;
-  }
-  h1,h2,h3,.display{
-    font-family:'Fraunces', serif;
-    font-weight:700;
-    letter-spacing:-0.01em;
-  }
-  .mono{font-family:'Space Mono', monospace;}
-  button{font-family:inherit;}
-  p{margin:0 0 8px;}
-
-  /* ---------- layout ---------- */
-  .app{
-    max-width:1280px;
-    margin:0 auto;
-    padding:18px 18px 40px;
-  }
-  header.topbar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:16px;
-    flex-wrap:wrap;
-    padding-bottom:14px;
-    border-bottom:1px solid var(--hairline);
-    margin-bottom:18px;
-  }
-  .brand{
-    display:flex;
-    align-items:baseline;
-    gap:10px;
-  }
-  .brand h1{
-    font-size:1.7rem;
-    margin:0;
-    color:var(--cream);
-  }
-  .brand .sub{
-    font-style:italic;
-    font-size:0.82rem;
-    color:var(--cream-dim);
-    font-family:'Fraunces', serif;
-  }
-  .species-pill{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    background:var(--soil-panel);
-    border:1px solid var(--hairline);
-    border-radius:999px;
-    padding:5px 12px;
-    font-size:0.72rem;
-    color:var(--cream-dim);
-    cursor:default;
-  }
-  .species-pill .sp-ic{font-size:1rem;}
-  .resources{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .res-chip{
-    display:flex;
-    align-items:center;
-    gap:7px;
-    background:var(--soil-panel);
-    border:1px solid var(--hairline);
-    border-radius:999px;
-    padding:6px 14px 6px 10px;
-  }
-  .res-chip .ic{font-size:1.05rem;}
-  .res-chip .val{font-family:'Space Mono',monospace; font-size:0.92rem;}
-  .res-chip .lbl{font-size:0.68rem; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.06em;}
-  .res-chip.warn .val{color:var(--alert);}
-  .res-chip.cap .val{color:var(--gold);}
-
-  .season-strip{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:14px;
-    background:var(--soil-panel);
-    border:1px solid var(--hairline);
-    border-radius:var(--r-card);
-    padding:10px 16px;
-    margin-bottom:16px;
-    flex-wrap:wrap;
-  }
-  .season-info{display:flex; align-items:center; gap:10px; font-size:0.85rem;}
-  .season-icon{font-size:1.5rem;}
-  .season-bar-track{
-    width:160px; height:6px; border-radius:4px; background:var(--soil-panel-3);
-    overflow:hidden; border:1px solid var(--hairline);
-  }
-  .season-bar-fill{height:100%; background:linear-gradient(90deg, var(--leaf-dim), var(--leaf)); transition:width .4s;}
-  .season-name{font-weight:600;}
-  .season-desc{color:var(--cream-dim); font-size:0.76rem;}
-
-  .layout{
-    display:grid;
-    grid-template-columns:268px 1fr;
-    gap:18px;
-    align-items:start;
-  }
-  @media (max-width: 880px){
-    .layout{grid-template-columns:1fr;}
-  }
-
-  /* ---------- tabs ---------- */
-  .tabbar{
-    display:flex;
-    gap:4px;
-    margin-bottom:14px;
-    background:var(--soil-panel-3);
-    border-radius:999px;
-    padding:4px;
-    border:1px solid var(--hairline);
-  }
-  .tab-btn{
-    flex:1;
-    background:transparent;
-    border:none;
-    color:var(--cream-dim);
-    font-size:0.74rem;
-    padding:7px 4px;
-    border-radius:999px;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:5px;
-    transition:background .15s, color .15s;
-  }
-  .tab-btn .ic{font-size:0.95rem;}
-  .tab-btn:hover{color:var(--cream);}
-  .tab-btn.active{background:var(--soil-panel); color:var(--gold); box-shadow:0 0 0 1px var(--hairline-lit) inset;}
-  .tab-panel{display:none;}
-  .tab-panel.active{display:block;}
-
-  /* ---------- sidebar / panel ---------- */
-  .panel{
-    background:var(--soil-panel);
-    border:1px solid var(--hairline);
-    border-radius:var(--r-card);
-    padding:14px;
-  }
-  .panel + .panel{margin-top:14px;}
-  .panel h2{
-    font-size:0.95rem;
-    margin:0 0 10px;
-    color:var(--gold);
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .panel h2 .count-badge{
-    margin-left:auto;
-    font-family:'Space Mono',monospace;
-    font-size:0.68rem;
-    color:var(--cream-dim);
-    background:var(--soil-panel-3);
-    border-radius:6px;
-    padding:1px 6px;
-  }
-  .panel-note{font-size:0.72rem; color:var(--cream-faint); line-height:1.5; margin-top:6px;}
-
-  .build-btn{
-    width:100%;
-    display:flex;
-    align-items:flex-start;
-    gap:10px;
-    text-align:left;
-    background:var(--soil-panel-2);
-    border:1px solid var(--hairline);
-    border-radius:8px;
-    padding:9px 10px;
-    margin-bottom:8px;
-    cursor:pointer;
-    color:var(--cream);
-    transition:border-color .15s, transform .1s, background .15s;
-  }
-  .build-btn:last-child{margin-bottom:0;}
-  .build-btn:hover{border-color:var(--tunnel-lit); background:#3a281a;}
-  .build-btn:active{transform:scale(0.98);}
-  .build-btn.selected{
-    border-color:var(--gold);
-    background:#42301c;
-    box-shadow:0 0 0 1px var(--gold) inset;
-  }
-  .build-btn.disabled{opacity:0.45; cursor:not-allowed;}
-  .build-btn.locked{opacity:0.4; cursor:not-allowed; position:relative;}
-  .build-btn .ic{font-size:1.3rem; line-height:1.2; flex-shrink:0;}
-  .build-btn .meta{flex:1; min-width:0;}
-  .build-btn .name{font-weight:600; font-size:0.88rem; display:flex; align-items:center; gap:6px;}
-  .build-btn .desc{font-size:0.72rem; color:var(--cream-dim); margin-top:2px; line-height:1.3;}
-  .build-btn .cost{font-size:0.7rem; font-family:'Space Mono',monospace; margin-top:4px; color:var(--fungus);}
-  .lock-tag{font-size:0.6rem; background:var(--soil-panel-3); border:1px solid var(--hairline); border-radius:5px; padding:1px 5px; color:var(--cream-faint);}
-
-  .stat-row{
-    display:flex;
-    justify-content:space-between;
-    font-size:0.82rem;
-    padding:4px 0;
-    border-bottom:1px dashed var(--hairline);
-  }
-  .stat-row:last-child{border-bottom:none;}
-  .stat-row .v{font-family:'Space Mono',monospace; color:var(--cream);}
-
-  .selected-info{
-    font-size:0.78rem;
-    color:var(--cream-dim);
-    line-height:1.5;
-    min-height:34px;
-  }
-  .cancel-btn{
-    margin-top:10px;
-    width:100%;
-    background:transparent;
-    border:1px solid var(--hairline);
-    color:var(--cream-dim);
-    border-radius:8px;
-    padding:6px;
-    font-size:0.75rem;
-    cursor:pointer;
-  }
-  .cancel-btn:hover{border-color:var(--alert); color:var(--alert);}
-
-  /* caste assignment sliders */
-  .caste-row{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    padding:6px 0;
-    border-bottom:1px dashed var(--hairline);
-  }
-  .caste-row:last-child{border-bottom:none;}
-  .caste-row .ic{font-size:1.1rem; width:22px; text-align:center;}
-  .caste-row .lbl{flex:1; font-size:0.78rem;}
-  .caste-row .ctrl{display:flex; align-items:center; gap:6px;}
-  .caste-row button{
-    width:22px; height:22px;
-    border-radius:5px;
-    border:1px solid var(--hairline);
-    background:var(--soil-panel-2);
-    color:var(--cream);
-    cursor:pointer;
-    font-size:0.85rem;
-    line-height:1;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .caste-row button:hover{border-color:var(--gold);}
-  .caste-row button:disabled{opacity:0.3; cursor:not-allowed;}
-  .caste-row .num{
-    font-family:'Space Mono',monospace; font-size:0.82rem; width:22px; text-align:center;
-  }
-  .caste-total-row{
-    display:flex; justify-content:space-between; font-size:0.74rem; color:var(--cream-faint);
-    margin-top:8px; padding-top:8px; border-top:1px solid var(--hairline);
-  }
-  .caste-total-row.over{color:var(--alert);}
-
-  /* ---------- board ---------- */
-  .board-wrap{
-    background:
-      radial-gradient(ellipse at 50% 0%, #2a1c10 0%, #160d07 75%);
-    border:1px solid var(--hairline);
-    border-radius:var(--r-card);
-    padding:20px;
-    overflow:auto;
-    position:relative;
-  }
-  .depth-tabs{
-    display:flex;
-    gap:6px;
-    margin-bottom:14px;
-  }
-  .depth-tab{
-    background:var(--soil-panel-2);
-    border:1px solid var(--hairline);
-    color:var(--cream-dim);
-    border-radius:8px;
-    padding:6px 12px;
-    font-size:0.76rem;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .depth-tab.active{border-color:var(--gold); color:var(--gold); background:#3a2a16;}
-  .depth-tab.locked{opacity:0.4; cursor:not-allowed;}
-  .depth-tab .badge-new{
-    background:var(--alert); color:var(--cream); font-size:0.55rem; padding:1px 4px; border-radius:4px;
-  }
-
-  .tunnel-grid{
-    display:grid;
-    position:relative;
-    margin:0 auto;
-    width:max-content;
-  }
-  .cell{
-    width:54px; height:54px;
-    border-radius:38% 62% 55% 45% / 48% 42% 58% 52%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:1.4rem;
-    cursor:pointer;
-    position:relative;
-    transition:transform .12s, box-shadow .15s, filter .15s;
-    user-select:none;
-  }
-  .cell.undug{
-    background:repeating-linear-gradient(135deg, #1c120a 0 6px, #19100a 6px 12px);
-    border:1px solid #100a05;
-    cursor:default;
-  }
-  .cell.undug.diggable{
-    cursor:pointer;
-    box-shadow:0 0 0 1px var(--leaf-dim) inset;
-  }
-  .cell.undug.diggable:hover{filter:brightness(1.3);}
-  .cell.dug{
-    background:linear-gradient(145deg, var(--tunnel-lit), var(--tunnel));
-    border:1px solid #3a2716;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,.35), 0 2px 3px var(--shadow-deep);
-  }
-  .cell.dug.empty.buildable{box-shadow:0 0 0 2px var(--gold) inset, inset 0 2px 4px rgba(0,0,0,.35);}
-  .cell.dug.empty.buildable:hover{transform:scale(1.06);}
-  .cell.room-forage{background:linear-gradient(145deg, #9bbf66, var(--leaf-dim));}
-  .cell.room-fungus{background:linear-gradient(145deg, #f0b56e, var(--fungus-dim));}
-  .cell.room-nursery{background:linear-gradient(145deg, #fbf1de, #cdb986); color:#3a2c14;}
-  .cell.room-barracks{background:linear-gradient(145deg, #d8714f, #8e3a26);}
-  .cell.room-storage{background:linear-gradient(145deg, #c9a86a, #8a6a35);}
-  .cell.room-water{background:linear-gradient(145deg, #8fcbdb, var(--water-dim));}
-  .cell.room-compost{background:linear-gradient(145deg, #7a6a4a, #4a3e28);}
-  .cell.room-lab{background:linear-gradient(145deg, #b6a4e8, var(--science-dim));}
-  .cell.room-dairy{background:linear-gradient(145deg, #e8d9a0, #b39b54);}
-  .cell.room-vault{background:linear-gradient(145deg, #fff0c2, #c9a23a);}
-  .cell.room-queen{
-    background:radial-gradient(circle at 35% 30%, #fff3cf, var(--gold) 70%);
-    color:#3a2a08;
-    box-shadow:0 0 0 2px var(--gold), 0 0 14px 2px rgba(217,179,91,.5);
-  }
-  .cell .badge{
-    position:absolute;
-    bottom:-6px; right:-4px;
-    background:var(--soil-void);
-    border:1px solid var(--hairline);
-    border-radius:6px;
-    font-size:0.55rem;
-    padding:1px 3px;
-    font-family:'Space Mono',monospace;
-    color:var(--cream-dim);
-  }
-  .cell .occ-badge{
-    position:absolute;
-    top:-6px; left:-4px;
-    background:var(--soil-void);
-    border:1px solid var(--gold);
-    border-radius:6px;
-    font-size:0.55rem;
-    padding:1px 3px;
-    font-family:'Space Mono',monospace;
-    color:var(--gold);
-  }
-  .conn{
-    border-radius:5px;
-  }
-  .conn.h{background:transparent;}
-  .conn.v{background:transparent;}
-  .conn.active{
-    background:linear-gradient(var(--tunnel-lit), var(--tunnel));
-    box-shadow: inset 0 0 3px rgba(0,0,0,.4);
-  }
-
-  .ant-dot{
-    position:absolute;
-    width:7px; height:7px;
-    border-radius:50%;
-    background:#1c1108;
-    box-shadow:0 0 0 1px rgba(0,0,0,.4), 0 0 3px rgba(0,0,0,.5);
-    pointer-events:none;
-    z-index:5;
-    transition: left 1.1s cubic-bezier(.4,0,.2,1), top 1.1s cubic-bezier(.4,0,.2,1), opacity .3s;
-  }
-  .ant-dot.leaf::after{content:'';position:absolute; top:-3px; left:1px; width:4px; height:4px; background:var(--leaf); border-radius:1px; transform:rotate(20deg);}
-  .ant-dot.fungus::after{content:'';position:absolute; top:-3px; left:1px; width:4px; height:4px; background:var(--fungus); border-radius:50%;}
-  .ant-dot.water::after{content:'';position:absolute; top:-3px; left:1px; width:4px; height:4px; background:var(--water); border-radius:50%;}
-
-  /* ---------- tech tree ---------- */
-  .tech-branch{margin-bottom:16px;}
-  .tech-branch-title{
-    font-size:0.78rem; text-transform:uppercase; letter-spacing:.06em;
-    color:var(--cream-faint); margin-bottom:8px; display:flex; align-items:center; gap:6px;
-  }
-  .tech-card{
-    display:flex; align-items:flex-start; gap:10px;
-    background:var(--soil-panel-2);
-    border:1px solid var(--hairline);
-    border-radius:8px;
-    padding:10px;
-    margin-bottom:8px;
-  }
-  .tech-card.done{border-color:var(--leaf-dim); background:#283a1c;}
-  .tech-card.locked{opacity:0.5;}
-  .tech-card .ic{font-size:1.3rem;}
-  .tech-card .meta{flex:1;}
-  .tech-card .name{font-weight:600; font-size:0.85rem;}
-  .tech-card .desc{font-size:0.74rem; color:var(--cream-dim); margin-top:2px;}
-  .tech-card .cost{font-size:0.7rem; font-family:'Space Mono',monospace; color:var(--science); margin-top:4px;}
-  .tech-card button{
-    background:var(--science-dim); border:1px solid var(--science);
-    color:var(--cream); border-radius:6px; padding:6px 10px; font-size:0.72rem;
-    cursor:pointer; flex-shrink:0; align-self:center;
-  }
-  .tech-card button:hover{background:var(--science);}
-  .tech-card button:disabled{opacity:0.4; cursor:not-allowed;}
-  .tech-card .done-tag{color:var(--leaf); font-size:0.72rem; align-self:center; flex-shrink:0;}
-
-  /* ---------- encyclopedia ---------- */
-  .lex-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:8px;}
-  .lex-card{
-    background:var(--soil-panel-2); border:1px solid var(--hairline); border-radius:8px;
-    padding:10px; cursor:pointer; transition:border-color .15s;
-  }
-  .lex-card:hover{border-color:var(--gold-dim);}
-  .lex-card.locked{opacity:0.35; cursor:default;}
-  .lex-card .ic{font-size:1.6rem;}
-  .lex-card .name{font-weight:600; font-size:0.8rem; margin-top:4px;}
-  .lex-card .tag{font-size:0.65rem; color:var(--cream-faint);}
-  .lex-detail{
-    background:var(--soil-panel-2); border:1px solid var(--hairline-lit); border-radius:8px;
-    padding:14px; margin-top:12px; font-size:0.82rem; line-height:1.6; color:var(--cream-dim);
-  }
-  .lex-detail h3{color:var(--cream); font-size:1rem; margin:0 0 8px;}
-  .lex-detail .fact{margin-bottom:8px; padding-left:14px; border-left:2px solid var(--gold-dim);}
-
-  /* ---------- achievements ---------- */
-  .ach-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:10px;}
-  .ach-card{
-    display:flex; gap:10px; align-items:flex-start;
-    background:var(--soil-panel-2); border:1px solid var(--hairline); border-radius:8px; padding:10px;
-  }
-  .ach-card.unlocked{border-color:var(--gold-dim); background:#3a2c14;}
-  .ach-card .ic{font-size:1.5rem; opacity:0.5;}
-  .ach-card.unlocked .ic{opacity:1;}
-  .ach-card .name{font-weight:600; font-size:0.82rem;}
-  .ach-card .desc{font-size:0.72rem; color:var(--cream-dim); margin-top:2px;}
-
-  /* ---------- stat tab ---------- */
-  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:10px; margin-bottom:14px;}
-  .stat-box{background:var(--soil-panel-2); border:1px solid var(--hairline); border-radius:8px; padding:12px;}
-  .stat-box .big{font-family:'Space Mono',monospace; font-size:1.4rem; color:var(--gold);}
-  .stat-box .lbl{font-size:0.7rem; color:var(--cream-faint); text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
-
-  /* ---------- log ---------- */
-  .log-panel{
-    margin-top:16px;
-  }
-  .log-list{
-    list-style:none;
-    margin:0; padding:0;
-    max-height:170px;
-    overflow-y:auto;
-    font-size:0.8rem;
-    display:flex;
-    flex-direction:column-reverse;
-    gap:5px;
-  }
-  .log-list li{
-    color:var(--cream-dim);
-    border-left:2px solid var(--hairline);
-    padding-left:8px;
-  }
-  .log-list li.raid-fail{color:var(--alert); border-left-color:var(--alert);}
-  .log-list li.raid-win{color:var(--leaf); border-left-color:var(--leaf);}
-  .log-list li.fresh{color:var(--cream);}
-  .log-list li.tech{color:var(--science); border-left-color:var(--science);}
-  .log-list li.season{color:var(--fungus); border-left-color:var(--fungus);}
-  .log-list li.ach{color:var(--gold); border-left-color:var(--gold);}
-  .log-time{font-family:'Space Mono',monospace; font-size:0.68rem; color:var(--cream-dim); margin-right:6px;}
-
-  footer.appfoot{
-    margin-top:22px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    font-size:0.72rem;
-    color:var(--cream-dim);
-    flex-wrap:wrap;
-    gap:8px;
-  }
-  .foot-actions{display:flex; gap:8px;}
-  .reset-btn, .speed-btn{
-    background:transparent;
-    border:1px solid var(--hairline);
-    color:var(--cream-dim);
-    border-radius:6px;
-    padding:5px 10px;
-    font-size:0.72rem;
-    cursor:pointer;
-  }
-  .reset-btn:hover{border-color:var(--alert); color:var(--alert);}
-  .speed-btn.active{border-color:var(--gold); color:var(--gold);}
-  .speed-btn:hover{border-color:var(--gold-dim);}
-
-  .toast{
-    position:fixed;
-    bottom:20px; left:50%;
-    transform:translateX(-50%) translateY(10px);
-    background:var(--soil-panel);
-    border:1px solid var(--gold);
-    color:var(--cream);
-    padding:10px 18px;
-    border-radius:8px;
-    font-size:0.85rem;
-    opacity:0;
-    transition:opacity .3s, transform .3s;
-    pointer-events:none;
-    z-index:50;
-    max-width:90vw;
-    text-align:center;
-  }
-  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
-
-  /* ---------- modal (species select / intro) ---------- */
-  .modal-overlay{
-    position:fixed; inset:0; background:rgba(8,5,2,0.78);
-    display:flex; align-items:center; justify-content:center;
-    z-index:100; padding:20px;
-  }
-  .modal-box{
-    background:var(--soil-panel); border:1px solid var(--hairline-lit);
-    border-radius:14px; padding:26px; max-width:760px; width:100%;
-    max-height:88vh; overflow-y:auto;
-    box-shadow:0 20px 60px rgba(0,0,0,.6);
-  }
-  .modal-box h2{font-size:1.4rem; margin:0 0 6px; color:var(--cream);}
-  .modal-sub{color:var(--cream-dim); font-size:0.88rem; margin-bottom:18px;}
-  .species-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:12px;}
-  .species-card{
-    background:var(--soil-panel-2); border:2px solid var(--hairline); border-radius:10px;
-    padding:14px; cursor:pointer; transition:border-color .15s, transform .12s;
-  }
-  .species-card:hover{border-color:var(--gold-dim); transform:translateY(-2px);}
-  .species-card .sp-head{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
-  .species-card .sp-ic{font-size:2rem;}
-  .species-card .sp-name{font-weight:700; font-size:1rem; font-family:'Fraunces',serif;}
-  .species-card .sp-latin{font-size:0.72rem; font-style:italic; color:var(--cream-faint);}
-  .species-card .sp-desc{font-size:0.78rem; color:var(--cream-dim); line-height:1.5; margin-bottom:8px;}
-  .species-card .sp-trait{font-size:0.72rem; color:var(--leaf); margin-bottom:3px; display:flex; gap:6px;}
-  .species-card .sp-trait.con{color:var(--alert);}
-  .modal-skip{
-    display:block; margin:16px auto 0; background:transparent; border:none;
-    color:var(--cream-faint); font-size:0.76rem; cursor:pointer; text-decoration:underline;
-  }
-
-  .info-modal-body{font-size:0.85rem; line-height:1.6; color:var(--cream-dim);}
-  .info-modal-body h3{color:var(--gold); font-size:0.95rem; margin:14px 0 6px;}
-  .info-modal-body h3:first-child{margin-top:0;}
-  .modal-close-btn{
-    margin-top:18px; width:100%; background:var(--gold-dim); border:1px solid var(--gold);
-    color:#241509; font-weight:600; border-radius:8px; padding:9px; cursor:pointer; font-size:0.85rem;
-  }
-  .modal-close-btn:hover{background:var(--gold);}
-
-  ::-webkit-scrollbar{width:8px; height:8px;}
-  ::-webkit-scrollbar-thumb{background:var(--hairline); border-radius:4px;}
-
-  @media (prefers-reduced-motion: reduce){
-    .ant-dot{transition:none;}
-    .build-btn, .cell{transition:none;}
-  }
-  :focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ui-bg:#0f0c00;--ui-card:#1a1400;--ui-border:#4a3800;
+  --gold:#ffcc00;--text:#fff5cc;--muted:#a08040;
+}
+body{font-family:Arial,sans-serif;background:#0a0800;color:var(--text);overflow-x:hidden;user-select:none}
+#app{max-width:1280px;margin:0 auto}
+.screen{display:none}.screen.active{display:block}
+/* HOME */
+#homeScreen{padding:14px}
+.logo{text-align:center;padding:14px 0 6px}
+.logo h1{font-size:30px;color:var(--gold);text-shadow:0 0 20px rgba(255,200,0,.5);letter-spacing:2px}
+.logo p{color:var(--muted);font-size:12px;margin-top:3px}
+.tabs{display:flex;border-bottom:2px solid var(--ui-border);margin-bottom:12px}
+.tab{padding:9px 18px;cursor:pointer;font-size:13px;color:var(--muted);border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.12s}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--ui-card);border:2px solid var(--ui-border);border-radius:10px;padding:12px;margin-bottom:10px}
+.card h3{font-size:13px;color:var(--gold);margin-bottom:8px}
+.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold;transition:.12s}
+.btn-primary{background:linear-gradient(135deg,#b86800,#e09000);color:#fff;border:2px solid #f0b020;box-shadow:0 2px 8px rgba(180,100,0,.5)}
+.btn-primary:hover{background:linear-gradient(135deg,#d08000,#ffb020)}
+.btn-secondary{background:#1e1600;color:var(--muted);border:1px solid var(--ui-border)}
+.metric{background:#0a0800;border-radius:7px;padding:8px;text-align:center;border:1px solid var(--ui-border)}
+.metric .val{font-size:18px;font-weight:bold;color:var(--gold)}
+.metric .lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:8px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px}
+.elo-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:bold}
+.rank-bronze{background:#4a2000;color:#ffb060}
+.rank-silver{background:#303030;color:#d8d8d8}
+.rank-gold{background:#4a3800;color:#ffe050}
+.rank-plat{background:#002a4a;color:#70bbff}
+.rank-diamond{background:#001e4a;color:#90c8ff}
+.rank-master{background:#2e0050;color:#c070ff}
+select,input[type=text]{padding:6px 9px;background:#0a0800;border:1px solid var(--ui-border);border-radius:5px;color:var(--text);font-size:12px}
+input[type=range]{width:100%;accent-color:var(--gold)}
+/* GAME */
+#gameScreen{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+#topHud{display:flex;align-items:center;gap:8px;background:var(--ui-bg);border-bottom:2px solid var(--ui-border);padding:5px 10px;flex-shrink:0;flex-wrap:wrap}
+.hv{font-weight:bold;color:var(--gold);font-size:14px}
+.hk{font-size:11px;color:var(--muted)}
+#mainArea{display:flex;flex:1;overflow:hidden}
+#leftPanel{width:148px;flex-shrink:0;background:var(--ui-bg);border-right:2px solid var(--ui-border);overflow-y:auto;padding:5px}
+#centerCol{display:flex;flex-direction:column;flex:1;overflow:hidden}
+#canvasWrap{position:relative;flex:1;overflow:hidden;min-height:0}
+#gameCanvas{display:block;cursor:crosshair}
+#rightPanel{width:158px;flex-shrink:0;background:var(--ui-bg);border-left:2px solid var(--ui-border);overflow-y:auto;padding:5px}
+#bottomArea{flex-shrink:0;background:var(--ui-bg);border-top:2px solid var(--ui-border);padding:5px 10px}
+#waveCtrl{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+#waveLabel{font-size:12px;color:var(--text);flex:1}
+#waveBar{height:7px;background:#100c00;border-radius:4px;overflow:hidden;margin-bottom:3px}
+#waveBarIn{height:100%;background:linear-gradient(90deg,var(--gold),#ff8000);border-radius:4px;transition:width .25s;width:0%}
+#waveLog{font-size:10px;color:var(--muted);max-height:44px;overflow-y:auto}
+#waveLog .g{color:#44ee70}
+#waveLog .b{color:#ff4040}
+/* BOT AREA */
+#botArea{display:flex;gap:5px;flex-wrap:wrap;padding:5px 8px;background:#080600;border-top:2px solid var(--ui-border);flex-shrink:0;min-height:0}
+.bot-screen{position:relative;border:2px solid #444;border-radius:5px;overflow:hidden;flex-shrink:0}
+.bot-label{position:absolute;top:0;left:0;right:0;background:rgba(0,0,0,.82);font-size:8px;padding:1px 4px;display:flex;justify-content:space-between;z-index:2;pointer-events:none;white-space:nowrap}
+.bot-canvas{display:block}
+/* Tower buttons */
+.tbtn{width:100%;padding:4px 5px;margin-bottom:3px;background:#120e00;border:1px solid #2e2000;border-radius:5px;cursor:pointer;color:var(--text);font-size:9px;text-align:left;transition:.1s;display:flex;align-items:center;gap:4px}
+.tbtn:hover{border-color:var(--gold);background:#201400}
+.tbtn.sel{border-color:var(--gold);background:#2e1800;box-shadow:0 0 5px rgba(255,200,0,.35)}
+.tbtn-icon{font-size:16px;line-height:1;flex-shrink:0}
+.tbtn-name{font-size:9px;font-weight:bold;color:var(--gold)}
+.tbtn-cost{font-size:8px;color:var(--muted)}
+/* Upgrade panel */
+.upg-hdr{font-size:9px;color:var(--gold);margin-bottom:3px;font-weight:bold;margin-top:7px}
+.upg-row{width:100%;padding:4px 5px;background:#120e00;border:1px solid #2e2000;border-radius:4px;font-size:9px;cursor:pointer;color:var(--text);text-align:left;margin-bottom:2px;transition:.1s;display:block}
+.upg-row:hover:not([disabled]){border-color:var(--gold);background:#201000}
+.upg-row[disabled]{opacity:.3;cursor:not-allowed}
+.upg-row.done{background:#081400;border-color:#1e4000;color:#40a000;cursor:default}
+.sell-btn{width:100%;padding:4px;background:#200000;border:1px solid #500000;border-radius:4px;color:#ff5050;cursor:pointer;font-size:9px;margin-top:5px}
+.sell-btn:hover{background:#2e0000}
+#endOverlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:200}
+#endBox{background:var(--ui-card);border:2px solid var(--gold);border-radius:12px;padding:24px 28px;text-align:center;min-width:300px;max-width:420px}
+#endBox h2{font-size:22px;margin-bottom:10px}
+#endBox .stats{font-size:12px;line-height:2.2;color:var(--muted);margin-bottom:16px}
+.map-row{display:flex;gap:8px;margin-bottom:8px;cursor:pointer;padding:6px;border-radius:7px;border:2px solid transparent;transition:.1s}
+.map-row:hover{border-color:#6a5000}
+.map-row.msel{border-color:var(--gold);background:rgba(255,200,0,.06)}
+.map-thumb{border-radius:5px;flex-shrink:0}
+.map-info{font-size:11px;color:var(--muted);line-height:1.6}
+.map-info b{color:var(--text)}
 </style>
 </head>
 <body>
-<div class="app" id="app"></div>
-<div class="toast" id="toast"></div>
+<div id="app">
+
+<!-- HOME -->
+<div id="homeScreen" class="screen active">
+  <div class="logo">
+    <h1>🎈 BLOONS TD ARENA</h1>
+    <p>Tower Defense • Alle BTD5-Türme • Bot-KI mit eigenem Spielfeld</p>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('play')">Spielen</button>
+    <button class="tab" onclick="showTab('profile')">Profil</button>
+    <button class="tab" onclick="showTab('lb')">Rangliste</button>
+    <button class="tab" onclick="showTab('guide')">Guide</button>
+  </div>
+  <div id="panel-play" class="panel active">
+    <div class="card"><h3>Spieler</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="av0" style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#b06000,#ffcc00);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px">P</div>
+        <div><div style="font-weight:bold;font-size:14px" id="hpn">Spieler</div>
+        <span class="elo-badge rank-bronze" id="hrb">Bronze</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:4px" id="hel">1000 ELO</span></div>
+      </div>
+    </div>
+    <div class="card"><h3>Schwierigkeit</h3>
+      <select id="diffSel" style="width:100%">
+        <option value="easy">🟢 Leicht — 200 Leben, viel Geld</option>
+        <option value="medium" selected>🟡 Mittel — Standard</option>
+        <option value="hard">🔴 Schwer — weniger Geld, mehr Bloons</option>
+        <option value="extreme">💀 Extrem — Profi-Modus</option>
+      </select>
+    </div>
+    <div class="card"><h3>Bots <span id="botCntLabel" style="color:var(--gold)">3</span></h3>
+      <input type="range" min="1" max="7" value="3" step="1" oninput="document.getElementById('botCntLabel').textContent=this.value;cfg.botCount=+this.value">
+    </div>
+    <div class="card"><h3>Karte</h3><div id="mapList"></div></div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:15px;margin-top:4px" onclick="startGame()">🎮 ARENA STARTEN</button>
+  </div>
+  <div id="panel-profile" class="panel">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div id="profAv" style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#b06000,#ffcc00);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:20px">P</div>
+      <div style="flex:1">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+          <span style="font-weight:bold;font-size:15px" id="profName">Spieler</span>
+          <input type="text" id="nameIn" placeholder="Name ändern..." style="width:110px">
+          <button class="btn btn-secondary" onclick="doRename()" style="padding:2px 8px;font-size:11px">OK</button>
+        </div>
+        <span class="elo-badge rank-bronze" id="profBadge">Bronze</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:5px" id="profElo">1000 ELO</span>
+      </div>
+    </div>
+    <div class="g4"><div class="metric"><div class="val" id="sGames">0</div><div class="lbl">Spiele</div></div><div class="metric"><div class="val" id="sWins">0</div><div class="lbl">Siege</div></div><div class="metric"><div class="val" id="sWave">1</div><div class="lbl">Max Wave</div></div><div class="metric"><div class="val" id="sKills">0</div><div class="lbl">Kills</div></div></div>
+    <div class="g3"><div class="metric"><div class="val" id="sWR">0%</div><div class="lbl">Siegrate</div></div><div class="metric"><div class="val" id="sAvg">—</div><div class="lbl">Ø Platz</div></div><div class="metric"><div class="val" id="sPeak">1000</div><div class="lbl">Peak ELO</div></div></div>
+    <div class="card"><h3>Letzte Spiele</h3><div id="histList" style="font-size:11px;color:var(--muted)">Noch keine Spiele.</div></div>
+  </div>
+  <div id="panel-lb" class="panel">
+    <div style="font-size:15px;font-weight:bold;color:var(--gold);margin-bottom:10px">🏆 Rangliste</div>
+    <div id="lbList"></div>
+  </div>
+  <div id="panel-guide" class="panel">
+    <div class="card"><h3>Alle BTD5-Türme</h3>
+      <div style="font-size:10px;color:#ccc;line-height:1.9">
+        🐒 Dart Monkey | 💣 Bomb Shooter | ❄️ Ice Tower | 🌵 Tack Shooter | 🐺 Super Monkey<br>
+        🌿 Boomerang | 💥 Mortar | ⚡ Lightning | 🎯 Sniper | 🚁 Heli Pilot<br>
+        🐒🏹 Monkey Ace | 🌊 Monkey Buccaneer | 🧙 Wizard | ☀️ Druid | 🦝 Ninja<br>
+        🧪 Alchemist | 🌲 Spike Factory | 🥁 Village | 🎲 Engineer
+      </div>
+    </div>
+    <div class="card"><h3>Bloon-Typen (Hierarchie)</h3>
+      <div style="font-size:10px;color:#ccc;line-height:1.8">
+        🔴 Rot 1 | 🔵 Blau 2 | 🟢 Grün 3 | 🟡 Gelb 4 | 🩷 Pink 5<br>
+        ⚫ Schwarz 10 | ⬜ Weiß 10 | 🟣 Lila 15 | 🔶 Lead 20 | 🦓 Zebra 23<br>
+        🌈 Rainbow 47 | 💎 Keramik 60 | 🌑 MOAB 200 | 💣 BFB 700 | 🌀 ZOMG 4000<br>
+        Beim Tod spawnen Kinder-Bloons!
+      </div>
+    </div>
+    <div class="card"><h3>Bot-Strategien</h3>
+      <div style="font-size:10px;color:#ccc;line-height:1.8">
+        <b style="color:#ff8888">Noob (400–700 ELO)</b>: Kauft zufällig, nie Upgrades<br>
+        <b style="color:#ffbb44">Anfänger (700–1000)</b>: Bevorzugt Dart/Bomb, selten Upgrades<br>
+        <b style="color:#ffff44">Normal (1000–1300)</b>: Sinnvolle Türme, gelegentlich Upgrades<br>
+        <b style="color:#88ff88">Gut (1300–1600)</b>: Synergien, Pfad 1 bevorzugt<br>
+        <b style="color:#44bbff">Experte (1600–2000)</b>: Spart auf starke Türme, beide Pfade<br>
+        <b style="color:#cc88ff">Meister (2000+)</b>: Optimale Türme + Max-Upgrades + Synergie
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="gameScreen" class="screen">
+  <div id="topHud">
+    <span class="hk">❤️</span><span class="hv" id="hudLives">150</span>
+    <span style="color:#2a2000">│</span>
+    <span class="hk">💰</span><span class="hv" id="hudMoney">650</span>
+    <span style="color:#2a2000">│</span>
+    <span class="hk">🌊</span><span class="hv" id="hudWave">0</span><span class="hk" id="hudWaveOf">/80</span>
+    <span style="color:#2a2000">│</span>
+    <span class="hk">🎈</span><span class="hv" id="hudBloons">0</span>
+    <span style="color:#2a2000">│</span>
+    <span class="hk">⭐</span><span class="hv" id="hudElo">1000</span>
+    <span style="flex:1"></span>
+    <button class="btn btn-secondary" id="pauseBtn" onclick="togglePause()" style="padding:3px 10px;font-size:11px">⏸</button>
+    <button class="btn btn-secondary" id="speedBtn" onclick="toggleSpeed()" style="padding:3px 10px;font-size:11px">2x</button>
+    <button class="btn btn-secondary" onclick="goHome()" style="padding:3px 8px;font-size:11px">🏠</button>
+  </div>
+  <div id="mainArea">
+    <div id="leftPanel">
+      <div style="font-size:9px;color:var(--gold);font-weight:bold;margin-bottom:4px;letter-spacing:1px">TÜRME KAUFEN</div>
+      <div id="towerButtons"></div>
+      <div style="font-size:9px;color:#444;margin-top:6px;line-height:1.6">Klick=auswählen<br>Dann Karte klicken</div>
+    </div>
+    <div id="centerCol">
+      <div id="canvasWrap"><canvas id="gameCanvas"></canvas></div>
+      <div id="bottomArea">
+        <div id="waveCtrl">
+          <span id="waveLabel">Bereit für Welle 1</span>
+          <button id="startWaveBtn" class="btn btn-primary" onclick="startNextWave()" style="padding:4px 12px;font-size:11px">Nächste Welle ▶</button>
+        </div>
+        <div id="waveBar"><div id="waveBarIn"></div></div>
+        <div id="waveLog"></div>
+      </div>
+    </div>
+    <div id="rightPanel">
+      <div style="font-size:9px;color:var(--gold);font-weight:bold;margin-bottom:4px;letter-spacing:1px">DETAILS</div>
+      <div id="towerDetails" style="font-size:10px;color:var(--muted)">Turm auswählen oder platzieren</div>
+    </div>
+  </div>
+  <div id="botArea"></div>
+</div>
+
+<div id="endOverlay">
+  <div id="endBox">
+    <h2 id="endTitle">Spiel beendet</h2>
+    <div class="stats" id="endStats"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-primary" onclick="goHome()">🏠 Menü</button>
+      <button class="btn btn-secondary" onclick="startGame()" style="padding:8px 16px">🔄 Nochmal</button>
+    </div>
+  </div>
+</div>
+
 <script>
-/* ============================================================
-   MYRMEX — DATENDEFINITIONEN
-   Artenwahl, Räume, Technologien, Lexikon, Achievements, Gefahren
-   ============================================================ */
+// ================================================================
+// TOWER TYPES — all BTD5 towers, 2 upgrade paths x 4 levels each
+// targetMode: 'first','last','strong','close','sniper'
+// ================================================================
+const TTYPES=[
+{id:'dart',name:'Dart Monkey',icon:'🐒',cost:170,dmg:1,range:115,rate:950,pierce:2,color:'#e09020',targetMode:'first',
+ p1:[{n:'Improved Targeting',cost:100,e:'pierce+1'},{n:'Jet Darts',cost:150,e:'rate-150'},{n:'Razor Wind',cost:300,e:'triple'},{n:'Ultra Juggernaut',cost:2200,e:'juggernaut'}],
+ p2:[{n:'Long Range',cost:100,e:'range+20'},{n:'Enhanced Eyesight',cost:150,e:'range+20'},{n:'Super Range',cost:250,e:'range+30'},{n:'XXL Darts',cost:3000,e:'xxl'}]},
 
-const SPECIES = {
-  formica: {
-    key:'formica', name:'Rote Waldameise', latin:'Formica rufa', icon:'🐜',
-    desc:'Baut riesige Nadelhügel und verteidigt sie mit Ameisensäure. Eine der bekanntesten heimischen Arten Europas.',
-    traits:[
-      {text:'+25% Verteidigungskraft (Säurespritzer)', good:true},
-      {text:'+15% Baracken-Kapazität', good:true},
-      {text:'-10% Pilzgarten-Ertrag (kein Pilzanbau in der Natur)', good:false}
-    ],
-    mods:{ defenseMult:1.25, barracksCapMult:1.15, fungusMult:0.9, forageMult:1.0, nurseryMult:1.0 },
-    color:'#c8593c',
-    fact:'Formica rufa kann bis zu 100 Millionen Ameisen umfassende Hügel über mehrere Jahrzehnte bewohnen und verteidigt sich durch gezieltes Verspritzen von Ameisensäure aus der Giftdrüse.'
+{id:'bomb',name:'Bomb Shooter',icon:'💣',cost:380,dmg:6,range:100,rate:1800,pierce:10,aoe:40,color:'#d06000',targetMode:'first',
+ p1:[{n:'Bigger Bombs',cost:150,e:'aoe+15'},{n:'Missile Launcher',cost:250,e:'dmg+5+rate-200'},{n:'MOAB Mauler',cost:1000,e:'moabdmg'},{n:'MOAB Assassin',cost:5000,e:'moabkill'}],
+ p2:[{n:'Frag Bombs',cost:200,e:'pierce+8'},{n:'Cluster Bombs',cost:500,e:'cluster'},{n:'Recursive Cluster',cost:1500,e:'aoe+20+pierce+4'},{n:'Bomb Blitz',cost:8000,e:'bombblitz'}]},
+
+{id:'ice',name:'Ice Tower',icon:'❄️',cost:280,dmg:0,range:90,rate:3500,freeze:true,freezeDur:1.5,color:'#60b0ff',targetMode:'first',
+ p1:[{n:'Permafrost',cost:100,e:'slow'},{n:'Cold Snap',cost:200,e:'whitehit'},{n:'Arctic Wind',cost:500,e:'range+30+bigfreeze'},{n:'Absolute Zero',cost:4500,e:'absfreeze'}],
+ p2:[{n:'Enhanced Freeze',cost:100,e:'freezedur+0.5'},{n:'Deep Freeze',cost:150,e:'freezedur+1'},{n:'Cryo Cannon',cost:600,e:'range+25+dmg+1'},{n:'Super Freeze',cost:3500,e:'superfreeze'}]},
+
+{id:'tack',name:'Tack Shooter',icon:'🌵',cost:210,dmg:1,range:78,rate:1400,spread:8,color:'#20b040',targetMode:'close',
+ p1:[{n:'Faster Shooting',cost:100,e:'rate-200'},{n:'Even Faster',cost:150,e:'rate-200'},{n:'Super Fast Tacks',cost:500,e:'rate-300'},{n:'Tack Sprayer',cost:3000,e:'tsprayer'}],
+ p2:[{n:'Long Reach',cost:100,e:'range+15'},{n:'Extra Long',cost:150,e:'range+15'},{n:'Blade Shooter',cost:300,e:'dmg+2+pierce+1'},{n:'Blade Maelstrom',cost:3500,e:'maelstrom'}]},
+
+{id:'super',name:'Super Monkey',icon:'🐺',cost:2500,dmg:1,range:105,rate:90,pierce:1,color:'#c000c0',targetMode:'first',
+ p1:[{n:'Laser Blasts',cost:2000,e:'dmg+2+rate-10'},{n:'Plasma Blasts',cost:3000,e:'dmg+4'},{n:'Sun God',cost:8000,e:'sungod'},{n:'True Sun God',cost:50000,e:'truesun'}],
+ p2:[{n:'Super Range',cost:1000,e:'range+35'},{n:'Epic Range',cost:1500,e:'range+45'},{n:'Robo-Monkey',cost:4000,e:'robo'},{n:'Tech Terror',cost:25000,e:'techterror'}]},
+
+{id:'boomr',name:'Boomerang',icon:'🌿',cost:310,dmg:2,range:125,rate:1500,pierce:4,color:'#30b070',targetMode:'first',
+ p1:[{n:'Glaive Thrower',cost:200,e:'pierce+3'},{n:'Glaive Ricochet',cost:350,e:'pierce+4+dmg+1'},{n:'Glaive Lord',cost:2000,e:'glaive_lord'},{n:'MOAB Press',cost:7000,e:'moab_press'}],
+ p2:[{n:'Bionic Boomerang',cost:300,e:'rate-400'},{n:'Turbo Charge',cost:900,e:'rate-400'},{n:'Perma-Charge',cost:3500,e:'rate-500+dmg+3'},{n:'MOAB Domination',cost:20000,e:'moab_dom'}]},
+
+{id:'mortar',name:'Mortar',icon:'💥',cost:680,dmg:8,range:99000,rate:3000,aoe:55,pierce:25,color:'#808080',targetMode:'sniper',
+ p1:[{n:'Bigger Blast',cost:250,e:'aoe+15+dmg+3'},{n:'Bloon Buster',cost:500,e:'dmg+8'},{n:'The Big One',cost:2000,e:'dmg+18+aoe+15'},{n:'The Biggest One',cost:6500,e:'bigone'}],
+ p2:[{n:'Faster Reload',cost:200,e:'rate-500'},{n:'Rapid Reload',cost:400,e:'rate-500'},{n:'Heavy Shells',cost:900,e:'dmg+12+aoe+10'},{n:'Pop & Awe',cost:5000,e:'popnawe'}]},
+
+{id:'lightning',name:'Lightning',icon:'⚡',cost:530,dmg:2,range:105,rate:1800,chain:4,color:'#e0d000',targetMode:'first',
+ p1:[{n:'Faster Zapping',cost:200,e:'rate-300'},{n:'Voltage',cost:300,e:'dmg+2+chain+2'},{n:'Tesla',cost:1200,e:'dmg+5+chain+3'},{n:'Technological Terror',cost:6500,e:'tech_terror'}],
+ p2:[{n:'Extra Range',cost:150,e:'range+20'},{n:'Increased Power',cost:250,e:'range+20+dmg+2'},{n:'Storm Cannon',cost:1500,e:'stormcannon'},{n:'LITERAL STORM',cost:12000,e:'literalstorm'}]},
+
+{id:'sniper',name:'Sniper',icon:'🎯',cost:350,dmg:8,range:99999,rate:3500,pierce:1,color:'#a090ff',targetMode:'sniper',sniperMode:true,
+ p1:[{n:'Full Metal Jacket',cost:200,e:'leaddmg'},{n:'Point Five Oh',cost:350,e:'dmg+10'},{n:'Deadly Precision',cost:900,e:'dmg+18'},{n:'Cripple MOAB',cost:4500,e:'cripplemoab'}],
+ p2:[{n:'Night Vision',cost:150,e:'camo'},{n:'Shrapnel Shot',cost:350,e:'pierce+4+aoe+25'},{n:'Bouncing Bullet',cost:900,e:'chain+3'},{n:'Supply Drop',cost:4500,e:'supply'}]},
+
+{id:'heli',name:'Heli Pilot',icon:'🚁',cost:1350,dmg:2,range:160,rate:600,pierce:3,homing:true,color:'#40a0e0',targetMode:'first',
+ p1:[{n:'Bigger Jets',cost:250,e:'range+30'},{n:'IFR',cost:400,e:'range+25'},{n:'Downdraft',cost:2500,e:'push+dmg+2'},{n:'Apache Dartship',cost:10000,e:'apache'}],
+ p2:[{n:'Faster Darts',cost:250,e:'rate-100'},{n:'Faster Firing',cost:400,e:'rate-100+dmg+1'},{n:'Quad Darts',cost:2000,e:'triple+pierce+2'},{n:'Apache Prime',cost:18000,e:'apache_prime'}]},
+
+{id:'ace',name:'Monkey Ace',icon:'🐒🏹',cost:1080,dmg:1,range:99999,rate:700,pierce:2,color:'#e0c050',targetMode:'sniper',
+ p1:[{n:'Rapid Fire',cost:300,e:'rate-100'},{n:'Lots More Darts',cost:350,e:'pierce+4'},{n:'Fighter Plane',cost:2000,e:'fighter'},{n:'Operation: DNT',cost:12000,e:'operation_dnt'}],
+ p2:[{n:'Lots More Darts',cost:200,e:'pierce+3'},{n:'Fighter Plane Gun',cost:400,e:'dmg+2+rate-100'},{n:'Spy Plane',cost:1200,e:'camo+pierce+2'},{n:'Bombardier',cost:5000,e:'bombardier'}]},
+
+{id:'buccaneer',name:'Buccaneer',icon:'🌊',cost:650,dmg:2,range:130,rate:1200,pierce:4,color:'#1060c0',targetMode:'first',
+ p1:[{n:'Faster Shooting',cost:200,e:'rate-200'},{n:'Cannon Ship',cost:300,e:'aoe+20+dmg+3'},{n:'Destroyer',cost:1500,e:'rate-300+dmg+4'},{n:'Aircraft Carrier',cost:8000,e:'aircraft'}],
+ p2:[{n:'Long Reach',cost:150,e:'range+25'},{n:'Crow\'s Nest',cost:200,e:'camo'},{n:'Monkey Pirates',cost:1500,e:'pirate'},{n:'Flagship',cost:11000,e:'flagship'}]},
+
+{id:'wizard',name:'Wizard',icon:'🧙',cost:580,dmg:3,range:110,rate:1200,pierce:3,color:'#8030e0',targetMode:'first',
+ p1:[{n:'Intense Magic',cost:250,e:'dmg+2'},{n:'Monkey Sense',cost:350,e:'camo'},{n:'Archmage',cost:2000,e:'archmage'},{n:'Sorcerer Prime',cost:18000,e:'sorcerer_prime'}],
+ p2:[{n:'Fireball',cost:300,e:'aoe+20+dmg+2'},{n:'Wall of Fire',cost:500,e:'wall_of_fire'},{n:'Shimmer',cost:1500,e:'debuff'},{n:'Necromancer',cost:8000,e:'necromancer'}]},
+
+{id:'ninja',name:'Ninja Monkey',icon:'🦝',cost:550,dmg:2,range:105,rate:800,pierce:2,color:'#404040',targetMode:'first',shurikenPierce:true,
+ p1:[{n:'Sharper Shurikens',cost:200,e:'pierce+2+dmg+1'},{n:'Seeking Shuriken',cost:350,e:'homing'},{n:'Bloonjitsu',cost:1500,e:'spread+5+rate-100'},{n:'Master of the Night',cost:12000,e:'master_night'}],
+ p2:[{n:'Distraction',cost:200,e:'slow'},{n:'Flash Bomb',cost:400,e:'aoe+30+rate+200'},{n:'Smokescreens',cost:1500,e:'smokescreen'},{n:'Grand Saboteur',cost:9000,e:'grand_sab'}]},
+
+{id:'alch',name:'Alchemist',icon:'🧪',cost:720,dmg:1,range:90,rate:2200,pierce:5,aoe:35,color:'#20b090',targetMode:'first',
+ p1:[{n:'Larger Potions',cost:200,e:'aoe+15'},{n:'Acidic Mixture',cost:350,e:'dot'},{n:'Berserker Brew',cost:2000,e:'berserker'},{n:'Strongest Acid',cost:8500,e:'strongest_acid'}],
+ p2:[{n:'Stronger Acid',cost:200,e:'dmg+2+dotdmg+1'},{n:'Stronger Stimulant',cost:350,e:'buffTower'},{n:'Permanent Brew',cost:2500,e:'permabrew'},{n:'Total Transformation',cost:35000,e:'total_transform'}]},
+
+{id:'druid',name:'Druid',icon:'☀️',cost:550,dmg:3,range:108,rate:1100,pierce:3,color:'#50b020',targetMode:'first',
+ p1:[{n:'Hard Thorns',cost:200,e:'pierce+2+dmg+1'},{n:'Druid of the Jungle',cost:350,e:'range+20'},{n:'Druid of the Storm',cost:2000,e:'storm_druid'},{n:'Avatar of Wrath',cost:25000,e:'avatar_wrath'}],
+ p2:[{n:'Thorn Swarm',cost:200,e:'triple+pierce+1'},{n:'Heart of Thunder',cost:400,e:'chain+3+rate-100'},{n:'Druid of the Jungle',cost:1800,e:'jungle_druid'},{n:'Spirit of the Forest',cost:12000,e:'spirit_forest'}]},
+
+{id:'spike',name:'Spike Factory',icon:'🌲',cost:1080,dmg:1,range:75,rate:1800,pierce:5,color:'#806000',targetMode:'close',spikeMode:true,
+ p1:[{n:'Faster Production',cost:300,e:'rate-400'},{n:'Even Faster',cost:450,e:'rate-400'},{n:'MOAB SHREDR',cost:2000,e:'moab_shredr'},{n:'Perma-Spike',cost:18000,e:'perma_spike'}],
+ p2:[{n:'Longer Reach',cost:200,e:'range+15'},{n:'Spread Spikes',cost:350,e:'spread+3+pierce+3'},{n:'Long Life Spikes',cost:1200,e:'pierce+8'},{n:'Super Mines',cost:30000,e:'super_mines'}]},
+
+{id:'village',name:'Monkey Village',icon:'🥁',cost:1150,dmg:0,range:120,rate:99999,pierce:0,color:'#c07020',targetMode:'first',supportMode:true,
+ p1:[{n:'Bigger Radius',cost:400,e:'range+25'},{n:'Jungle Drums',cost:600,e:'buffSpeed'},{n:'Primary Training',cost:2200,e:'buffDmg'},{n:'Primary Expertise',cost:20000,e:'primary_expertise'}],
+ p2:[{n:'Monkey Business',cost:350,e:'discount'},{n:'Monkey Commerce',cost:600,e:'income'},{n:'Monkey Town',cost:3000,e:'goldBonus'},{n:'Banana Research HQ',cost:15000,e:'banana_hq'}]},
+
+{id:'engineer',name:'Engineer',icon:'🎲',cost:580,dmg:2,range:95,rate:2500,pierce:3,color:'#c08040',targetMode:'first',
+ p1:[{n:'Sentry Gun',cost:300,e:'sentry'},{n:'Faster Engineering',cost:400,e:'rate-500'},{n:'Sprockets',cost:1800,e:'dmg+4+pierce+4'},{n:'Ultraboost',cost:18000,e:'ultraboost'}],
+ p2:[{n:'Larger Service Area',cost:250,e:'range+20'},{n:'Deconstruction',cost:400,e:'leaddmg+dmg+1'},{n:'Cleansing Foam',cost:1500,e:'foam'},{n:'Elite Sniper',cost:9500,e:'elite_engi'}]}
+];
+
+// ================================================================
+// BLOON TYPES with children hierarchy
+// ================================================================
+const BTYPES=[
+  {id:'red',   icon:'🔴',hp:1,  speed:0.55, reward:1,  immune:[],             color:'#cc2020',children:[]},
+  {id:'blue',  icon:'🔵',hp:2,  speed:0.65, reward:1,  immune:[],             color:'#2060cc',children:['red']},
+  {id:'green', icon:'🟢',hp:3,  speed:0.80, reward:1,  immune:[],             color:'#20a020',children:['blue']},
+  {id:'yellow',icon:'🟡',hp:4,  speed:1.10, reward:1,  immune:[],             color:'#c8c000',children:['green']},
+  {id:'pink',  icon:'🩷',hp:5,  speed:1.40, reward:1,  immune:[],             color:'#e060a0',children:['yellow']},
+  {id:'black', icon:'⚫',hp:10, speed:0.85, reward:2,  immune:['bomb'],       color:'#333333',children:['pink','pink']},
+  {id:'white', icon:'⬜',hp:10, speed:0.85, reward:2,  immune:['ice'],        color:'#c8c8c8',children:['pink','pink']},
+  {id:'purple',icon:'🟣',hp:15, speed:0.75, reward:3,  immune:['super','energy'],color:'#7020a0',children:['pink','pink']},
+  {id:'lead',  icon:'🔶',hp:20, speed:0.55, reward:4,  immune:['dart','tack','lightning','heli','boomr','ninja','druid','spike','ace','engineer'],color:'#9090a0',children:['black','black']},
+  {id:'zebra', icon:'🦓',hp:23, speed:0.85, reward:5,  immune:['ice','bomb'], color:'#505050',children:['black','white']},
+  {id:'rainbow',icon:'🌈',hp:47,speed:1.00, reward:8,  immune:[],             color:'#d050d0',children:['zebra','zebra']},
+  {id:'ceramic',icon:'💎',hp:60,speed:0.70, reward:15, immune:[],             color:'#a05020',children:['rainbow','rainbow']},
+  {id:'moab',  icon:'🌑',hp:200,speed:0.30, reward:50, immune:[],             color:'#1020a0',big:true,children:['ceramic','ceramic','ceramic','ceramic']},
+  {id:'bfb',   icon:'💣',hp:700,speed:0.20, reward:200,immune:[],             color:'#100050',big:true,boss:true,children:['moab','moab','moab','moab']},
+  {id:'zomg',  icon:'🌀',hp:4000,speed:0.10,reward:800,immune:[],             color:'#004000',big:true,boss:true,children:['bfb','bfb','bfb','bfb']}
+];
+const BT=Object.fromEntries(BTYPES.map(b=>[b.id,b]));
+
+// ================================================================
+// MAPS — 6 maps with long, detailed paths
+// ================================================================
+const MAPS={
+  grasslands:{
+    name:'Grasslands',desc:'Sanfte Kurven — leicht',diff:'easy',bg:'#2a7018',
+    rawPath:[{x:0,y:200},{x:120,y:200},{x:120,y:80},{x:300,y:80},{x:300,y:340},{x:480,y:340},{x:480,y:140},{x:660,y:140},{x:660,y:320},{x:840,y:320},{x:840,y:100},{x:1020,y:100},{x:1020,y:260},{x:1150,y:260}]
   },
-  atta: {
-    key:'atta', name:'Blattschneiderameise', latin:'Atta cephalotes', icon:'🍃',
-    desc:'Schneidet Blätter, um damit unterirdisch einen Pilz als einzige Nahrungsquelle zu kultivieren — Landwirtschaft, lange vor dem Menschen.',
-    traits:[
-      {text:'+40% Pilzgarten-Ertrag', good:true},
-      {text:'+20% Sammelertrag', good:true},
-      {text:'-15% Verteidigungskraft (keine Säure, kaum Wehrhaftigkeit)', good:false}
-    ],
-    mods:{ defenseMult:0.85, barracksCapMult:1.0, fungusMult:1.4, forageMult:1.2, nurseryMult:1.0 },
-    color:'#8bab57',
-    fact:'Blattschneiderameisen betreiben seit über 50 Millionen Jahren Landwirtschaft: Sie züchten einen Pilz der Gattung Leucoagaricus, der ausschließlich in ihren Kolonien existiert und Antibiotika-produzierende Bakterien zur Schädlingsabwehr trägt.'
+  monkey_lane:{
+    name:'Monkey Lane',desc:'Tiefer Zickzack — mittel',diff:'medium',bg:'#185010',
+    rawPath:[{x:0,y:100},{x:160,y:100},{x:160,y:360},{x:340,y:360},{x:340,y:80},{x:540,y:80},{x:540,y:310},{x:700,y:310},{x:700,y:130},{x:880,y:130},{x:880,y:380},{x:1060,y:380},{x:1060,y:180},{x:1150,y:180}]
   },
-  lasius: {
-    key:'lasius', name:'Schwarze Wegameise', latin:'Lasius niger', icon:'🐾',
-    desc:'Die häufigste Gartenameise Mitteleuropas. Generalistin, melkt Blattläuse für Honigtau und passt sich fast jedem Lebensraum an.',
-    traits:[
-      {text:'Ausgewogen in allen Bereichen', good:true},
-      {text:'Honigtau-Melkerei verfügbar (Zusatzressource)', good:true},
-      {text:'Keine besonderen Schwächen', good:true}
-    ],
-    mods:{ defenseMult:1.0, barracksCapMult:1.0, fungusMult:1.0, forageMult:1.05, nurseryMult:1.05 },
-    color:'#6fa8b8',
-    fact:'Lasius niger pflegt regelrechte Symbiosen mit Blattläusen: Im Austausch für Schutz vor Fressfeinden „melkt" sie deren zuckerhaltige Ausscheidungen, den Honigtau — eine der wichtigsten Energiequellen vieler Kolonien.'
+  frozen_over:{
+    name:'Frozen Over',desc:'Enge Kurven — schwer',diff:'hard',bg:'#0c2030',
+    rawPath:[{x:0,y:240},{x:90,y:240},{x:90,y:60},{x:260,y:60},{x:260,y:210},{x:420,y:210},{x:420,y:60},{x:600,y:60},{x:600,y:310},{x:760,y:310},{x:760,y:150},{x:920,y:150},{x:920,y:380},{x:1060,y:380},{x:1060,y:200},{x:1150,y:200}]
   },
-  camponotus: {
-    key:'camponotus', name:'Rossameise', latin:'Camponotus herculeanus', icon:'🪵',
-    desc:'Die größte heimische Ameise. Nagt Gänge in morsches Holz statt Erde, hat enorm langlebige Königinnen und kräftige Mandibeln.',
-    traits:[
-      {text:'+30% Bevölkerungslimit durch Kinderstuben', good:true},
-      {text:'Königin lebt theoretisch unbegrenzt (kein Alterungsrisiko)', good:true},
-      {text:'-20% Grabgeschwindigkeit (härteres Substrat)', good:false}
-    ],
-    mods:{ defenseMult:1.05, barracksCapMult:1.0, fungusMult:1.0, forageMult:1.0, nurseryMult:1.3, digCostMult:1.2 },
-    color:'#d9b35b',
-    fact:'Camponotus-Königinnen können über 20 Jahre alt werden — eine der höchsten bekannten Lebenserwartungen im Insektenreich. Ihre kräftigen Mandibeln zernagen morsches Holz zu feinem „Sägemehl", das vor den Nesteingängen liegt.'
+  park_path:{
+    name:'Park Path',desc:'Lange Geraden — mittel',diff:'medium',bg:'#206030',
+    rawPath:[{x:0,y:180},{x:220,y:180},{x:220,y:50},{x:520,y:50},{x:520,y:300},{x:720,y:300},{x:720,y:160},{x:850,y:160},{x:850,y:370},{x:1150,y:370}]
+  },
+  spiral:{
+    name:'Spiralpfad',desc:'Extrem langer Spiral — schwer',diff:'hard',bg:'#1a2800',
+    rawPath:[{x:0,y:210},{x:130,y:210},{x:130,y:50},{x:1000,y:50},{x:1000,y:380},{x:210,y:380},{x:210,y:130},{x:880,y:130},{x:880,y:300},{x:340,y:300},{x:340,y:200},{x:760,y:200},{x:760,y:170},{x:1150,y:170}]
+  },
+  spice_islands:{
+    name:'Spice Islands',desc:'Viele Wendungen — extrem',diff:'extreme',bg:'#102030',
+    rawPath:[{x:0,y:290},{x:110,y:290},{x:110,y:100},{x:220,y:100},{x:220,y:350},{x:370,y:350},{x:370,y:80},{x:510,y:80},{x:510,y:290},{x:630,y:290},{x:630,y:110},{x:770,y:110},{x:770,y:350},{x:920,y:350},{x:920,y:160},{x:1150,y:160}]
   }
 };
+const MAPKEYS=Object.keys(MAPS);
 
-const ROOM_TYPES = {
-  forage: {
-    key:'forage', name:'Sammelgang', icon:'🍃', cls:'room-forage', tier:1,
-    cost:{leaves:10},
-    desc:'Sammelt Blattstücke aus der Umgebung. Braucht Arbeiterinnen als Sammlerinnen.',
-    caste:'forager',
-    requiresTech:null,
-  },
-  fungus: {
-    key:'fungus', name:'Pilzgarten', icon:'🍄', cls:'room-fungus', tier:1,
-    cost:{leaves:25},
-    desc:'Wandelt Blätter in nährendes Pilzfutter um. Braucht Pilzgärtnerinnen.',
-    caste:'gardener',
-    requiresTech:null,
-  },
-  nursery: {
-    key:'nursery', name:'Kinderstube', icon:'🥚', cls:'room-nursery', tier:1,
-    cost:{leaves:30, fungus:15},
-    desc:'Erhöht das Bevölkerungslimit und zieht Larven auf. Braucht Pflegerinnen.',
-    caste:'nurse',
-    requiresTech:null,
-  },
-  barracks: {
-    key:'barracks', name:'Kaserne', icon:'🛡', cls:'room-barracks', tier:1,
-    cost:{leaves:35, fungus:20},
-    desc:'Bildet bis zu 3 Soldatinnen zur Verteidigung aus.',
-    caste:'soldier',
-    requiresTech:null,
-  },
-  storage: {
-    key:'storage', name:'Lagerkammer', icon:'📦', cls:'room-storage', tier:1,
-    cost:{leaves:20},
-    desc:'Erhöht die maximale Lagerkapazität für Blätter und Pilzfutter um je 60.',
-    caste:null,
-    requiresTech:null,
-  },
-  water: {
-    key:'water', name:'Wasserspeicher', icon:'💧', cls:'room-water', tier:2,
-    cost:{leaves:30, fungus:10},
-    desc:'Sammelt Tau und Feuchtigkeit. Wasser wird im Winter und bei Trockenheit lebenswichtig.',
-    caste:'forager',
-    requiresTech:'irrigation',
-  },
-  compost: {
-    key:'compost', name:'Komposthaufen', icon:'♻️', cls:'room-compost', tier:2,
-    cost:{leaves:18, fungus:8},
-    desc:'Recycelt Abfälle und Kadaver zu Dünger, der den Pilzgarten beschleunigt.',
-    caste:'gardener',
-    requiresTech:'composting',
-  },
-  lab: {
-    key:'lab', name:'Forschungskammer', icon:'🔬', cls:'room-lab', tier:2,
-    cost:{leaves:40, fungus:25},
-    desc:'Erzeugt Wissenschaftspunkte zur Erforschung neuer Technologien.',
-    caste:'scholar',
-    requiresTech:'scouting',
-  },
-  dairy: {
-    key:'dairy', name:'Honigtau-Melkerei', icon:'🐛', cls:'room-dairy', tier:2,
-    cost:{leaves:28, fungus:14},
-    desc:'Nur möglich mit geeigneten Arten: Melkt Blattläuse für süßen Honigtau (Energie-Bonus).',
-    caste:'forager',
-    requiresTech:'aphid_husbandry',
-    speciesOnly:'lasius',
-  },
-  vault: {
-    key:'vault', name:'Königliche Schatzkammer', icon:'👑', cls:'room-vault', tier:3,
-    cost:{leaves:80, fungus:60},
-    desc:'Speichert Prestigepunkte der Kolonie — das ultimative Ziel großer Imperien.',
-    caste:null,
-    requiresTech:'royal_chamber',
-  },
-};
-
-const CASTES = {
-  forager: {key:'forager', name:'Sammlerin', icon:'🍃'},
-  gardener:{key:'gardener', name:'Pilzgärtnerin', icon:'🍄'},
-  nurse:   {key:'nurse', name:'Pflegerin', icon:'🥚'},
-  soldier: {key:'soldier', name:'Soldatin', icon:'🛡'},
-  scholar: {key:'scholar', name:'Forscherin', icon:'🔬'},
-  builder: {key:'builder', name:'Baumeisterin (frei)', icon:'⛏'},
-};
-
-const TECHS = {
-  // --- Sammel-Ast ---
-  better_mandibles: {
-    key:'better_mandibles', branch:'gather', name:'Verstärkte Mandibeln', icon:'🦷',
-    desc:'+20% Ertrag aller Sammelgänge.', cost:12,
-    requires:[], effect:{forageMult:1.2}
-  },
-  pheromone_trails: {
-    key:'pheromone_trails', branch:'gather', name:'Pheromonpfade', icon:'〜',
-    desc:'Sammlerinnen finden 25% häufiger Nahrung pro Tick.', cost:18,
-    requires:['better_mandibles'], effect:{forageMult:1.25}
-  },
-  irrigation: {
-    key:'irrigation', branch:'gather', name:'Feuchtigkeitsgänge', icon:'💧',
-    desc:'Schaltet den Wasserspeicher frei. Wasser wird verfügbar.', cost:15,
-    requires:[], effect:{unlockRoom:'water'}
-  },
-  aphid_husbandry: {
-    key:'aphid_husbandry', branch:'gather', name:'Blattlauszucht', icon:'🐛',
-    desc:'Schaltet die Honigtau-Melkerei frei (nur Lasius niger).', cost:22,
-    requires:['irrigation'], effect:{unlockRoom:'dairy'}
-  },
-  // --- Verteidigungs-Ast ---
-  acid_glands: {
-    key:'acid_glands', branch:'defense', name:'Vergrößerte Giftdrüsen', icon:'🧪',
-    desc:'+30% Verteidigungskraft pro Soldatin.', cost:14,
-    requires:[], effect:{soldierDefenseMult:1.3}
-  },
-  sentry_posts: {
-    key:'sentry_posts', branch:'defense', name:'Wachposten', icon:'👁',
-    desc:'Überfälle werden 8 Sekunden früher angekündigt.', cost:10,
-    requires:[], effect:{raidWarning:8}
-  },
-  fortified_walls: {
-    key:'fortified_walls', branch:'defense', name:'Verstärkte Wände', icon:'🧱',
-    desc:'Grundverteidigung +4, unabhängig von Soldatinnen.', cost:20,
-    requires:['sentry_posts'], effect:{baseDefenseBonus:4}
-  },
-  composting: {
-    key:'composting', branch:'defense', name:'Kompostierung', icon:'♻️',
-    desc:'Schaltet den Komposthaufen frei: weniger Verlust bei Niederlagen.', cost:16,
-    requires:[], effect:{unlockRoom:'compost'}
-  },
-  // --- Bevölkerungs-Ast ---
-  scouting: {
-    key:'scouting', branch:'pop', name:'Kundschafterinnen', icon:'🧭',
-    desc:'Schaltet die Forschungskammer frei.', cost:10,
-    requires:[], effect:{unlockRoom:'lab'}
-  },
-  royal_jelly: {
-    key:'royal_jelly', branch:'pop', name:'Königinnenfuttersaft', icon:'🍯',
-    desc:'+25% Nachwuchsgeschwindigkeit in Kinderstuben.', cost:18,
-    requires:[], effect:{nurseryProgressMult:1.25}
-  },
-  efficient_broods: {
-    key:'efficient_broods', branch:'pop', name:'Effiziente Brutpflege', icon:'🥚',
-    desc:'-20% Pilzfutterkosten pro neuer Ameise.', cost:20,
-    requires:['royal_jelly'], effect:{nurseryFungusMult:0.8}
-  },
-  royal_chamber: {
-    key:'royal_chamber', branch:'pop', name:'Königliche Architektur', icon:'🏛',
-    desc:'Schaltet die Schatzkammer frei — Prestige für die Ewigkeit.', cost:30,
-    requires:['scouting','efficient_broods'], effect:{unlockRoom:'vault'}
-  },
-};
-
-const THREATS = {
-  anteater: {
-    key:'anteater', name:'Ameisenbär', icon:'🦣',
-    desc:'Ein einzelner, hungriger Räuber gräbt die obersten Gänge auf.',
-    strengthMult:1.0,
-    fact:'Große Ameisenbären können mit ihrer langen, klebrigen Zunge bis zu 30.000 Insekten pro Tag aufnehmen, ohne je richtig zu kauen — sie besitzen keine Zähne.'
-  },
-  bird: {
-    key:'bird', name:'Grünspecht', icon:'🐦',
-    desc:'Ein Vogel hat den Hügel entdeckt und hackt sich zu den Vorräten vor.',
-    strengthMult:0.8,
-    fact:'Der Grünspecht ist in Europa auf Ameisen spezialisiert: Mit seiner bis zu 10 cm langen, klebrigen Zunge holt er sie direkt aus dem Bau.'
-  },
-  flood: {
-    key:'flood', name:'Starkregen', icon:'🌧',
-    desc:'Wasser dringt in die oberen Kammern ein und bedroht die Vorräte.',
-    strengthMult:0.7,
-    fact:'Viele Ameisenarten verschließen bei Regen aktiv ihre Nesteingänge mit Erde oder kleinen Steinchen, um ein Überfluten der Brutkammern zu verhindern.'
-  },
-  rival: {
-    key:'rival', name:'Rivalisierende Kolonie', icon:'⚔️',
-    desc:'Eine fremde Kolonie sondiert die Grenzen — und greift bei Schwäche an.',
-    strengthMult:1.2,
-    fact:'Territorialkriege zwischen benachbarten Ameisenkolonien können sich über Wochen hinziehen und enden manchmal mit der vollständigen Versklavung oder Vernichtung der schwächeren Kolonie.'
-  },
-  fungalInfection: {
-    key:'fungalInfection', name:'Schimmelbefall', icon:'🦠',
-    desc:'Ein fremder Schimmelpilz bedroht den Pilzgarten und die Vorräte.',
-    strengthMult:0.6,
-    fact:'Blattschneiderameisen tragen auf ihrem Panzer symbiotische Bakterien (Pseudonocardia), die Antibiotika produzieren — eine biologische Waffe gegen genau solche Schimmelpilze.'
+// ================================================================
+// WAVE GENERATION — 80 waves, BTD5-style
+// ================================================================
+function buildWaves(){
+  const waves=[];
+  const tier=['red','blue','green','yellow','pink','black','white','purple','lead','zebra','rainbow','ceramic','moab','bfb','zomg'];
+  const rng=(seed)=>{let s=seed;return()=>{s=(s*9301+49297)%233280;return s/233280;};};
+  const r=rng(42);
+  for(let w=1;w<=80;w++){
+    const bloons=[];
+    if(w%20===0){
+      // Boss wave
+      const bossTier=w>=60?'zomg':w>=40?'bfb':'moab';
+      const cnt=w>=60?3:w>=40?2:1;
+      for(let i=0;i<cnt;i++)bloons.push(bossTier);
+      for(let i=0;i<10;i++)bloons.push('ceramic');
+      for(let i=0;i<8;i++)bloons.push('rainbow');
+    } else {
+      const maxTier=Math.min(tier.length-1,Math.floor((w-1)/5.5));
+      let budget=Math.floor(20+w*5+w*w*0.12);
+      let safetyCounter=0;
+      while(budget>0&&bloons.length<130&&safetyCounter<500){
+        safetyCounter++;
+        // Weight toward higher tiers as wave increases
+        const tierIdx=Math.min(maxTier,Math.max(0,Math.floor(r()*1.4*(maxTier+1)-maxTier*0.2)));
+        const t=tier[Math.max(0,Math.min(tier.length-1,tierIdx))];
+        const bt=BT[t];if(!bt)break;
+        const cost=Math.ceil(bt.hp/4)||1;
+        if(cost>budget&&bloons.length>2)break;
+        bloons.push(t);budget-=cost;
+      }
+    }
+    waves.push(bloons);
   }
+  return waves;
+}
+const WAVES=buildWaves();
+
+// ================================================================
+// DIFFICULTY
+// ================================================================
+const DIFF={
+  easy:   {lives:200,money:800,mult:1.3,hpMult:0.85},
+  medium: {lives:150,money:650,mult:1.0,hpMult:1.0},
+  hard:   {lives:100,money:500,mult:0.85,hpMult:1.15},
+  extreme:{lives:60, money:400,mult:0.70,hpMult:1.35}
 };
 
-const ACHIEVEMENTS = {
-  firstRoom: {key:'firstRoom', name:'Erste Grabung', icon:'⛏', desc:'Baue deinen ersten Raum.'},
-  tenAnts: {key:'tenAnts', name:'Wachsendes Volk', icon:'🐜', desc:'Erreiche 10 Ameisen.'},
-  fiftyAnts: {key:'fiftyAnts', name:'Großkolonie', icon:'🐜', desc:'Erreiche 50 Ameisen.'},
-  survivedRaid: {key:'survivedRaid', name:'Standhaft', icon:'🛡', desc:'Wehre einen Überfall erfolgreich ab.'},
-  firstTech: {key:'firstTech', name:'Forscherin', icon:'🔬', desc:'Erforsche die erste Technologie.'},
-  allTechs: {key:'allTechs', name:'Wissenschaftsimperium', icon:'🧠', desc:'Erforsche alle Technologien.'},
-  survivedWinter: {key:'survivedWinter', name:'Überwinterin', icon:'❄️', desc:'Überlebe einen vollen Winter.'},
-  vaultBuilt: {key:'vaultBuilt', name:'Erbe der Königin', icon:'👑', desc:'Baue die königliche Schatzkammer.'},
-  allRoomTypes: {key:'allRoomTypes', name:'Architektin', icon:'🏗', desc:'Baue mindestens einmal jeden freigeschalteten Raumtyp.'},
-  hundredLeaves: {key:'hundredLeaves', name:'Vollgepackt', icon:'🍃', desc:'Sammle 100 Blätter gleichzeitig auf Lager.'},
-  deepDigger: {key:'deepDigger', name:'Tiefenrausch', icon:'🕳', desc:'Grabe 20 Gänge.'},
-  oldColony: {key:'oldColony', name:'Jahreszeiten-Veteranin', icon:'🍂', desc:'Erlebe alle vier Jahreszeiten einmal.'},
-};
+// ================================================================
+// BOT SKILL TIERS — tiered by ELO range
+// ================================================================
+const BSKILLS=[
+  {tier:'noob',    minElo:400, maxElo:700,  color:'#ff8888'},
+  {tier:'beginner',minElo:700, maxElo:1000, color:'#ffbb44'},
+  {tier:'normal',  minElo:1000,maxElo:1300, color:'#ffff44'},
+  {tier:'good',    minElo:1300,maxElo:1600, color:'#88ff88'},
+  {tier:'expert',  minElo:1600,maxElo:2000, color:'#44bbff'},
+  {tier:'master',  minElo:2000,maxElo:3000, color:'#cc88ff'}
+];
+const BCOLORS=['#3498db','#2ecc71','#e74c3c','#f39c12','#9b59b6','#1abc9c','#e67e22'];
 
-const LEXICON = {
-  anatomy: {key:'anatomy', name:'Anatomie', icon:'🔬', unlockedFromStart:true,
-    facts:[
-      'Ameisen haben sechs Beine, ein dreigliedriges Exoskelett (Kopf, Brust, Hinterleib) und keine Lungen — sie atmen über feine Röhren, sogenannte Tracheen, direkt durch die Körperwand.',
-      'Das Gehirn einer Ameise besitzt etwa 250.000 Neuronen — winzig im Vergleich zum Menschen, aber hochgradig auf Geruchsverarbeitung spezialisiert.',
-      'Ameisen können das bis zu 50-fache ihres eigenen Körpergewichts tragen, dank eines extrem effizienten Hebelsystems in Hals und Mandibeln.'
-    ]},
-  colony: {key:'colony', name:'Kolonieleben', icon:'🏘', unlockedFromStart:true,
-    facts:[
-      'Eine Ameisenkolonie funktioniert als „Superorganismus": Einzelne Tiere sind fast bedeutungslos, aber das Kollektiv löst komplexe Probleme wie Wegfindung, Nestbau und Verteidigung.',
-      'Die Arbeitsteilung erfolgt oft altersabhängig: Junge Arbeiterinnen bleiben meist im Nest (Brutpflege), ältere übernehmen riskantere Aufgaben wie Nahrungssuche.',
-      'Manche Kolonien bestehen aus nur wenigen Dutzend Tieren, andere — etwa bei Argentinischen Ameisen — bilden „Superkolonien" über tausende Kilometer mit Milliarden Individuen.'
-    ]},
-  communication: {key:'communication', name:'Kommunikation', icon:'〜', unlockedFromStart:false, unlockAt:{ants:8},
-    facts:[
-      'Pheromone sind die wichtigste Sprache der Ameisen: Spurpheromone markieren Wege zu Futterquellen, Alarmpheromone warnen vor Gefahr.',
-      'Manche Arten nutzen zusätzlich Vibrationen (Stridulation) und Berührungen mit den Antennen, um Informationen über Distanz und Richtung von Futter zu übermitteln.',
-      'Tote Ameisen werden anhand chemischer Abbauprodukte (z. B. Ölsäure) erkannt — Artgenossen tragen die Leiche dann gezielt aus dem Nest zum „Friedhof".'
-    ]},
-  queen: {key:'queen', name:'Die Königin', icon:'👑', unlockedFromStart:false, unlockAt:{rooms:['nursery']},
-    facts:[
-      'Eine Königin legt nach der Gründung meist ein Leben lang Eier — bei manchen Arten mehrere tausend pro Tag im Höhepunkt der Legeperiode.',
-      'Vor der Koloniegründung verpaart sich eine junge Königin oft nur einmal in ihrem Leben, speichert die Spermien aber jahrzehntelang in einem speziellen Organ, der Spermatheka.',
-      'Stirbt die Königin ohne Nachfolgerin, ist die Kolonie meist zum Aussterben verurteilt — die Arbeiterinnen können selbst keine fruchtbaren Weibchen mehr produzieren.'
-    ]},
-  foraging: {key:'foraging', name:'Nahrungssuche', icon:'🍃', unlockedFromStart:false, unlockAt:{rooms:['forage']},
-    facts:[
-      'Manche Ameisenarten legen täglich Strecken zurück, die im Verhältnis zur Körpergröße menschlichen Marathons über hunderte Kilometer entsprechen würden.',
-      'Wüstenameisen wie Cataglyphis navigieren mit einem internen „Schrittzähler" und der Sonnenposition, um exakt zum Nest zurückzufinden — ganz ohne Pheromonspur.',
-      'Honigtau von Blattläusen, Zikaden und Schildläusen ist für viele Arten eine der ergiebigsten Energiequellen — manche Kolonien „besitzen" buchstäblich ganze Blattlauskolonien.'
-    ]},
-  fungiculture: {key:'fungiculture', name:'Pilzanbau', icon:'🍄', unlockedFromStart:false, unlockAt:{rooms:['fungus']},
-    facts:[
-      'Blattschneiderameisen zerkauen Blattmaterial zu einer Art Kompost, auf dem ein spezialisierter Pilz wächst — die einzige Nahrungsquelle für ihre Larven.',
-      'Der kultivierte Pilz existiert nirgendwo wild in der Natur mehr — er wurde über Jahrmillionen so stark domestiziert, dass er ohne die Ameisen nicht überleben kann.',
-      'Schädliche Schimmelpilze werden mit körpereigenen, antibiotikaproduzierenden Bakterien bekämpft — ein natürliches Pflanzenschutzmittel, das Wissenschaftler heute erforschen.'
-    ]},
-  defense: {key:'defense', name:'Verteidigung', icon:'🛡', unlockedFromStart:false, unlockAt:{rooms:['barracks']},
-    facts:[
-      'Soldatinnen vieler Arten haben überproportional große Köpfe und Mandibeln — spezialisiert allein auf Kampf und Verteidigung, nicht auf Nahrungssuche.',
-      'Manche Arten betreiben „Selbstmordverteidigung": Bei der malaysischen Ameise Colobopsis explodiert eine Arbeiterin und verklebt Angreifer mit giftigem Sekret.',
-      'Treiberameisen (Dorylus) bilden bei Gefahr lebende Ketten und Brücken aus ihren eigenen Körpern, um Lücken im Gelände zu überwinden oder Brut zu schützen.'
-    ]},
-  species: {key:'species', name:'Artenvielfalt', icon:'🌍', unlockedFromStart:true,
-    facts:[
-      'Weltweit sind über 13.000 Ameisenarten beschrieben — Schätzungen gehen von weit über 20.000 tatsächlich existierenden Arten aus.',
-      'Ameisen kommen auf allen Kontinenten außer der Antarktis vor und besiedeln Lebensräume von Wüsten bis Regenwald.',
-      'Schätzungen zufolge gibt es weltweit mehrere Billiarden einzelne Ameisen — ihre gemeinsame Biomasse übertrifft die aller wild lebenden Vögel und Säugetiere zusammen.'
-    ]},
-  seasons: {key:'seasons', name:'Jahreszeiten', icon:'🍂', unlockedFromStart:false, unlockAt:{seasonsSeen:2},
-    facts:[
-      'In gemäßigten Klimazonen verfallen viele Ameisenkolonien im Winter in eine Winterruhe (Diapause): Stoffwechsel und Aktivität sinken drastisch, um Energie zu sparen.',
-      'Vor dem Winter stellen Arbeiterinnen oft gezielt Vorräte zusammen und verschließen tiefere, frostsichere Kammern, in die sich die Königin zurückzieht.',
-      'Mit steigenden Temperaturen im Frühling beginnt die Kolonie wieder aktiv zu werden — oft ausgelöst durch Bodentemperatur statt Kalenderdatum.'
-    ]}
-};
-
-const SEASONS = ['spring','summer','autumn','winter'];
-const SEASON_INFO = {
-  spring: {name:'Frühling', icon:'🌱', desc:'Wachstumsphase: Erträge und Brutpflege laufen normal.', forageMult:1.0, fungusMult:1.0, nurseryMult:1.1, raidMult:0.9},
-  summer: {name:'Sommer', icon:'☀️', desc:'Hochsaison: Maximaler Sammelertrag, aber auch mehr Bedrohungen.', forageMult:1.25, fungusMult:1.1, nurseryMult:1.0, raidMult:1.15},
-  autumn: {name:'Herbst', icon:'🍂', desc:'Vorratszeit: Gute Erträge, Vorbereitung auf den Winter wichtig.', forageMult:1.1, fungusMult:1.0, nurseryMult:0.9, raidMult:1.0},
-  winter: {name:'Winter', icon:'❄️', desc:'Winterruhe: Kaum Sammelertrag, kein Nachwuchs ohne Wasser-Vorrat.', forageMult:0.35, fungusMult:0.5, nurseryMult:0.2, raidMult:0.5},
-};
-function appShellHtml(){
-  return `
-  <header class="topbar">
-    <div class="brand">
-      <h1>🐜 Myrmex</h1>
-      <span class="sub">eine Kolonie unter der Erde</span>
-      <span class="species-pill" id="speciesPill"></span>
-    </div>
-    <div class="resources" id="resourceBar"></div>
-  </header>
-
-  <div class="season-strip" id="seasonStrip"></div>
-
-  <div class="tabbar" id="tabbar">
-    <button class="tab-btn active" data-tab="build"><span class="ic">🏗</span>Bauen</button>
-    <button class="tab-btn" data-tab="folk"><span class="ic">🐾</span>Volk</button>
-    <button class="tab-btn" data-tab="tech"><span class="ic">🔬</span>Forschung</button>
-    <button class="tab-btn" data-tab="lex"><span class="ic">📖</span>Lexikon</button>
-    <button class="tab-btn" data-tab="ach"><span class="ic">🏆</span>Erfolge</button>
-    <button class="tab-btn" data-tab="stats"><span class="ic">📊</span>Statistik</button>
-  </div>
-
-  <div class="layout">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-
-      <div class="tab-panel active" data-tabpanel="build">
-        <div class="panel">
-          <h2>⛏ Graben</h2>
-          <button class="build-btn" id="digBtn" data-mode="dig">
-            <span class="ic">⛏</span>
-            <span class="meta">
-              <div class="name">Tunnel graben</div>
-              <div class="desc">Erweitert den Bau an einen angrenzenden Gang.</div>
-              <div class="cost" id="digCost">— Blätter</div>
-            </span>
-          </button>
-        </div>
-        <div class="panel">
-          <h2>🏗 Bauen <span class="count-badge" id="roomCountBadge"></span></h2>
-          <div id="buildPalette"></div>
-        </div>
-        <div class="panel">
-          <h2>ℹ Auswahl</h2>
-          <div class="selected-info" id="selectedInfo">Wähle links eine Aktion, dann klicke auf den Bau.</div>
-          <button class="cancel-btn" id="cancelBtn" style="display:none;">Auswahl aufheben</button>
-        </div>
-      </div>
-
-      <div class="tab-panel" data-tabpanel="folk">
-        <div class="panel">
-          <h2>🐾 Volk</h2>
-          <div class="stat-row"><span>Ameisen</span><span class="v" id="statAnts">–</span></div>
-          <div class="stat-row"><span>Freie Arbeiterinnen</span><span class="v" id="statFree">–</span></div>
-          <div class="stat-row"><span>Arbeitsplätze gesamt</span><span class="v" id="statWorkersNeeded">–</span></div>
-          <div class="stat-row"><span>Effizienz</span><span class="v" id="statEfficiency">–</span></div>
-        </div>
-        <div class="panel">
-          <h2>🎚 Kasten-Zuweisung <span class="count-badge" id="casteAssignedBadge"></span></h2>
-          <div id="casteAssign"></div>
-          <p class="panel-note">Weise deine Arbeiterinnen Aufgaben zu. Jede Rolle braucht passende Räume, um wirksam zu sein. Nicht zugewiesene Ameisen zählen als freie Baumeisterinnen.</p>
-        </div>
-      </div>
-
-      <div class="tab-panel" data-tabpanel="tech">
-        <div class="panel">
-          <h2>🔬 Wissenschaft</h2>
-          <div class="stat-row"><span>Punkte</span><span class="v" id="statScience">–</span></div>
-          <div class="stat-row"><span>Punkte / Sek</span><span class="v" id="statScienceRate">–</span></div>
-          <p class="panel-note">Forschungskammern (benötigen Tech „Kundschafterinnen") erzeugen Wissenschaftspunkte. Investiere sie in drei Forschungsästen.</p>
-        </div>
-      </div>
-
-      <div class="tab-panel" data-tabpanel="lex">
-        <div class="panel">
-          <h2>📖 Lexikon <span class="count-badge" id="lexCountBadge"></span></h2>
-          <p class="panel-note">Echtes Wissen über Ameisen, freigeschaltet durch Spielfortschritt.</p>
-        </div>
-      </div>
-
-      <div class="tab-panel" data-tabpanel="ach">
-        <div class="panel">
-          <h2>🏆 Erfolge <span class="count-badge" id="achCountBadge"></span></h2>
-        </div>
-      </div>
-
-      <div class="tab-panel" data-tabpanel="stats">
-        <div class="panel">
-          <h2>📊 Statistik</h2>
-          <div class="stat-row"><span>Kolonie-Alter</span><span class="v" id="statAge2">–</span></div>
-          <div class="stat-row"><span>Gegrabene Gänge</span><span class="v" id="statDug">–</span></div>
-          <div class="stat-row"><span>Gebaute Räume</span><span class="v" id="statRooms">–</span></div>
-          <div class="stat-row"><span>Überfälle abgewehrt</span><span class="v" id="statRaidsWon">–</span></div>
-          <div class="stat-row"><span>Überfälle verloren</span><span class="v" id="statRaidsLost">–</span></div>
-          <div class="stat-row"><span>Blätter (gesamt gesammelt)</span><span class="v" id="statLeavesTotal">–</span></div>
-          <div class="stat-row"><span>Prestige (Schatzkammer)</span><span class="v" id="statPrestige">–</span></div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- BOARD -->
-    <div class="board-area">
-      <div class="board-wrap">
-        <div class="depth-tabs" id="depthTabs"></div>
-        <div class="tunnel-grid" id="grid"></div>
-      </div>
-
-      <!-- secondary content shown only on tech/lex/ach tabs, rendered inside board area on wide layouts -->
-      <div class="panel" id="techPanelWide" style="display:none;"></div>
-      <div class="panel" id="lexPanelWide" style="display:none;"></div>
-      <div class="panel" id="achPanelWide" style="display:none;"></div>
-
-      <div class="panel log-panel">
-        <h2>📜 Kolonie-Chronik</h2>
-        <ul class="log-list" id="logList"></ul>
-      </div>
-    </div>
-  </div>
-
-  <footer class="appfoot">
-    <span>Alter der Kolonie: <span class="mono" id="colonyAge">0:00</span> · nächster Überfall in <span class="mono" id="raidCountdown">–</span></span>
-    <div class="foot-actions">
-      <button class="speed-btn active" data-speed="1" id="speed1Btn">1×</button>
-      <button class="speed-btn" data-speed="2" id="speed2Btn">2×</button>
-      <button class="speed-btn" data-speed="3" id="speed3Btn">3×</button>
-      <button class="reset-btn" id="resetBtn">Kolonie zurücksetzen</button>
-    </div>
-  </footer>
-  `;
+// ================================================================
+// PLAYER DATA
+// ================================================================
+let P=JSON.parse(localStorage.getItem('btdP5b')||'null')||
+  {name:'Spieler',elo:1000,games:0,wins:0,maxWave:1,totalKills:0,peakElo:1000,sumPlace:0,hist:[]};
+let BL=JSON.parse(localStorage.getItem('btdBL5b')||'null');
+if(!BL){
+  const bnames=['DartMaster','BombKing','FrostQueen','TackPro','PyroBot','ZapBot','SniperAI','HeliBot','GlaiverX','WizardBot','NinjaBot','AlchMind'];
+  BL=bnames.map((n,i)=>({name:n,elo:Math.floor(500+Math.random()*1800)}));
+  localStorage.setItem('btdBL5b',JSON.stringify(BL));
+}
+function save(){localStorage.setItem('btdP5b',JSON.stringify(P));}
+function getRank(e){
+  if(e>=2500)return{l:'Master',c:'rank-master'};
+  if(e>=2100)return{l:'Diamond',c:'rank-diamond'};
+  if(e>=1800)return{l:'Platin',c:'rank-plat'};
+  if(e>=1500)return{l:'Gold',c:'rank-gold'};
+  if(e>=1200)return{l:'Silber',c:'rank-silver'};
+  return{l:'Bronze',c:'rank-bronze'};
 }
 
-function speciesModalHtml(){
-  const cards = Object.values(SPECIES).map(sp => `
-    <div class="species-card" data-species="${sp.key}" tabindex="0" role="button">
-      <div class="sp-head">
-        <span class="sp-ic">${sp.icon}</span>
-        <div>
-          <div class="sp-name">${sp.name}</div>
-          <div class="sp-latin">${sp.latin}</div>
-        </div>
-      </div>
-      <div class="sp-desc">${sp.desc}</div>
-      ${sp.traits.map(t => `<div class="sp-trait ${t.good?'':'con'}">${t.good?'✓':'△'} ${t.text}</div>`).join('')}
-    </div>
-  `).join('');
-  return `
-  <div class="modal-overlay" id="speciesModal">
-    <div class="modal-box">
-      <h2>🐜 Wähle deine Art</h2>
-      <div class="modal-sub">Jede Ameisenart hat reale biologische Eigenheiten, die dein Spiel beeinflussen. Die Wahl ist endgültig für diese Kolonie.</div>
-      <div class="species-grid">${cards}</div>
-    </div>
-  </div>`;
+// ================================================================
+// CONFIG & STATE
+// ================================================================
+let cfg={botCount:3,diff:'medium',map:'grasslands'};
+let GS=null,RAF=null,paused=false,gameOver=false,gameSpeed=1;
+let selTowerType=null,selPlaced=null;
+let CMAP=null,CW=0,CH=0;
+const BOT_CW=170,BOT_CH=108;
+
+// ================================================================
+// HOME UI
+// ================================================================
+function showTab(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['play','profile','lb','guide'][i]===t));
+  ['play','profile','lb','guide'].forEach(x=>document.getElementById('panel-'+x).classList.toggle('active',x===t));
+  if(t==='profile')renderProfile();
+  if(t==='lb')renderLB();
+}
+function refreshTopUI(){
+  const r=getRank(P.elo);
+  ['hpn','profName'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=P.name;});
+  ['av0','profAv'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=P.name[0].toUpperCase();});
+  const rb=document.getElementById('hrb');if(rb){rb.textContent=r.l;rb.className='elo-badge '+r.c;}
+  const pb=document.getElementById('profBadge');if(pb){pb.textContent=r.l;pb.className='elo-badge '+r.c;}
+  const hel=document.getElementById('hel');if(hel)hel.textContent=P.elo+' ELO';
+  const pe=document.getElementById('profElo');if(pe)pe.textContent=P.elo+' ELO';
+  const he=document.getElementById('hudElo');if(he)he.textContent=P.elo;
+}
+refreshTopUI();
+
+function renderMapList(){
+  const el=document.getElementById('mapList');if(!el)return;
+  el.innerHTML=MAPKEYS.map(k=>{
+    const m=MAPS[k];
+    const dc={easy:'#44ee70',medium:'#ffcc00',hard:'#ff8040',extreme:'#ff3030'}[m.diff]||'#fff';
+    const dl={easy:'🟢 Leicht',medium:'🟡 Mittel',hard:'🔴 Schwer',extreme:'💀 Extrem'}[m.diff]||m.diff;
+    return`<div class="map-row ${cfg.map===k?'msel':''}" onclick="selectMap('${k}')">
+      <canvas class="map-thumb" id="mthumb-${k}" width="100" height="60"></canvas>
+      <div class="map-info"><b>${m.name}</b><br>${m.desc}<br><span style="color:${dc}">${dl}</span></div>
+    </div>`;
+  }).join('');
+  MAPKEYS.forEach(k=>drawMapThumb(k));
+}
+function selectMap(k){cfg.map=k;renderMapList();}
+function drawMapThumb(k){
+  const c=document.getElementById('mthumb-'+k);if(!c)return;
+  const ctx=c.getContext('2d');
+  const m=MAPS[k];
+  ctx.fillStyle=m.bg;ctx.fillRect(0,0,100,60);
+  const sx=100/1150,sy=60/440;
+  ctx.strokeStyle='#c8a44a';ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(m.rawPath[0].x*sx,m.rawPath[0].y*sy);
+  for(let i=1;i<m.rawPath.length;i++)ctx.lineTo(m.rawPath[i].x*sx,m.rawPath[i].y*sy);
+  ctx.stroke();
+  ctx.strokeStyle='#e0bc6a';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(m.rawPath[0].x*sx,m.rawPath[0].y*sy);
+  for(let i=1;i<m.rawPath.length;i++)ctx.lineTo(m.rawPath[i].x*sx,m.rawPath[i].y*sy);
+  ctx.stroke();
+}
+renderMapList();
+
+function renderProfile(){
+  document.getElementById('sGames').textContent=P.games;
+  document.getElementById('sWins').textContent=P.wins;
+  document.getElementById('sWave').textContent=P.maxWave;
+  document.getElementById('sKills').textContent=P.totalKills;
+  document.getElementById('sWR').textContent=P.games>0?Math.round(P.wins/P.games*100)+'%':'0%';
+  document.getElementById('sAvg').textContent=P.games>0?(P.sumPlace/P.games).toFixed(1):'—';
+  document.getElementById('sPeak').textContent=P.peakElo;
+  const hl=document.getElementById('histList');
+  if(!P.hist||!P.hist.length){hl.textContent='Noch keine Spiele.';return;}
+  hl.innerHTML=P.hist.slice(-8).reverse().map(h=>
+    `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1e1600">
+      <span>${h.place===1?'🏆':'💀'} #${h.place}/${h.tot}</span>
+      <span>W${h.wave} | ${h.kills}</span>
+      <span style="color:${h.de>=0?'#44ee70':'#ff4040'}">${h.de>=0?'+':''}${h.de}</span>
+    </div>`
+  ).join('');
+}
+function renderLB(){
+  const all=[...BL,{name:P.name,elo:P.elo,isMe:true}].sort((a,b)=>b.elo-a.elo).slice(0,15);
+  document.getElementById('lbList').innerHTML=all.map((e,i)=>{
+    const r=getRank(e.elo);
+    return`<div style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;margin-bottom:3px;background:${e.isMe?'rgba(255,200,0,.08)':'#100c00'};border:1px solid ${e.isMe?'var(--gold)':'#201800'}">
+      <span style="min-width:22px;font-weight:bold;font-size:12px">#${i+1}</span>
+      <span style="flex:1;font-size:12px">${e.isMe?'👤 ':''}<b>${e.name}</b></span>
+      <span class="elo-badge ${r.c}">${r.l}</span>
+      <span style="font-size:11px;min-width:60px;text-align:right">${e.elo}</span>
+    </div>`;
+  }).join('');
+}
+function doRename(){
+  const v=document.getElementById('nameIn').value.trim();
+  if(v.length>0&&v.length<=16){P.name=v;save();refreshTopUI();}
+  document.getElementById('nameIn').value='';
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
 }
 
-function infoModalHtml(title, bodyHtml){
-  return `
-  <div class="modal-overlay" id="infoModal">
-    <div class="modal-box">
-      <h2>${title}</h2>
-      <div class="info-modal-body">${bodyHtml}</div>
-      <button class="modal-close-btn" id="infoModalCloseBtn">Verstanden</button>
-    </div>
-  </div>`;
+// ================================================================
+// PATH BUILDING
+// ================================================================
+function buildDensePath(rawPath,w,h){
+  // Scale raw coords to canvas
+  const maxX=Math.max(...rawPath.map(p=>p.x));
+  const maxY=Math.max(...rawPath.map(p=>p.y));
+  const scaleX=(w-40)/maxX;
+  const scaleY=(h-40)/maxY;
+  const sc=Math.min(scaleX,scaleY);
+  const ox=(w-maxX*sc)/2;
+  const oy=(h-maxY*sc)/2;
+  const pts=rawPath.map(p=>({x:p.x*sc+ox,y:p.y*sc+oy}));
+  // Build dense path (every 2px)
+  const dense=[];
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i],b=pts[i+1];
+    const dx=b.x-a.x,dy=b.y-a.y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    const steps=Math.ceil(dist/2);
+    for(let s=0;s<steps;s++)dense.push({x:a.x+dx*s/steps,y:a.y+dy*s/steps});
+  }
+  dense.push(pts[pts.length-1]);
+  return {dense,scaledPts:pts};
 }
-(function(){
-  "use strict";
 
-  /* ===================== CONFIG ===================== */
-  const GR = 5, GC = 6;                 // logical room grid per depth level
-  const QUEEN_R = 2, QUEEN_C = 2;
-  const CELL = 54, CONN = 16;
-  const DEPTHS = [
-    {key:'d0', name:'Oberboden', icon:'🌱', unlockCost:0},
-    {key:'d1', name:'Mittelschicht', icon:'🪵', unlockCost:60},
-    {key:'d2', name:'Tiefenkammern', icon:'💎', unlockCost:160},
-  ];
+// ================================================================
+// GAME START
+// ================================================================
+function startGame(){
+  cfg.diff=document.getElementById('diffSel').value;
+  cfg.botCount=parseInt(document.getElementById('botCntLabel').textContent);
+  showScreen('gameScreen');
+  gameOver=false;paused=false;gameSpeed=1;selTowerType=null;selPlaced=null;
+  document.getElementById('endOverlay').style.display='none';
+  document.getElementById('speedBtn').textContent='2x';
+  document.getElementById('pauseBtn').textContent='⏸';
+  CMAP=MAPS[cfg.map]||MAPS['grasslands'];
+  const canvas=document.getElementById('gameCanvas');
+  const wrap=document.getElementById('canvasWrap');
+  setTimeout(()=>{
+    CW=wrap.clientWidth||900;
+    CH=wrap.clientHeight||320;
+    canvas.width=CW;canvas.height=CH;
+    initGame();
+  },60);
+}
 
-  const RATES = {
-    leafPerForage: 0.9,
-    fungusLeafCost: 1.4,
-    fungusPerFungusRoom: 0.7,
-    nurseryFungusPerAnt: 9,
-    nurseryProgressPerSec: 0.16,
-    soldierDefense: 4,
-    baseDefense: 2,
-    barracksCapacity: 3,
-    digBaseCost: 8,
-    digCostStep: 4,
-    storageBase: 80,
-    storagePerRoom: 60,
-    sciencePerLabRoom: 0.22,
-    waterPerRoom: 0.5,
-    waterUpkeepPerAnt: 0.015,
-    compostBonus: 0.3,
-    dairyHoneyPerRoom: 0.6,
+function initGame(){
+  const diff=DIFF[cfg.diff];
+  const {dense,scaledPts}=buildDensePath(CMAP.rawPath,CW,CH);
+
+  GS={
+    lives:diff.lives,maxLives:diff.lives,
+    money:diff.money,mult:diff.mult,hpMult:diff.hpMult,
+    wave:0,waveActive:false,waveQueue:[],
+    spawnTimer:0,spawnInterval:750,
+    bloons:[],towers:[],projs:[],
+    bots:[],kills:0,
+    path:dense,scaledPts,
+    lastTime:performance.now(),hoverX:-999,hoverY:-999,
+    income:0 // per-wave income from village
   };
 
-  const SAVE_KEY = 'myrmex_save_v2';
-
-  /* ===================== STATE ===================== */
-  let cells = {};         // depthKey -> array of GR*GC logical cells {dug, room, builtAt}
-  let resources = {leaves:35, fungus:6, water:0, honey:0, science:0, prestige:0};
-  let ants = 4;
-  let antsCap = 6;
-  let casteCounts = {forager:0, gardener:0, nurse:0, soldier:0, scholar:0};
-  let nurseryProgress = 0;
-  let mode = null;         // null | 'dig' | room key
-  let activeDepth = 'd0';
-  let unlockedDepths = ['d0'];
-  let ageSec = 0;
-  let nextRaidIn = randRange(40,65);
-  let raidWarningGiven = false;
-  let logEntries = [];
-  let speciesKey = null;
-  let activeTab = 'build';
-  let speedMult = 1;
-  let seasonIdx = 0;        // index into SEASONS
-  let seasonElapsed = 0;
-  let seasonDuration = 90;  // seconds per season at 1x speed
-  let seasonsSeenSet = [];
-  let techDone = {};        // key -> true
-  let unlockedRooms = {};   // key -> true (rooms without requiresTech always true)
-  let achievementsUnlocked = {};
-  let lexUnlocked = {};
-  let builtRoomTypesEver = {};
-  let lifetimeStats = {leavesTotal:0, dugTotal:0, roomsTotal:0, raidsWon:0, raidsLost:0};
-  let pendingLexDetail = null;
-
-  function randRange(a,b){return Math.floor(a + Math.random()*(b-a));}
-
-  function speciesMods(){
-    if(!speciesKey || !SPECIES[speciesKey]) return {};
-    return SPECIES[speciesKey].mods || {};
-  }
-
-  /* ===================== INIT ===================== */
-  function freshState(keepSpecies){
-    cells = {};
-    DEPTHS.forEach(d=>{
-      const arr = [];
-      for(let r=0;r<GR;r++){
-        for(let c=0;c<GC;c++){
-          arr.push({r,c, dug:false, room:null});
-        }
-      }
-      cells[d.key] = arr;
+  // Create bots — all start around 1000 ELO but vary in tier
+  const botNames=['Axel','Brix','Cyan','Dyna','Echo','Fuzz','Grix','Haze','Iris','Jolt','Kira','Luna'];
+  for(let i=0;i<cfg.botCount;i++){
+    // Spread bot skill levels
+    const tierIdx=Math.min(BSKILLS.length-1,Math.floor(Math.random()*BSKILLS.length*((i+1)/(cfg.botCount+1))*1.5));
+    const skill=BSKILLS[tierIdx];
+    const elo=skill.minElo+Math.floor(Math.random()*(skill.maxElo-skill.minElo));
+    const {dense:bDense,scaledPts:bPts}=buildDensePath(CMAP.rawPath,BOT_CW,BOT_CH);
+    GS.bots.push({
+      id:i,
+      name:botNames[i%botNames.length],
+      color:BCOLORS[i%BCOLORS.length],
+      elo,tier:skill.tier,
+      lives:diff.lives,maxLives:diff.lives,
+      money:diff.money,mult:diff.mult,hpMult:diff.hpMult,
+      towers:[],kills:0,wave:0,
+      alive:true,buyTimer:0,savingFor:null,savingTurns:0,
+      path:bDense,scaledPts:bPts,
+      bloons:[],projs:[],
+      spawnTimer:0,waveActive:false,waveQueue:[],
+      income:0
     });
-    cellAt('d0', QUEEN_R,QUEEN_C).dug = true;
-    cellAt('d0', QUEEN_R,QUEEN_C).room = 'queen';
-    resources = {leaves:35, fungus:6, water:0, honey:0, science:0, prestige:0};
-    ants = 4; antsCap = 6; nurseryProgress = 0;
-    casteCounts = {forager:0, gardener:0, nurse:0, soldier:0, scholar:0};
-    ageSec = 0; nextRaidIn = randRange(40,65); raidWarningGiven = false;
-    logEntries = [];
-    activeDepth = 'd0';
-    unlockedDepths = ['d0'];
-    activeTab = 'build';
-    speedMult = 1;
-    seasonIdx = 0; seasonElapsed = 0; seasonsSeenSet = [SEASONS[0]];
-    techDone = {};
-    unlockedRooms = {};
-    achievementsUnlocked = {};
-    lexUnlocked = {};
-    builtRoomTypesEver = {};
-    lifetimeStats = {leavesTotal:0, dugTotal:0, roomsTotal:0, raidsWon:0, raidsLost:0};
-    if(!keepSpecies) speciesKey = null;
-    addLog('Die Königin hat ihre erste Kammer gegraben. Die Kolonie beginnt.', 'fresh');
-    checkLexUnlocks();
   }
 
-  function cellAt(depth, r,c){ return cells[depth][r*GC+c]; }
-  function idx(r,c){ return r*GC+c; }
-  function inBounds(r,c){ return r>=0 && r<GR && c>=0 && c<GC; }
+  buildTowerButtons();
+  buildBotScreens();
+  const canvas=document.getElementById('gameCanvas');
+  canvas.onclick=onCanvasClick;
+  canvas.onmousemove=onCanvasMove;
+  canvas.onmouseleave=()=>{if(GS){GS.hoverX=-999;GS.hoverY=-999;}};
+  cancelAnimationFrame(RAF);
+  RAF=requestAnimationFrame(gameLoop);
+  document.getElementById('startWaveBtn').disabled=false;
+  document.getElementById('waveLabel').textContent='Bereit für Welle 1';
+  document.getElementById('hudWaveOf').textContent='/'+WAVES.length;
+  updateHUD();
+}
 
-  function neighbors(r,c){
-    return [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].filter(([nr,nc])=>inBounds(nr,nc));
+// ================================================================
+// CANVAS INTERACTION
+// ================================================================
+function onCanvasMove(e){
+  const r=e.target.getBoundingClientRect();
+  if(GS){GS.hoverX=e.clientX-r.left;GS.hoverY=e.clientY-r.top;}
+}
+function onCanvasClick(e){
+  if(!GS||gameOver)return;
+  const r=e.target.getBoundingClientRect();
+  const cx=e.clientX-r.left,cy=e.clientY-r.top;
+  // Click existing tower?
+  const hit=GS.towers.find(t=>Math.hypot(t.x-cx,t.y-cy)<20);
+  if(hit){
+    selPlaced=hit;selTowerType=null;
+    document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
+    showTowerDetails(hit);return;
   }
+  if(!selTowerType){selPlaced=null;document.getElementById('towerDetails').textContent='Turm auswählen oder platzieren';return;}
+  const tt=TTYPES.find(t=>t.id===selTowerType);
+  if(!tt)return;
+  if(GS.money<tt.cost){logWave('Zu wenig Geld! 💰','b');return;}
+  // Path collision — check dense path
+  if(!GS.path.every(p=>Math.hypot(p.x-cx,p.y-cy)>26)){logWave('Nicht auf dem Pfad!','b');return;}
+  // Overlap
+  if(!GS.towers.every(t=>Math.hypot(t.x-cx,t.y-cy)>34)){logWave('Zu nah an anderem Turm!','b');return;}
+  // Canvas bounds
+  if(cx<15||cy<15||cx>CW-15||cy>CH-15){logWave('Außerhalb der Karte!','b');return;}
+  GS.money-=tt.cost;
+  placeTower(GS,tt,cx,cy,true);
+  updateHUD();
+}
 
-  function isDiggable(depth, r,c){
-    const cell = cellAt(depth, r,c);
-    if(cell.dug) return false;
-    // depth 0 needs adjacency; deeper levels need adjacency too, but the very first cell
-    // of an unlocked deeper level starts pre-dug to act as the entrance shaft.
-    return neighbors(r,c).some(([nr,nc])=>cellAt(depth, nr,nc).dug);
+// ================================================================
+// TOWER BUTTONS
+// ================================================================
+function buildTowerButtons(){
+  const c=document.getElementById('towerButtons');
+  c.innerHTML='';
+  TTYPES.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='tbtn';btn.id='tbtn-'+t.id;
+    btn.innerHTML=`<span class="tbtn-icon">${t.icon}</span><div><div class="tbtn-name">${t.name}</div><div class="tbtn-cost">💰${t.cost}</div></div>`;
+    btn.onclick=()=>selectTowerType(t.id);
+    c.appendChild(btn);
+  });
+}
+function selectTowerType(id){
+  selTowerType=id;selPlaced=null;
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
+  const btn=document.getElementById('tbtn-'+id);if(btn)btn.classList.add('sel');
+  const tt=TTYPES.find(t=>t.id===id);
+  if(tt){
+    document.getElementById('towerDetails').innerHTML=
+      `<div style="color:var(--gold);font-weight:bold;margin-bottom:4px">${tt.icon} ${tt.name}</div>
+       <div style="color:var(--muted);font-size:9px">💰${tt.cost} | DMG ${tt.dmg} | RNG ${tt.range>9000?'∞':Math.round(tt.range)} | ${(1000/tt.rate).toFixed(1)}/s</div>
+       <div style="font-size:9px;color:#444;margin-top:5px">Klick auf die Karte</div>`;
   }
+}
 
-  function digCost(depth){
-    const dugCount = cells[depth].filter(c=>c.dug).length;
-    const mods = speciesMods();
-    const base = RATES.digBaseCost + dugCount * RATES.digCostStep;
-    return Math.round(base * (mods.digCostMult || 1));
-  }
+// ================================================================
+// TOWER PLACEMENT
+// ================================================================
+function placeTower(gs,tt,x,y,isPlayer){
+  const t={
+    id:Math.random().toString(36).slice(2),
+    type:tt.id,x,y,
+    dmg:tt.dmg,range:tt.range,rate:tt.rate,
+    pierce:tt.pierce||1,aoe:tt.aoe||0,
+    freeze:tt.freeze||false,freezeDur:tt.freezeDur||1.5,
+    freezeWhite:false,
+    dot:false,dotDmg:0,dotDur:0,
+    chain:tt.chain||0,homing:tt.homing||false,
+    spread:tt.spread||0,triple:false,
+    push:false,camo:false,leaddmg:false,
+    sniperMode:tt.sniperMode||false,
+    supportMode:tt.supportMode||false,
+    spikeMode:tt.spikeMode||false,
+    slowFactor:0,
+    buffSpeed:false,buffDmg:false,discount:false,income:false,goldBonus:false,
+    icon:tt.icon,color:tt.color,
+    targetMode:tt.targetMode||'first',
+    timer:0,p1lvl:0,p2lvl:0,
+    p1:tt.p1?JSON.parse(JSON.stringify(tt.p1)):[],
+    p2:tt.p2?JSON.parse(JSON.stringify(tt.p2)):[],
+    isPlayer,kills:0,
+    spikes:[],// for spike factory
+    sentries:[] // for engineer
+  };
+  gs.towers.push(t);
+  return t;
+}
 
-  function isRoomUnlocked(key){
-    const def = ROOM_TYPES[key];
-    if(!def) return false;
-    if(def.speciesOnly && def.speciesOnly !== speciesKey) return false;
-    if(!def.requiresTech) return true;
-    return !!techDone[def.requiresTech];
-  }
+// ================================================================
+// TOWER DETAILS PANEL
+// ================================================================
+function showTowerDetails(t){
+  selPlaced=t;
+  if(!GS)return;
+  const tt=TTYPES.find(x=>x.id===t.type);if(!tt)return;
+  const td=document.getElementById('towerDetails');
+  let html=`<div style="color:var(--gold);font-weight:bold;margin-bottom:3px;font-size:11px">${tt.icon} ${tt.name}</div>`;
+  html+=`<div style="font-size:9px;color:var(--muted);margin-bottom:6px">Kills:${t.kills} DMG:${t.dmg} RNG:${t.range>9000?'∞':Math.round(t.range)}</div>`;
 
-  function storageCap(){
-    const storageRooms = allCellsFlat().filter(c=>c.room==='storage').length;
-    return RATES.storageBase + storageRooms * RATES.storagePerRoom;
-  }
-
-  function allCellsFlat(){
-    let out = [];
-    DEPTHS.forEach(d=> out = out.concat(cells[d.key]));
-    return out;
-  }
-
-  function roomsOfType(type){
-    return allCellsFlat().filter(c=>c.room===type);
-  }
-
-  /* ===================== ECONOMY TICK ===================== */
-  const state = {lastSoldiers:0, lastWorkersNeeded:0, lastEfficiency:1, lastScienceRate:0};
-
-  function currentSeasonInfo(){ return SEASON_INFO[SEASONS[seasonIdx]]; }
-
-  function advanceSeasonIfNeeded(){
-    seasonElapsed++;
-    if(seasonElapsed >= seasonDuration){
-      seasonElapsed = 0;
-      const prevWinter = SEASONS[seasonIdx]==='winter';
-      seasonIdx = (seasonIdx+1) % SEASONS.length;
-      const name = SEASON_INFO[SEASONS[seasonIdx]].name;
-      addLog(`Die Jahreszeit wechselt zu ${name}.`, 'season');
-      if(!seasonsSeenSet.includes(SEASONS[seasonIdx])) seasonsSeenSet.push(SEASONS[seasonIdx]);
-      if(prevWinter){
-        unlockAchievement('survivedWinter');
-        flashToast('❄️ Ihr habt den Winter überlebt!');
-      }
-      if(seasonsSeenSet.length>=4) unlockAchievement('oldColony');
-      checkLexUnlocks();
-    }
-  }
-
-  function techEffectValue(key, fallback){
-    let v = fallback;
-    Object.values(TECHS).forEach(t=>{
-      if(techDone[t.key] && t.effect && t.effect[key]!==undefined){
-        if(typeof t.effect[key] === 'number'){
-          v = (v===undefined?1:v) * t.effect[key];
-        }
-      }
-    });
-    return v;
-  }
-
-  function tick(){
-    ageSec += speedMult;
-    for(let s=0;s<speedMult;s++) advanceSeasonIfNeeded();
-
-    const mods = speciesMods();
-    const season = currentSeasonInfo();
-
-    const forageRooms = roomsOfType('forage');
-    const fungusRooms  = roomsOfType('fungus');
-    const nurseryRooms = roomsOfType('nursery');
-    const barracksRooms= roomsOfType('barracks');
-    const waterRooms = roomsOfType('water');
-    const compostRooms = roomsOfType('compost');
-    const labRooms = roomsOfType('lab');
-    const dairyRooms = roomsOfType('dairy');
-    const vaultRooms = roomsOfType('vault');
-
-    const workersNeeded = forageRooms.length + fungusRooms.length + nurseryRooms.length +
-      barracksRooms.length + waterRooms.length + compostRooms.length + labRooms.length + dairyRooms.length;
-    const efficiency = workersNeeded>0 ? Math.min(1, ants/Math.max(1,workersNeeded)) : 1;
-
-    const cap = storageCap();
-    const forageMult = (mods.forageMult||1) * season.forageMult * techEffectValue('forageMult',1);
-    const fungusMult = (mods.fungusMult||1) * season.fungusMult;
-    const nurseryMult = (mods.nurseryMult||1) * season.nurseryMult * techEffectValue('nurseryProgressMult',1);
-
-    for(let s=0;s<speedMult;s++){
-      // foraging - gated by assigned caste, capped by rooms
-      const activeForagers = Math.min(casteCounts.forager, forageRooms.length * 3);
-      const forageWorkRatio = forageRooms.length>0 ? Math.min(1, activeForagers/forageRooms.length) : 0;
-      if(forageRooms.length>0 && forageWorkRatio>0){
-        const gain = forageRooms.length * RATES.leafPerForage * forageMult * forageWorkRatio;
-        resources.leaves = Math.min(cap, resources.leaves + gain);
-        lifetimeStats.leavesTotal += gain;
-        if(Math.random() < 0.5*forageWorkRatio){
-          const src = forageRooms[randRange(0,forageRooms.length)];
-          spawnAntDot(src, queenCell(), 'leaf');
-        }
-      }
-
-      // water gathering (forager caste shared with water rooms too, simplified: scales with forager presence)
-      if(waterRooms.length>0 && casteCounts.forager>0){
-        const ratio = Math.min(1, casteCounts.forager / Math.max(1, forageRooms.length+waterRooms.length));
-        const gain = waterRooms.length * RATES.waterPerRoom * ratio;
-        resources.water = Math.min(cap*0.5, resources.water + gain);
-        if(Math.random()<0.25*ratio){
-          const src = waterRooms[randRange(0,waterRooms.length)];
-          spawnAntDot(src, queenCell(), 'water');
-        }
-      }
-      // water upkeep in winter
-      const waterUpkeep = ants * RATES.waterUpkeepPerAnt * (SEASONS[seasonIdx]==='winter'?2.2:1);
-      resources.water = Math.max(0, resources.water - waterUpkeep);
-
-      // dairy - honey production (lasius only, but room itself already gated)
-      if(dairyRooms.length>0 && casteCounts.forager>0){
-        resources.honey += dairyRooms.length * RATES.dairyHoneyPerRoom * 0.5;
-      }
-
-      // fungus conversion - gated by gardener caste
-      const activeGardeners = Math.min(casteCounts.gardener, fungusRooms.length * 3);
-      const gardenRatio = fungusRooms.length>0 ? Math.min(1, activeGardeners/fungusRooms.length) : 0;
-      if(fungusRooms.length>0 && gardenRatio>0){
-        const compostBonus = compostRooms.length>0 ? (1+RATES.compostBonus*Math.min(1,compostRooms.length/Math.max(1,fungusRooms.length))) : 1;
-        const wanted = fungusRooms.length * RATES.fungusLeafCost * gardenRatio;
-        const used = Math.min(wanted, resources.leaves);
-        const ratio = wanted>0 ? used/wanted : 0;
-        resources.leaves -= used;
-        const gain = fungusRooms.length * RATES.fungusPerFungusRoom * fungusMult * gardenRatio * ratio * compostBonus;
-        resources.fungus = Math.min(cap, resources.fungus + gain);
-        if(Math.random() < 0.4*gardenRatio*ratio){
-          const src = fungusRooms[randRange(0,fungusRooms.length)];
-          spawnAntDot(src, queenCell(), 'fungus');
-        }
-      }
-
-      // science from lab, gated by scholar caste
-      if(labRooms.length>0){
-        const scholarRatio = Math.min(1, casteCounts.scholar / Math.max(1,labRooms.length));
-        const gain = labRooms.length * RATES.sciencePerLabRoom * scholarRatio;
-        resources.science += gain;
-        state.lastScienceRate = gain;
-      } else {
-        state.lastScienceRate = 0;
-      }
-
-      // nursery growth - gated by nurse caste
-      antsCap = 6 + nurseryRooms.length * 4 + Math.round(4*(mods.nurseryMult>1?(mods.nurseryMult-1)*4:0));
-      const nurseActive = nurseryRooms.length>0 && casteCounts.nurse>0;
-      if(nurseActive && ants < antsCap && resources.water>=0){
-        const nurseRatio = Math.min(1, casteCounts.nurse / Math.max(1,nurseryRooms.length));
-        const winterPenalty = (SEASONS[seasonIdx]==='winter' && resources.water<2) ? 0.1 : 1;
-        nurseryProgress += nurseryRooms.length * RATES.nurseryProgressPerSec * nurseryMult * nurseRatio * winterPenalty;
-        if(nurseryProgress >= 1){
-          const fungusMultTech = techEffectValue('nurseryFungusMult',1);
-          const cost = RATES.nurseryFungusPerAnt * fungusMultTech;
-          if(resources.fungus >= cost){
-            resources.fungus -= cost;
-            ants += 1;
-            nurseryProgress -= 1;
-            addLog('Eine neue Arbeiterin hat ihre Larvenkammer verlassen.', 'fresh');
-            checkAchAntCount();
-          } else {
-            nurseryProgress = 0.99;
-          }
-        }
-      }
-
-      // raid countdown
-      nextRaidIn--;
-      const warnAt = techEffectValue('raidWarning',0) || 0;
-      if(!raidWarningGiven && warnAt>0 && nextRaidIn<=warnAt && nextRaidIn>0){
-        raidWarningGiven = true;
-        flashToast('⚠️ Wachposten melden Bewegung in der Nähe...');
-      }
-      if(nextRaidIn <= 0){
-        runRaid();
-        nextRaidIn = randRange(50,85);
-        raidWarningGiven = false;
-      }
-
-      resources.leaves = Math.max(0, Math.min(cap, resources.leaves));
-      resources.fungus = Math.max(0, Math.min(cap, resources.fungus));
-    }
-
-    const idleAnts = Math.max(0, ants - (casteCounts.forager+casteCounts.gardener+casteCounts.nurse+casteCounts.soldier+casteCounts.scholar));
-    const soldierCap = barracksRooms.length * RATES.barracksCapacity * (mods.barracksCapMult||1);
-    const soldiers = Math.min(casteCounts.soldier, soldierCap);
-
-    state.lastSoldiers = Math.round(soldiers);
-    state.lastWorkersNeeded = workersNeeded;
-    state.lastEfficiency = efficiency;
-
-    checkAchievementsPassive();
-    renderAll();
-    save();
-  }
-
-  function queenCell(){ return cellAt('d0', QUEEN_R, QUEEN_C); }
-
-  function runRaid(){
-    const minutes = ageSec/60;
-    const threatKeys = Object.keys(THREATS);
-    const threat = THREATS[threatKeys[randRange(0,threatKeys.length)]];
-    const season = currentSeasonInfo();
-    const mods = speciesMods();
-
-    const raidStrength = (6 + minutes*1.6 + Math.random()*4) * threat.strengthMult * season.raidMult;
-    const baseDefBonus = techEffectValue('baseDefenseBonus',0) || 0;
-    const soldierDefMult = (mods.defenseMult||1) * techEffectValue('soldierDefenseMult',1);
-    const defense = RATES.baseDefense + baseDefBonus + state.lastSoldiers*RATES.soldierDefense*soldierDefMult;
-
-    if(defense >= raidStrength){
-      const bonus = Math.round(4 + Math.random()*6);
-      resources.leaves = Math.min(storageCap(), resources.leaves + bonus);
-      lifetimeStats.raidsWon++;
-      addLog(`${threat.icon} ${threat.name} griff an — eure ${Math.round(state.lastSoldiers)} Soldatinnen haben ihn vertrieben. +${bonus} Blätter erbeutet.`, 'raid-win');
-      flashToast(`Überfall abgewehrt! 🛡 (${threat.name})`);
-      unlockAchievement('survivedRaid');
+  // Path 1
+  html+=`<div class="upg-hdr">▲ Pfad 1</div>`;
+  for(let i=0;i<4;i++){
+    const u=t.p1[i];if(!u)break;
+    const done=i<t.p1lvl;
+    const isNext=i===t.p1lvl;
+    const blocked=isNext&&t.p2lvl>=4; // can't do both paths to max if other is max (BTD5 restriction: max 3 on one if other has 2+)
+    if(done){
+      html+=`<div class="upg-row done">✅ ${u.n}</div>`;
+    } else if(isNext&&!blocked){
+      const canAff=GS.money>=u.cost;
+      html+=`<button class="upg-row" ${canAff?'':'disabled'} onclick="upgradeTower('${t.id}',1,${i})">${i+1}. ${u.n} 💰${u.cost}</button>`;
     } else {
-      const compostRooms = roomsOfType('compost');
-      const lossMult = compostRooms.length>0 ? 0.3 * 0.75 : 0.3;
-      const lossLeaves = Math.round(resources.leaves*lossMult);
-      const lossFungus = Math.round(resources.fungus*lossMult);
-      resources.leaves -= lossLeaves;
-      resources.fungus -= lossFungus;
-      let antLoss = 0;
-      if(state.lastSoldiers===0 && raidStrength > defense+5 && ants>2){
-        antLoss = 1; ants -= 1;
-      }
-      lifetimeStats.raidsLost++;
-      addLog(`${threat.icon} ${threat.name} hat die Kolonie überrannt! Verloren: ${lossLeaves} Blätter, ${lossFungus} Pilzfutter${antLoss?', 1 Ameise':''}.`, 'raid-fail');
-      flashToast(`Überfall! ${threat.name} hat geplündert.`);
-    }
-    pendingLexDetail = threat.key; // could surface threat fact somewhere later
-  }
-
-  /* ===================== ANT DOT ANIMATION ===================== */
-  function trackPos(n){
-    let pos = 0;
-    for(let i=0;i<n;i++){
-      pos += (i%2===0) ? CELL : CONN;
-    }
-    return pos;
-  }
-  function cellCenterPx(cell){
-    const colUnit = cell.c*2;
-    const rowUnit = cell.r*2;
-    const x = trackPos(colUnit) + CELL/2;
-    const y = trackPos(rowUnit) + CELL/2;
-    return {x,y};
-  }
-
-  function spawnAntDot(fromCell, toCell, kind){
-    const grid = document.getElementById('grid');
-    if(!grid) return;
-    const from = cellCenterPx(fromCell);
-    const to = cellCenterPx(toCell);
-    const dot = document.createElement('div');
-    dot.className = 'ant-dot ' + kind;
-    dot.style.left = (from.x-3.5)+'px';
-    dot.style.top = (from.y-3.5)+'px';
-    grid.appendChild(dot);
-    requestAnimationFrame(()=>{
-      requestAnimationFrame(()=>{
-        dot.style.left = (to.x-3.5)+'px';
-        dot.style.top = (to.y-3.5)+'px';
-      });
-    });
-    setTimeout(()=>{
-      dot.style.opacity = '0';
-      setTimeout(()=>dot.remove(), 350);
-    }, 1150);
-  }
-
-  /* ===================== TECH TREE LOGIC ===================== */
-  function canResearch(key){
-    const t = TECHS[key];
-    if(!t) return false;
-    if(techDone[key]) return false;
-    if(resources.science < t.cost) return false;
-    return t.requires.every(r=>techDone[r]);
-  }
-
-  function researchTech(key){
-    const t = TECHS[key];
-    if(!canResearch(key)) return;
-    resources.science -= t.cost;
-    techDone[key] = true;
-    if(t.effect && t.effect.unlockRoom) unlockedRooms[t.effect.unlockRoom] = true;
-    addLog(`Neue Technologie erforscht: ${t.name}.`, 'tech');
-    flashToast(`🔬 Erforscht: ${t.name}`);
-    if(Object.keys(techDone).length===1) unlockAchievement('firstTech');
-    if(Object.keys(techDone).length===Object.keys(TECHS).length) unlockAchievement('allTechs');
-    checkLexUnlocks();
-    renderAll(); save();
-  }
-
-  /* ===================== ACHIEVEMENTS ===================== */
-  function unlockAchievement(key){
-    if(achievementsUnlocked[key]) return;
-    achievementsUnlocked[key] = true;
-    const a = ACHIEVEMENTS[key];
-    if(a){
-      addLog(`🏆 Erfolg freigeschaltet: ${a.name}`, 'ach');
-      flashToast(`🏆 ${a.name}`);
+      html+=`<div class="upg-row" style="opacity:.25;cursor:default">${i+1}. ${u.n} 💰${u.cost}</div>`;
     }
   }
-  function checkAchAntCount(){
-    if(ants>=10) unlockAchievement('tenAnts');
-    if(ants>=50) unlockAchievement('fiftyAnts');
-  }
-  function checkAchievementsPassive(){
-    checkAchAntCount();
-    if(resources.leaves>=100) unlockAchievement('hundredLeaves');
-    if(lifetimeStats.dugTotal>=20) unlockAchievement('deepDigger');
-    const allTypes = Object.keys(ROOM_TYPES).filter(k=>isRoomUnlocked(k));
-    if(allTypes.length>0 && allTypes.every(t=>builtRoomTypesEver[t])) unlockAchievement('allRoomTypes');
-  }
 
-  /* ===================== LEXICON UNLOCKS ===================== */
-  function checkLexUnlocks(){
-    Object.values(LEXICON).forEach(entry=>{
-      if(lexUnlocked[entry.key]) return;
-      if(entry.unlockedFromStart){ lexUnlocked[entry.key] = true; return; }
-      const cond = entry.unlockAt;
-      if(!cond) return;
-      let ok = true;
-      if(cond.ants && ants < cond.ants) ok = false;
-      if(cond.rooms && !cond.rooms.every(r=>builtRoomTypesEver[r])) ok = false;
-      if(cond.seasonsSeen && seasonsSeenSet.length < cond.seasonsSeen) ok = false;
-      if(ok) lexUnlocked[entry.key] = true;
-    });
-  }
-
-  /* ===================== GRID DOM ===================== */
-  function buildGridDom(){
-    const grid = document.getElementById('grid');
-    if(!grid) return;
-    grid.innerHTML = '';
-    const dispCols = GC*2-1, dispRows = GR*2-1;
-    const colTemplate = [];
-    for(let i=0;i<dispCols;i++) colTemplate.push(i%2===0? CELL+'px' : CONN+'px');
-    const rowTemplate = [];
-    for(let i=0;i<dispRows;i++) rowTemplate.push(i%2===0? CELL+'px' : CONN+'px');
-    grid.style.gridTemplateColumns = colTemplate.join(' ');
-    grid.style.gridTemplateRows = rowTemplate.join(' ');
-
-    for(let r=0;r<GR;r++){
-      for(let c=0;c<GC;c++){
-        const el = document.createElement('div');
-        el.dataset.r=r; el.dataset.c=c;
-        el.style.gridColumn = String(c*2+1);
-        el.style.gridRow = String(r*2+1);
-        el.addEventListener('click', ()=>onCellClick(r,c));
-        el.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' ') onCellClick(r,c); });
-        el.tabIndex = 0;
-        grid.appendChild(el);
-      }
-    }
-    for(let r=0;r<GR;r++){
-      for(let c=0;c<GC-1;c++){
-        const el = document.createElement('div');
-        el.className='conn h';
-        el.dataset.type='h'; el.dataset.r=r; el.dataset.c=c;
-        el.style.gridColumn = String(c*2+2);
-        el.style.gridRow = String(r*2+1);
-        grid.appendChild(el);
-      }
-    }
-    for(let r=0;r<GR-1;r++){
-      for(let c=0;c<GC;c++){
-        const el = document.createElement('div');
-        el.className='conn v';
-        el.dataset.type='v'; el.dataset.r=r; el.dataset.c=c;
-        el.style.gridColumn = String(c*2+1);
-        el.style.gridRow = String(r*2+2);
-        grid.appendChild(el);
-      }
-    }
-    renderCells();
-  }
-
-  function renderDepthTabs(){
-    const wrap = document.getElementById('depthTabs');
-    if(!wrap) return;
-    wrap.innerHTML = DEPTHS.map(d=>{
-      const unlocked = unlockedDepths.includes(d.key);
-      const active = d.key===activeDepth;
-      const canUnlock = !unlocked && resources.leaves>=d.unlockCost;
-      return `<button class="depth-tab ${active?'active':''} ${unlocked?'':'locked'}" data-depth="${d.key}" ${unlocked?'':'data-locked="1"'}>
-        <span>${d.icon}</span><span>${d.name}</span>
-        ${unlocked?'' : `<span class="lock-tag">🔒 ${d.unlockCost} 🍃</span>`}
-      </button>`;
-    }).join('');
-    wrap.querySelectorAll('.depth-tab').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const dk = btn.dataset.depth;
-        if(btn.dataset.locked){
-          const d = DEPTHS.find(x=>x.key===dk);
-          if(resources.leaves >= d.unlockCost){
-            resources.leaves -= d.unlockCost;
-            unlockedDepths.push(dk);
-            // pre-dig the entrance cell at top-left-ish so it's reachable
-            const entrance = cellAt(dk, 0, 0);
-            entrance.dug = true;
-            addLog(`Neue Ebene erschlossen: ${d.name}.`, 'fresh');
-            flashToast(`⛏ Ebene freigeschaltet: ${d.name}`);
-            activeDepth = dk;
-            buildGridDom();
-            renderAll(); save();
-          } else {
-            flashToast('Nicht genug Blätter, um diese Ebene zu erschließen.');
-          }
-        } else {
-          activeDepth = dk;
-          buildGridDom();
-          renderAll();
-        }
-      });
-    });
-  }
-
-  function renderCells(){
-    const grid = document.getElementById('grid');
-    if(!grid) return;
-    grid.querySelectorAll('[data-r][data-c]:not([data-type])').forEach(el=>{
-      const r = +el.dataset.r, c = +el.dataset.c;
-      const cell = cellAt(activeDepth, r,c);
-      el.className = 'cell';
-      el.innerHTML = '';
-      if(!cell.dug){
-        el.classList.add('undug');
-        if(isDiggable(activeDepth, r,c) && mode==='dig') el.classList.add('diggable');
-      } else if(cell.room){
-        const def = ROOM_TYPES[cell.room] || (cell.room==='queen'? {icon:'👑',cls:'room-queen'} : null);
-        el.classList.add('dug');
-        if(def){ el.classList.add(def.cls); el.innerHTML = `<span>${def.icon}</span>`; }
-        if(cell.room==='nursery'){
-          const pct = Math.min(99, Math.round(nurseryProgress*100));
-          el.innerHTML += `<span class="badge">${pct}%</span>`;
-        }
-        if(cell.room && cell.room!=='queen' && CASTES[ROOM_TYPES[cell.room].caste]){
-          // no per-room occupancy tracked individually (caste pool is global) - skip badge
-        }
-      } else {
-        el.classList.add('dug','empty');
-        if(mode && ROOM_TYPES[mode]) el.classList.add('buildable');
-        el.innerHTML = '<span style="opacity:.35;font-size:1.1rem;">·</span>';
-      }
-    });
-    grid.querySelectorAll('.conn').forEach(el=>{
-      const r = +el.dataset.r, c = +el.dataset.c;
-      let active;
-      if(el.dataset.type==='h') active = cellAt(activeDepth, r,c).dug && cellAt(activeDepth, r,c+1).dug;
-      else active = cellAt(activeDepth, r,c).dug && cellAt(activeDepth, r+1,c).dug;
-      el.classList.toggle('active', active);
-    });
-  }
-
-  /* ===================== TOPBAR / RESOURCES ===================== */
-  function fmt(n){ return Math.floor(n).toLocaleString('de-DE'); }
-
-  function renderTopbar(){
-    const cap = storageCap();
-    const sp = speciesKey ? SPECIES[speciesKey] : null;
-    const pill = document.getElementById('speciesPill');
-    if(pill) pill.innerHTML = sp ? `<span class="sp-ic">${sp.icon}</span> ${sp.name}` : '';
-
-    const hasWater = unlockedRooms.water || techDone.irrigation;
-    const hasHoney = roomsOfType('dairy').length>0;
-    const hasScience = techDone.scouting || roomsOfType('lab').length>0;
-    const hasVault = roomsOfType('vault').length>0;
-
-    let chips = `
-      <div class="res-chip ${resources.leaves>=cap?'cap':''}"><span class="ic">🍃</span><span class="val">${fmt(resources.leaves)}/${fmt(cap)}</span><span class="lbl">Blätter</span></div>
-      <div class="res-chip ${resources.fungus>=cap?'cap':''}"><span class="ic">🍄</span><span class="val">${fmt(resources.fungus)}/${fmt(cap)}</span><span class="lbl">Pilzfutter</span></div>
-      <div class="res-chip ${ants>=antsCap?'warn':''}"><span class="ic">🐜</span><span class="val">${ants}/${antsCap}</span><span class="lbl">Ameisen</span></div>
-    `;
-    if(hasWater){
-      chips += `<div class="res-chip ${resources.water<2 && SEASONS[seasonIdx]==='winter' ?'warn':''}"><span class="ic">💧</span><span class="val">${fmt(resources.water)}</span><span class="lbl">Wasser</span></div>`;
-    }
-    if(hasHoney){
-      chips += `<div class="res-chip"><span class="ic">🍯</span><span class="val">${fmt(resources.honey)}</span><span class="lbl">Honigtau</span></div>`;
-    }
-    if(hasScience){
-      chips += `<div class="res-chip"><span class="ic">🔬</span><span class="val">${fmt(resources.science)}</span><span class="lbl">Wissenschaft</span></div>`;
-    }
-    if(hasVault){
-      chips += `<div class="res-chip"><span class="ic">👑</span><span class="val">${fmt(resources.prestige)}</span><span class="lbl">Prestige</span></div>`;
-    }
-    document.getElementById('resourceBar').innerHTML = chips;
-  }
-
-  function renderSeasonStrip(){
-    const info = currentSeasonInfo();
-    const pct = Math.round((seasonElapsed/seasonDuration)*100);
-    document.getElementById('seasonStrip').innerHTML = `
-      <div class="season-info">
-        <span class="season-icon">${info.icon}</span>
-        <div>
-          <div class="season-name">${info.name}</div>
-          <div class="season-desc">${info.desc}</div>
-        </div>
-      </div>
-      <div class="season-bar-track"><div class="season-bar-fill" style="width:${pct}%"></div></div>
-    `;
-  }
-
-  /* ===================== BUILD PALETTE ===================== */
-  function renderPalette(){
-    const wrap = document.getElementById('buildPalette');
-    if(!wrap) return;
-    wrap.innerHTML = '';
-    const badge = document.getElementById('roomCountBadge');
-    const totalBuilt = allCellsFlat().filter(c=>c.room && c.room!=='queen').length;
-    if(badge) badge.textContent = totalBuilt + ' gebaut';
-
-    Object.values(ROOM_TYPES).forEach(def=>{
-      const unlocked = isRoomUnlocked(def.key);
-      const affordable = unlocked && canAfford(def.cost);
-      const btn = document.createElement('button');
-      btn.className = 'build-btn' + (mode===def.key?' selected':'') + (!affordable?' disabled':'') + (!unlocked?' locked':'');
-      const lockTag = !unlocked ? `<span class="lock-tag">🔒 ${def.requiresTech ? 'Tech: '+(TECHS[def.requiresTech]?TECHS[def.requiresTech].name:'?') : (def.speciesOnly ? SPECIES[def.speciesOnly].name : '')}</span>` : '';
-      btn.innerHTML = `
-        <span class="ic">${def.icon}</span>
-        <span class="meta">
-          <div class="name">${def.name} ${lockTag}</div>
-          <div class="desc">${def.desc}</div>
-          <div class="cost">${costString(def.cost)}</div>
-        </span>`;
-      btn.addEventListener('click', ()=>{
-        if(!unlocked){ flashToast('Diese Kammer ist noch nicht freigeschaltet.'); return; }
-        mode = (mode===def.key) ? null : def.key;
-        updateModeUi();
-      });
-      wrap.appendChild(btn);
-    });
-  }
-
-  function costString(cost){
-    const map = {leaves:'Blätter', fungus:'Pilzfutter', water:'Wasser'};
-    return Object.entries(cost).map(([k,v])=> `${v} ${map[k]||k}`).join(' · ');
-  }
-  function canAfford(cost){
-    return Object.entries(cost).every(([k,v])=> (resources[k]||0) >= v);
-  }
-
-  /* ===================== CASTE ASSIGNMENT ===================== */
-  function totalAssigned(){
-    return casteCounts.forager+casteCounts.gardener+casteCounts.nurse+casteCounts.soldier+casteCounts.scholar;
-  }
-
-  function renderCasteAssign(){
-    const wrap = document.getElementById('casteAssign');
-    if(!wrap) return;
-    const free = ants - totalAssigned();
-    const badge = document.getElementById('casteAssignedBadge');
-    if(badge) badge.textContent = `${totalAssigned()}/${ants}`;
-
-    const rows = Object.values(CASTES).filter(c=>c.key!=='builder').map(c=>{
-      const n = casteCounts[c.key]||0;
-      const roomCount = roomCountForCaste(c.key);
-      const cap = roomCapForCaste(c.key);
-      return `
-      <div class="caste-row">
-        <span class="ic">${c.icon}</span>
-        <span class="lbl">${c.name}<br><span style="color:var(--cream-faint); font-size:0.68rem;">${roomCount} Raum(e) · Kapazität ${cap}</span></span>
-        <span class="ctrl">
-          <button data-caste="${c.key}" data-dir="-1" ${n<=0?'disabled':''}>−</button>
-          <span class="num">${n}</span>
-          <button data-caste="${c.key}" data-dir="1" ${(free<=0 || n>=cap)?'disabled':''}>+</button>
-        </span>
-      </div>`;
-    }).join('');
-
-    wrap.innerHTML = rows + `
-      <div class="caste-total-row ${free<0?'over':''}">
-        <span>Freie Baumeisterinnen</span><span class="mono">${Math.max(0,free)}</span>
-      </div>`;
-
-    wrap.querySelectorAll('button[data-caste]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const c = btn.dataset.caste;
-        const dir = +btn.dataset.dir;
-        const free2 = ants - totalAssigned();
-        const cap = roomCapForCaste(c);
-        if(dir>0 && free2>0 && casteCounts[c]<cap) casteCounts[c]++;
-        if(dir<0 && casteCounts[c]>0) casteCounts[c]--;
-        renderAll(); save();
-      });
-    });
-  }
-
-  function roomCountForCaste(casteKey){
-    const roomKey = Object.values(ROOM_TYPES).find(r=>r.caste===casteKey);
-    if(!roomKey) return 0;
-    // multiple room types can share a caste (forager used by forage+water+dairy)
-    return Object.values(ROOM_TYPES).filter(r=>r.caste===casteKey).reduce((sum,r)=> sum + roomsOfType(r.key).length, 0);
-  }
-  function roomCapForCaste(casteKey){
-    const count = roomCountForCaste(casteKey);
-    if(casteKey==='soldier'){
-      const mods = speciesMods();
-      return Math.round(count * RATES.barracksCapacity * (mods.barracksCapMult||1));
-    }
-    return count * 3;
-  }
-
-  /* ===================== TECH TREE RENDER ===================== */
-  function renderTechPanel(){
-    const branches = {gather:'Sammeln & Vorrat', defense:'Verteidigung & Schutz', pop:'Bevölkerung & Wissen'};
-    const branchIcons = {gather:'🍃', defense:'🛡', pop:'🥚'};
-    let html = '';
-    Object.entries(branches).forEach(([bk,label])=>{
-      const techs = Object.values(TECHS).filter(t=>t.branch===bk);
-      html += `<div class="tech-branch"><div class="tech-branch-title">${branchIcons[bk]} ${label}</div>`;
-      techs.forEach(t=>{
-        const done = !!techDone[t.key];
-        const locked = !done && !t.requires.every(r=>techDone[r]);
-        const afford = canResearch(t.key);
-        html += `
-        <div class="tech-card ${done?'done':''} ${locked?'locked':''}">
-          <span class="ic">${t.icon}</span>
-          <span class="meta">
-            <div class="name">${t.name}</div>
-            <div class="desc">${t.desc}</div>
-            ${!done?`<div class="cost">${t.cost} 🔬 Wissenschaft${t.requires.length?' · benötigt: '+t.requires.map(r=>TECHS[r].name).join(', '):''}</div>`:''}
-          </span>
-          ${done? '<span class="done-tag">✓ erforscht</span>' : `<button data-tech="${t.key}" ${(!afford||locked)?'disabled':''}>Erforschen</button>`}
-        </div>`;
-      });
-      html += `</div>`;
-    });
-
-    document.getElementById('techPanelWide').innerHTML = `<h2>🌿 Forschungsbaum</h2>${html}`;
-    document.getElementById('techPanelWide').querySelectorAll('button[data-tech]').forEach(btn=>{
-      btn.addEventListener('click', ()=> researchTech(btn.dataset.tech));
-    });
-  }
-
-  /* ===================== LEXICON RENDER ===================== */
-  function renderLexPanel(){
-    const cards = Object.values(LEXICON).map(entry=>{
-      const unlocked = !!lexUnlocked[entry.key];
-      return `<div class="lex-card ${unlocked?'':'locked'}" data-lex="${entry.key}">
-        <div class="ic">${unlocked?entry.icon:'🔒'}</div>
-        <div class="name">${unlocked?entry.name:'???'}</div>
-        <div class="tag">${unlocked?(entry.facts.length+' Fakten'):'Gesperrt'}</div>
-      </div>`;
-    }).join('');
-    let detailHtml = '';
-    if(pendingLexDetail && lexUnlocked[pendingLexDetail]){
-      const e = LEXICON[pendingLexDetail];
-      detailHtml = `<div class="lex-detail"><h3>${e.icon} ${e.name}</h3>${e.facts.map(f=>`<div class="fact">${f}</div>`).join('')}</div>`;
-    }
-    const panel = document.getElementById('lexPanelWide');
-    panel.innerHTML = `<h2>📖 Lexikon der Kolonie</h2><div class="lex-grid">${cards}</div>${detailHtml}`;
-    panel.querySelectorAll('.lex-card').forEach(card=>{
-      card.addEventListener('click', ()=>{
-        const key = card.dataset.lex;
-        if(!lexUnlocked[key]){ flashToast('Dieser Lexikon-Eintrag ist noch gesperrt.'); return; }
-        pendingLexDetail = key;
-        renderLexPanel();
-        card.parentElement.nextElementSibling && card.parentElement.nextElementSibling.scrollIntoView({behavior:'smooth', block:'nearest'});
-      });
-    });
-    const badge = document.getElementById('lexCountBadge');
-    if(badge) badge.textContent = Object.values(lexUnlocked).filter(Boolean).length + '/' + Object.keys(LEXICON).length;
-  }
-
-  /* ===================== ACHIEVEMENTS RENDER ===================== */
-  function renderAchPanel(){
-    const cards = Object.values(ACHIEVEMENTS).map(a=>{
-      const unlocked = !!achievementsUnlocked[a.key];
-      return `<div class="ach-card ${unlocked?'unlocked':''}">
-        <span class="ic">${a.icon}</span>
-        <span class="meta">
-          <div class="name">${a.name}</div>
-          <div class="desc">${a.desc}</div>
-        </span>
-      </div>`;
-    }).join('');
-    document.getElementById('achPanelWide').innerHTML = `<h2>🏆 Erfolge der Kolonie</h2><div class="ach-grid">${cards}</div>`;
-    const badge = document.getElementById('achCountBadge');
-    if(badge) badge.textContent = Object.values(achievementsUnlocked).filter(Boolean).length + '/' + Object.keys(ACHIEVEMENTS).length;
-  }
-
-  /* ===================== STATS RENDER ===================== */
-  function renderStatsPanel(){
-    document.getElementById('statAge2').textContent = ageStr();
-    document.getElementById('statDug').textContent = lifetimeStats.dugTotal;
-    document.getElementById('statRooms').textContent = lifetimeStats.roomsTotal;
-    document.getElementById('statRaidsWon').textContent = lifetimeStats.raidsWon;
-    document.getElementById('statRaidsLost').textContent = lifetimeStats.raidsLost;
-    document.getElementById('statLeavesTotal').textContent = fmt(lifetimeStats.leavesTotal);
-    document.getElementById('statPrestige').textContent = fmt(resources.prestige);
-  }
-  function ageStr(){
-    const mm = Math.floor(ageSec/60), ss = ageSec%60;
-    return `${mm}:${String(ss).padStart(2,'0')}`;
-  }
-
-  /* ===================== MASTER RENDER ===================== */
-  function renderAll(){
-    renderTopbar();
-    renderSeasonStrip();
-    renderDepthTabs();
-    document.getElementById('digCost').textContent = `${digCost(activeDepth)} Blätter`;
-    document.getElementById('statAnts').textContent = `${ants} / ${antsCap}`;
-    document.getElementById('statFree').textContent = Math.max(0, ants-totalAssigned());
-    document.getElementById('statWorkersNeeded').textContent = state.lastWorkersNeeded;
-    document.getElementById('statEfficiency').textContent = Math.round(state.lastEfficiency*100)+'%';
-    document.getElementById('statScience').textContent = fmt(resources.science);
-    document.getElementById('statScienceRate').textContent = state.lastScienceRate.toFixed(2)+'/s';
-    document.getElementById('colonyAge').textContent = ageStr();
-    document.getElementById('raidCountdown').textContent = `${nextRaidIn}s`;
-    renderPalette();
-    renderCasteAssign();
-    renderCells();
-    if(activeTab==='tech') renderTechPanel();
-    if(activeTab==='lex') renderLexPanel();
-    if(activeTab==='ach') renderAchPanel();
-    if(activeTab==='stats') renderStatsPanel();
-  }
-
-  function updateModeUi(){
-    document.getElementById('digBtn').classList.toggle('selected', mode==='dig');
-    document.getElementById('cancelBtn').style.display = mode ? 'block' : 'none';
-    const info = document.getElementById('selectedInfo');
-    if(mode==='dig'){
-      info.textContent = `Klicke auf einen markierten Gang, um ihn für ${digCost(activeDepth)} Blätter zu graben.`;
-    } else if(mode && ROOM_TYPES[mode]){
-      info.textContent = `Klicke auf eine leere, gegrabene Kammer, um „${ROOM_TYPES[mode].name}" zu bauen.`;
+  // Path 2
+  html+=`<div class="upg-hdr">▲ Pfad 2</div>`;
+  for(let i=0;i<4;i++){
+    const u=t.p2[i];if(!u)break;
+    const done=i<t.p2lvl;
+    const isNext=i===t.p2lvl;
+    const blocked=isNext&&t.p1lvl>=4;
+    if(done){
+      html+=`<div class="upg-row done">✅ ${u.n}</div>`;
+    } else if(isNext&&!blocked){
+      const canAff=GS.money>=u.cost;
+      html+=`<button class="upg-row" ${canAff?'':'disabled'} onclick="upgradeTower('${t.id}',2,${i})">${i+1}. ${u.n} 💰${u.cost}</button>`;
     } else {
-      info.textContent = 'Wähle links eine Aktion, dann klicke auf den Bau.';
+      html+=`<div class="upg-row" style="opacity:.25;cursor:default">${i+1}. ${u.n} 💰${u.cost}</div>`;
     }
-    renderCells();
-    renderPalette();
   }
 
-  /* ===================== INTERACTION ===================== */
-  function onCellClick(r,c){
-    const cell = cellAt(activeDepth, r,c);
-    if(mode==='dig'){
-      if(!isDiggable(activeDepth, r,c)){ flashToast('Dieser Gang ist noch nicht erreichbar.'); return; }
-      const cost = digCost(activeDepth);
-      if(resources.leaves < cost){ flashToast('Nicht genug Blätter zum Graben.'); return; }
-      resources.leaves -= cost;
-      cell.dug = true;
-      lifetimeStats.dugTotal++;
-      addLog('Ein neuer Gang wurde in die Erde gegraben.', 'fresh');
-      renderAll(); save();
+  const sellVal=Math.floor(tt.cost*0.7);
+  html+=`<button class="sell-btn" onclick="sellTower('${t.id}')">💸 Verkaufen +💰${sellVal}</button>`;
+  td.innerHTML=html;
+}
+
+// ================================================================
+// UPGRADE SYSTEM
+// ================================================================
+function upgradeTower(id,path,level){
+  if(!GS)return;
+  const t=GS.towers.find(x=>x.id===id);if(!t)return;
+  const upgs=path===1?t.p1:t.p2;
+  if(!upgs||level>=upgs.length)return;
+  const curLvl=path===1?t.p1lvl:t.p2lvl;
+  if(level!==curLvl)return;// must be sequential
+  const u=upgs[level];
+  if(!u||GS.money<u.cost)return;
+  GS.money-=u.cost;
+  applyEffect(t,u.e);
+  if(path===1)t.p1lvl++;else t.p2lvl++;
+  showTowerDetails(t);
+  updateHUD();
+}
+
+function applyEffect(t,effectStr){
+  effectStr.split('+').forEach(e=>{
+    if(e.startsWith('pierce+'))t.pierce+=parseInt(e.slice(7));
+    else if(e.startsWith('range+'))t.range+=parseInt(e.slice(6));
+    else if(e.startsWith('dmg+'))t.dmg+=parseInt(e.slice(4));
+    else if(e.startsWith('rate-'))t.rate=Math.max(80,t.rate-parseInt(e.slice(5)));
+    else if(e.startsWith('rate+'))t.rate=Math.min(5000,t.rate+parseInt(e.slice(5)));
+    else if(e.startsWith('aoe+'))t.aoe+=parseInt(e.slice(4));
+    else if(e.startsWith('chain+'))t.chain+=parseInt(e.slice(6));
+    else if(e.startsWith('freezedur+'))t.freezeDur+=parseFloat(e.slice(10));
+    else if(e.startsWith('dotdmg+'))t.dotDmg+=parseInt(e.slice(7));
+    else if(e.startsWith('spread+'))t.spread+=parseInt(e.slice(7));
+    else if(e==='triple')t.triple=true;
+    else if(e==='homing')t.homing=true;
+    else if(e==='camo')t.camo=true;
+    else if(e==='leaddmg')t.leaddmg=true;
+    else if(e==='slow')t.slowFactor=0.5;
+    else if(e==='push')t.push=true;
+    else if(e==='whitehit')t.freezeWhite=true;
+    else if(e==='dot'){t.dot=true;t.dotDmg=1;t.dotDur=2;}
+    else if(e==='cluster'){t.aoe+=25;t.pierce+=8;}
+    else if(e==='bigfreeze'){t.aoe=90;}
+    else if(e==='moabdmg'){t.dmg+=22;}
+    else if(e==='moabkill'){t.dmg=9999;}
+    else if(e==='buffSpeed')t.buffSpeed=true;
+    else if(e==='buffDmg')t.buffDmg=true;
+    else if(e==='discount')t.discount=true;
+    else if(e==='income')t.income=true;
+    else if(e==='goldBonus')t.goldBonus=true;
+    else if(e==='sentry')t.sentry=true;
+    else if(e==='foam')t.foam=true;
+    else if(e==='berserker'){t.dmg+=3;t.rate=Math.max(80,t.rate-400);}
+    else if(e==='buffTower'){t.buffDmg=true;}
+    else if(e==='sungod'){t.dmg=12;t.rate=60;t.pierce=5;}
+    else if(e==='truesun'){t.dmg=30;t.rate=40;t.pierce=8;}
+    else if(e==='robo'){t.triple=true;t.pierce+=3;}
+    else if(e==='techterror'){t.dmg=25;t.aoe=70;t.rate=60;}
+    else if(e==='glaive_lord'){t.pierce=99;t.dmg+=5;}
+    else if(e==='moab_press'){t.pierce=99;t.dmg+=25;}
+    else if(e==='moab_dom'){t.dmg=9999;}
+    else if(e==='bigone'){t.dmg+=22;t.aoe+=18;}
+    else if(e==='popnawe'){t.aoe=130;t.pierce=99;t.dmg+=12;}
+    else if(e==='tsprayer'){t.spread=16;t.rate=500;t.dmg+=2;}
+    else if(e==='maelstrom'){t.spread=16;t.rate=180;t.dmg+=4;t.pierce+=4;}
+    else if(e==='stormcannon'){t.chain+=6;t.range+=25;t.dmg+=4;}
+    else if(e==='literalstorm'){t.chain=25;t.aoe=90;t.dmg+=10;}
+    else if(e==='tech_terror'){t.dmg=18;t.aoe=70;t.chain=12;}
+    else if(e==='cripplemoab'){t.dmg+=25;t.slowFactor=0.25;}
+    else if(e==='absfreeze'){t.range+=50;t.aoe=130;t.freezeDur+=3;t.freezeWhite=true;}
+    else if(e==='superfreeze'){t.range+=35;t.freezeDur+=2.5;}
+    else if(e==='bombblitz'){t.dmg+=12;t.aoe+=25;t.pierce+=10;}
+    else if(e==='apache'){t.dmg=6;t.rate=180;t.triple=true;t.pierce+=3;}
+    else if(e==='apache_prime'){t.dmg=12;t.rate=100;t.triple=true;t.pierce=7;t.aoe=35;}
+    else if(e==='xxl'){t.dmg+=12;t.pierce+=6;t.range+=35;}
+    else if(e==='juggernaut'){t.pierce=99;t.dmg+=10;t.aoe=25;}
+    else if(e==='moab_shredr'){t.dmg+=20;t.pierce+=10;}
+    else if(e==='perma_spike'){t.dmg+=15;t.pierce=99;t.rate=500;}
+    else if(e==='super_mines'){t.aoe=100;t.dmg=9999;}
+    else if(e==='fighter'){t.dmg+=3;t.pierce+=3;t.rate-=200;}
+    else if(e==='operation_dnt'){t.dmg=30;t.aoe=80;t.pierce=99;}
+    else if(e==='bombardier'){t.aoe+=40;t.dmg+=8;}
+    else if(e==='aircraft'){t.dmg+=10;t.pierce+=8;t.aoe+=30;}
+    else if(e==='flagship'){t.dmg+=15;t.pierce=99;t.aoe+=40;}
+    else if(e==='pirate'){t.dmg+=5;t.pierce+=4;}
+    else if(e==='archmage'){t.dmg+=8;t.aoe+=20;t.pierce+=4;}
+    else if(e==='sorcerer_prime'){t.dmg=40;t.aoe=80;t.pierce=99;}
+    else if(e==='wall_of_fire'){t.aoe+=30;t.dot=true;t.dotDmg=2;t.dotDur=3;}
+    else if(e==='debuff'){t.slowFactor=0.4;}
+    else if(e==='necromancer'){t.dmg+=10;t.aoe+=20;}
+    else if(e==='master_night'){t.dmg=15;t.pierce=99;t.rate=400;}
+    else if(e==='smokescreen'){t.slowFactor=0.3;t.aoe+=30;}
+    else if(e==='grand_sab'){t.dmg=25;t.rate=300;t.pierce=10;}
+    else if(e==='strongest_acid'){t.dmg=10;t.aoe=60;t.dot=true;t.dotDmg=5;t.dotDur=5;}
+    else if(e==='permabrew'){t.buffDmg=true;t.buffSpeed=true;}
+    else if(e==='total_transform'){t.dmg=50;t.aoe=100;t.pierce=99;}
+    else if(e==='storm_druid'){t.chain+=5;t.dmg+=6;}
+    else if(e==='avatar_wrath'){t.dmg=30;t.chain=15;t.aoe=60;}
+    else if(e==='jungle_druid'){t.triple=true;t.pierce+=2;}
+    else if(e==='spirit_forest'){t.dmg=20;t.aoe=80;t.pierce=99;}
+    else if(e==='primary_expertise'){t.buffDmg=true;t.buffSpeed=true;t.range+=30;}
+    else if(e==='banana_hq'){t.goldBonus=true;t.income=true;}
+    else if(e==='ultraboost'){t.buffDmg=true;t.buffSpeed=true;}
+    else if(e==='elite_engi'){t.dmg+=10;t.pierce+=8;t.range+=30;}
+    else if(e==='berserker'){t.dmg+=3;t.rate=Math.max(80,t.rate-300);}
+    else if(e==='supply'){t.supplyDrop=true;}
+  });
+}
+
+function sellTower(id){
+  if(!GS)return;
+  const idx=GS.towers.findIndex(x=>x.id===id);
+  if(idx<0)return;
+  const t=GS.towers[idx];
+  const tt=TTYPES.find(x=>x.id===t.type);if(!tt)return;
+  // Sell value: base cost 70% + upgrade costs 70%
+  let sellVal=Math.floor(tt.cost*0.7);
+  for(let i=0;i<t.p1lvl&&t.p1[i];i++)sellVal+=Math.floor(t.p1[i].cost*0.7);
+  for(let i=0;i<t.p2lvl&&t.p2[i];i++)sellVal+=Math.floor(t.p2[i].cost*0.7);
+  GS.money+=sellVal;
+  GS.towers.splice(idx,1);
+  selPlaced=null;
+  document.getElementById('towerDetails').textContent='Turm auswählen oder platzieren';
+  updateHUD();
+}
+
+// ================================================================
+// WAVES
+// ================================================================
+function startNextWave(){
+  if(!GS||GS.waveActive||gameOver)return;
+  if(GS.wave>=WAVES.length){logWave('Alle Wellen geschafft! 🏆','g');return;}
+  GS.wave++;GS.waveActive=true;
+  GS.waveQueue=[...WAVES[GS.wave-1]];
+  GS.spawnTimer=0;
+  document.getElementById('startWaveBtn').disabled=true;
+  document.getElementById('waveLabel').textContent=`Welle ${GS.wave}/${WAVES.length}`;
+  logWave(`⚔️ Welle ${GS.wave} — ${GS.waveQueue.length} Bloons`,'g');
+  // Bot also starts wave
+  GS.bots.forEach(b=>{
+    if(!b.alive)return;
+    b.wave=GS.wave;b.waveActive=true;
+    b.waveQueue=[...WAVES[GS.wave-1]];
+    b.spawnTimer=0;
+  });
+}
+function logWave(msg,cls){
+  const log=document.getElementById('waveLog');
+  if(!log)return;
+  const d=document.createElement('div');
+  d.textContent=msg;if(cls)d.className=cls;
+  log.appendChild(d);log.scrollTop=log.scrollHeight;
+  if(log.children.length>20)log.removeChild(log.firstChild);
+}
+
+// ================================================================
+// GAME LOOP
+// ================================================================
+function gameLoop(ts){
+  RAF=requestAnimationFrame(gameLoop);
+  if(paused||gameOver||!GS)return;
+  const dt=Math.min((ts-GS.lastTime)*gameSpeed,100);
+  GS.lastTime=ts;
+  if(dt<=0)return;
+  updateGame(dt);
+  renderGame();
+  renderBotScreens();
+  updateHUD();
+}
+
+// ================================================================
+// CORE UPDATE
+// ================================================================
+function updateGame(dt){
+  const gs=GS;
+  // Spawn bloons
+  if(gs.waveActive&&gs.waveQueue.length>0){
+    gs.spawnTimer+=dt;
+    const interval=Math.max(400,800-gs.wave*3);
+    while(gs.spawnTimer>=interval&&gs.waveQueue.length>0){
+      gs.spawnTimer-=interval;
+      spawnBloon(gs,gs.path,gs.waveQueue.shift());
+    }
+  }
+
+  updateBloons(gs,gs.path,dt,true);
+  updateTowers(gs,gs.bloons,dt,true);
+  updateProjs(gs.projs,gs.bloons,gs,dt);
+
+  // Village / support effects
+  gs.towers.forEach(vt=>{
+    if(!vt.supportMode)return;
+    if(vt.income&&Math.random()<0.0004*dt)gs.money+=5;
+    if(vt.goldBonus&&Math.random()<0.0006*dt)gs.money+=8;
+  });
+
+  // Supply drop
+  gs.towers.forEach(t=>{
+    if(t.supplyDrop&&Math.random()<0.00005*dt)gs.money+=200;
+  });
+
+  // Wave end check
+  if(gs.waveActive&&gs.waveQueue.length===0&&gs.bloons.length===0){
+    gs.waveActive=false;
+    const rew=Math.floor((80+gs.wave*22)*gs.mult);
+    gs.money+=rew;
+    document.getElementById('startWaveBtn').disabled=false;
+    document.getElementById('waveLabel').textContent=`Welle ${gs.wave} fertig! +💰${rew}`;
+    logWave(`✅ Welle ${gs.wave} abgeschlossen! +💰${rew}`,'g');
+    if(gs.wave>=WAVES.length)endGame(true);
+  }
+
+  // Progress bar
+  const wq=WAVES[gs.wave-1]||[];
+  const prog=wq.length>0?(1-gs.waveQueue.length/wq.length)*100:100;
+  document.getElementById('waveBarIn').style.width=Math.min(100,Math.max(0,prog))+'%';
+
+  // Update bots
+  gs.bots.forEach(b=>{
+    if(!b.alive)return;
+    // Bot wave spawn
+    if(b.waveActive&&b.waveQueue&&b.waveQueue.length>0){
+      b.spawnTimer+=dt;
+      const interval=Math.max(450,850-gs.wave*3);
+      while(b.spawnTimer>=interval&&b.waveQueue.length>0){
+        b.spawnTimer-=interval;
+        spawnBloon(b,b.path,b.waveQueue.shift());
+      }
+    }
+    updateBloons(b,b.path,dt,false);
+    updateTowers(b,b.bloons,dt,false);
+    updateProjs(b.projs,b.bloons,b,dt);
+    // Bot wave end
+    if(b.waveActive&&(!b.waveQueue||b.waveQueue.length===0)&&b.bloons.length===0){
+      b.waveActive=false;
+      b.money+=Math.floor((80+gs.wave*22)*b.mult);
+    }
+    updateBotAI(gs,b,dt);
+    if(b.lives<=0){b.alive=false;}
+  });
+}
+
+// ================================================================
+// BLOON UPDATE
+// ================================================================
+function spawnBloon(gs,path,typeId){
+  const bt=BT[typeId];if(!bt)return;
+  const hp=Math.ceil(bt.hp*(gs.hpMult||1));
+  gs.bloons.push({
+    id:Math.random().toString(36).slice(2),
+    type:typeId,hp,maxHp:hp,speed:bt.speed,
+    reward:bt.reward||1,immune:[...(bt.immune||[])],
+    color:bt.color,icon:bt.icon,
+    x:path[0].x,y:path[0].y,
+    pi:0,dead:false,
+    frozen:0,slowed:0,dotTimer:0,dotDmg:0,
+    big:bt.big||false,boss:bt.boss||false
+  });
+}
+
+function updateBloons(gs,path,dt,isPlayer){
+  const toRemove=[];
+  for(let i=gs.bloons.length-1;i>=0;i--){
+    const b=gs.bloons[i];
+    if(b.dead){toRemove.push(i);continue;}
+    // Frozen
+    if(b.frozen>0){b.frozen-=dt/1000;continue;}
+    // Move
+    const slowMult=b.slowed>0?0.45:1.0;
+    const spd=b.speed*slowMult*180; // pixels/sec units on dense path
+    b.pi+=spd*dt/1000;
+    b.pi=Math.min(b.pi,path.length-1);
+    const pp=path[Math.floor(b.pi)];
+    if(pp){b.x=pp.x;b.y=pp.y;}
+    if(b.slowed>0)b.slowed-=dt/1000;
+    // DoT
+    if(b.dotTimer>0){
+      b.dotTimer-=dt/1000;
+      if(b.dotTimer<=0){
+        b.hp-=b.dotDmg;
+        if(b.hp<=0){killBloon(gs,b,null,true);toRemove.push(i);continue;}
+        b.dotTimer=1;// tick every second
+      }
+    }
+    // Reached end
+    if(b.pi>=path.length-2){
+      b.dead=true;
+      gs.lives=Math.max(0,gs.lives-Math.ceil(b.hp));
+      toRemove.push(i);
+      if(isPlayer&&gs.lives<=0&&!gameOver)endGame(false);
+      continue;
+    }
+  }
+  for(let i=toRemove.length-1;i>=0;i--)gs.bloons.splice(toRemove[i],1);
+}
+
+// ================================================================
+// TOWER UPDATE
+// ================================================================
+function updateTowers(gs,bloons,dt,isPlayer){
+  gs.towers.forEach(t=>{
+    if(t.supportMode)return;// village doesn't shoot
+    t.timer+=dt;
+    if(t.timer<t.rate)return;
+
+    // Ice tower: freeze in range
+    if(t.type==='ice'){
+      const targets=bloons.filter(b=>{
+        if(b.dead||b.frozen>0)return false;
+        if(b.immune.includes('ice')&&!t.freezeWhite)return false;
+        return Math.hypot(b.x-t.x,b.y-t.y)<=t.range;
+      });
+      if(!targets.length)return;
+      t.timer=0;
+      targets.forEach(b=>{
+        b.frozen=t.freezeDur;
+        if(t.aoe>0)bloons.forEach(b2=>{
+          if(!b2.dead&&Math.hypot(b2.x-t.x,b2.y-t.y)<t.aoe&&!b2.immune.includes('ice')||t.freezeWhite)
+            b2.frozen=Math.max(b2.frozen,t.freezeDur);
+        });
+      });
       return;
     }
-    if(mode && ROOM_TYPES[mode]){
-      if(!isRoomUnlocked(mode)){ flashToast('Diese Kammer ist noch nicht freigeschaltet.'); return; }
-      if(!cell.dug || cell.room){ flashToast('Hier kann nichts gebaut werden.'); return; }
-      const def = ROOM_TYPES[mode];
-      if(!canAfford(def.cost)){ flashToast('Nicht genug Ressourcen.'); return; }
-      Object.entries(def.cost).forEach(([k,v])=> resources[k]-=v);
-      cell.room = mode;
-      lifetimeStats.roomsTotal++;
-      builtRoomTypesEver[mode] = true;
-      addLog(`${def.name} wurde gebaut.`, 'fresh');
-      if(lifetimeStats.roomsTotal===1) unlockAchievement('firstRoom');
-      if(mode==='vault') unlockAchievement('vaultBuilt');
-      checkLexUnlocks();
-      checkAchievementsPassive();
-      renderAll(); save();
+
+    // Spike factory: drop spikes near end
+    if(t.spikeMode){
+      const endPt=gs.path[gs.path.length-Math.min(40,Math.floor(gs.path.length*0.2))];
+      if(endPt&&Math.hypot(endPt.x-t.x,endPt.y-t.y)<t.range){
+        t.timer=0;
+        // Place spike projectile that waits on path
+        gs.projs.push({
+          x:endPt.x+Math.random()*20-10,y:endPt.y+Math.random()*20-10,
+          vx:0,vy:0,dmg:t.dmg,aoe:0,pierceLeft:t.pierce,
+          chain:0,dot:false,slow:0,immune:[],
+          homing:false,target:null,hitSet:new Set(),
+          life:8000,dead:false,color:'#c0c040',speed:0,
+          ttype:'spike',leaddmg:t.leaddmg,towerId:t.id,isSpike:true
+        });
+      }
       return;
     }
-    if(cell.room){
-      const def = ROOM_TYPES[cell.room];
-      if(def) flashToast(`${def.icon} ${def.name} — ${def.desc}`);
-      else flashToast('👑 Die Königskammer — Herz der Kolonie.');
-    }
-  }
 
-  /* ===================== VAULT PRESTIGE TICKING (separate light tick) ===================== */
-  function vaultTick(){
-    const vaultRooms = roomsOfType('vault');
-    if(vaultRooms.length>0){
-      resources.prestige += vaultRooms.length * 0.05 * speedMult;
-    }
-  }
-
-  /* ===================== TABS ===================== */
-  function setupTabs(){
-    document.querySelectorAll('.tab-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        activeTab = btn.dataset.tab;
-        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b===btn));
-        document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active', p.dataset.tabpanel===activeTab));
-        document.getElementById('techPanelWide').style.display = activeTab==='tech' ? 'block':'none';
-        document.getElementById('lexPanelWide').style.display = activeTab==='lex' ? 'block':'none';
-        document.getElementById('achPanelWide').style.display = activeTab==='ach' ? 'block':'none';
-        renderAll();
+    // Mortar: targets highest-path bloon anywhere
+    if(t.type==='mortar'){
+      const liveBloons=bloons.filter(b=>!b.dead);
+      if(!liveBloons.length)return;
+      const tgt=liveBloons.reduce((m,b)=>b.pi>m.pi?b:m,liveBloons[0]);
+      t.timer=0;
+      gs.projs.push({
+        x:t.x,y:t.y,
+        vx:(tgt.x-t.x)/60,vy:(tgt.y-t.y)/60,
+        targetX:tgt.x,targetY:tgt.y,
+        dmg:t.dmg,aoe:t.aoe,pierceLeft:t.pierce,
+        chain:0,dot:false,slow:0,immune:[],
+        homing:false,target:null,hitSet:new Set(),
+        life:1200,dead:false,color:'#808080',speed:0,
+        ttype:'mortar',leaddmg:t.leaddmg,towerId:t.id,isMortar:true
       });
-    });
-  }
+      return;
+    }
 
-  function setupSpeedButtons(){
-    [1,2,3].forEach(s=>{
-      const btn = document.getElementById('speed'+s+'Btn');
-      if(!btn) return;
-      btn.addEventListener('click', ()=>{
-        speedMult = s;
-        document.querySelectorAll('.speed-btn').forEach(b=>b.classList.toggle('active', +b.dataset.speed===s));
-      });
-    });
-  }
-
-  /* ===================== LOG / TOAST ===================== */
-  function addLog(text, cls){
-    const time = ageStr();
-    logEntries.push({text,cls,time});
-    if(logEntries.length>80) logEntries.shift();
-    renderLog();
-  }
-  function renderLog(){
-    const list = document.getElementById('logList');
-    if(!list) return;
-    list.innerHTML = logEntries.slice(-50).map(e=>
-      `<li class="${e.cls||''}"><span class="log-time">${e.time}</span>${e.text}</li>`
-    ).reverse().join('');
-  }
-  let toastTimer=null;
-  function flashToast(msg){
-    const t = document.getElementById('toast');
-    if(!t) return;
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
-  }
-
-  /* ===================== SPECIES MODAL ===================== */
-  function showSpeciesModal(){
-    const app = document.getElementById('app');
-    const wrap = document.createElement('div');
-    wrap.innerHTML = speciesModalHtml();
-    document.body.appendChild(wrap.firstElementChild);
-    document.querySelectorAll('.species-card').forEach(card=>{
-      const pick = ()=>{
-        speciesKey = card.dataset.species;
-        const modal = document.getElementById('speciesModal');
-        if(modal) modal.remove();
-        addLog(`Die Kolonie hat sich als ${SPECIES[speciesKey].name} (${SPECIES[speciesKey].latin}) etabliert.`, 'fresh');
-        flashToast(`${SPECIES[speciesKey].icon} Art gewählt: ${SPECIES[speciesKey].name}`);
-        save();
-        renderAll();
-      };
-      card.addEventListener('click', pick);
-      card.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' ') pick(); });
-    });
-  }
-
-  /* ===================== INFO MODAL (room-build first-time tooltip helper) ===================== */
-  function showInfoModal(title, bodyHtml){
-    const wrap = document.createElement('div');
-    wrap.innerHTML = infoModalHtml(title, bodyHtml);
-    document.body.appendChild(wrap.firstElementChild);
-    document.getElementById('infoModalCloseBtn').addEventListener('click', ()=>{
-      const modal = document.getElementById('infoModal');
-      if(modal) modal.remove();
-    });
-  }
-
-  /* ===================== SAVE / LOAD ===================== */
-  function save(){
-    try{
-      localStorage.setItem(SAVE_KEY, JSON.stringify({
-        v:2, cells, resources, ants, antsCap, casteCounts, nurseryProgress,
-        mode:null, activeDepth, unlockedDepths, ageSec, nextRaidIn, raidWarningGiven,
-        logEntries, speciesKey, speedMult, seasonIdx, seasonElapsed, seasonsSeenSet,
-        techDone, unlockedRooms, achievementsUnlocked, lexUnlocked, builtRoomTypesEver, lifetimeStats
-      }));
-    }catch(e){ /* storage unavailable, ignore */ }
-  }
-  function load(){
-    try{
-      const raw = localStorage.getItem(SAVE_KEY);
-      if(!raw) return false;
-      const data = JSON.parse(raw);
-      if(data.v!==2) return false; // old/incompatible save -> fresh start
-      cells = data.cells; resources = data.resources; ants = data.ants;
-      antsCap = data.antsCap; casteCounts = data.casteCounts || {forager:0,gardener:0,nurse:0,soldier:0,scholar:0};
-      nurseryProgress = data.nurseryProgress;
-      activeDepth = data.activeDepth || 'd0';
-      unlockedDepths = data.unlockedDepths || ['d0'];
-      ageSec = data.ageSec; nextRaidIn = data.nextRaidIn;
-      raidWarningGiven = data.raidWarningGiven || false;
-      logEntries = data.logEntries || [];
-      speciesKey = data.speciesKey || null;
-      speedMult = data.speedMult || 1;
-      seasonIdx = data.seasonIdx || 0;
-      seasonElapsed = data.seasonElapsed || 0;
-      seasonsSeenSet = data.seasonsSeenSet || [SEASONS[0]];
-      techDone = data.techDone || {};
-      unlockedRooms = data.unlockedRooms || {};
-      achievementsUnlocked = data.achievementsUnlocked || {};
-      lexUnlocked = data.lexUnlocked || {};
-      builtRoomTypesEver = data.builtRoomTypesEver || {};
-      lifetimeStats = data.lifetimeStats || {leavesTotal:0,dugTotal:0,roomsTotal:0,raidsWon:0,raidsLost:0};
-      return true;
-    }catch(e){ return false; }
-  }
-
-  /* ===================== BOOT ===================== */
-  function boot(){
-    const app = document.getElementById('app');
-    app.innerHTML = appShellHtml();
-
-    const hadSave = load();
-    if(!hadSave){ freshState(true); }
-    checkLexUnlocks();
-
-    buildGridDom();
-    setupTabs();
-    setupSpeedButtons();
-
-    document.getElementById('digBtn').addEventListener('click', ()=>{
-      mode = (mode==='dig') ? null : 'dig';
-      updateModeUi();
-    });
-    document.getElementById('cancelBtn').addEventListener('click', ()=>{
-      mode = null; updateModeUi();
-    });
-    document.getElementById('resetBtn').addEventListener('click', ()=>{
-      if(confirm('Die gesamte Kolonie wirklich auflösen und neu beginnen?')){
-        localStorage.removeItem(SAVE_KEY);
-        speciesKey = null;
-        freshState(false);
-        buildGridDom();
-        renderAll();
-        renderLog();
-        updateModeUi();
-        if(!speciesKey) showSpeciesModal();
+    // Sniper: instant-hit, no projectile needed, 100% accuracy
+    if(t.sniperMode){
+      const liveBloons=bloons.filter(b=>!b.dead&&!b.frozen);
+      if(!liveBloons.length)return;
+      // Target: strong (highest HP)
+      const tgt=t.targetMode==='sniper'?liveBloons.reduce((m,b)=>b.pi>m.pi?b:m,liveBloons[0]):liveBloons[0];
+      t.timer=0;
+      // Instant damage
+      let dmgLeft=t.dmg;
+      const pierceLeft=t.pierce;
+      let hits=0;
+      const sorted=[...liveBloons].sort((a,b)=>b.pi-a.pi);
+      for(let i=0;i<sorted.length&&hits<pierceLeft;i++){
+        const b=sorted[i];
+        if(b.dead)continue;
+        if(b.immune.includes('sniper')&&!t.leaddmg)continue;
+        if(b.immune.includes('lead')&&!t.leaddmg)continue;
+        b.hp-=t.dmg;
+        if(t.slowFactor>0)b.slowed=2;
+        hits++;
+        if(b.hp<=0){killBloon(gs,b,t);continue;}
       }
-    });
-    document.querySelectorAll('.speed-btn').forEach(b=>b.classList.toggle('active', +b.dataset.speed===speedMult));
-
-    renderAll();
-    renderLog();
-    updateModeUi();
-
-    if(!speciesKey){
-      showSpeciesModal();
+      // Chain
+      if(t.chain>0){
+        sorted.slice(0,t.chain).forEach(b=>{if(!b.dead){b.hp-=t.dmg;if(b.hp<=0)killBloon(gs,b,t);}});
+      }
+      // Visual: brief line to target (just a quick proj)
+      if(tgt&&!tgt.dead)gs.projs.push({
+        x:t.x,y:t.y,vx:(tgt.x-t.x)/6,vy:(tgt.y-t.y)/6,
+        dmg:0,aoe:0,pierceLeft:0,chain:0,dot:false,slow:0,immune:[],
+        homing:false,target:null,hitSet:new Set(),
+        life:120,dead:false,color:t.color,speed:20,
+        ttype:'sniper_trail',leaddmg:false,towerId:t.id
+      });
+      return;
     }
 
-    setInterval(()=>{ tick(); vaultTick(); }, 1000);
+    // Normal towers: find target and fire projectiles
+    const targets=findTargets(t,bloons);
+    if(!targets.length)return;
+    t.timer=0;
+    fireFromTower(gs,t,targets);
+  });
+}
+
+function findTargets(t,bloons){
+  const inRange=bloons.filter(b=>{
+    if(b.dead||b.frozen>0)return false;
+    return Math.hypot(b.x-t.x,b.y-t.y)<=t.range;
+  });
+  if(!inRange.length)return[];
+
+  let sorted;
+  switch(t.targetMode){
+    case'last': sorted=inRange.sort((a,b)=>a.pi-b.pi);break;
+    case'strong': sorted=inRange.sort((a,b)=>b.hp-a.hp);break;
+    case'close': sorted=inRange.sort((a,b)=>Math.hypot(a.x-t.x,a.y-t.y)-Math.hypot(b.x-t.x,b.y-t.y));break;
+    default: sorted=inRange.sort((a,b)=>b.pi-a.pi);break;// first
+  }
+  if(t.homing)return[inRange.reduce((m,b)=>b.hp>m.hp?b:m,inRange[0])];
+  const cnt=t.spread>1?Math.min(t.spread,sorted.length):1;
+  return sorted.slice(0,cnt);
+}
+
+function fireFromTower(gs,t,targets){
+  targets.forEach((tgt,i)=>{
+    if(!tgt||tgt.dead)return;
+    const dx=tgt.x-t.x,dy=tgt.y-t.y,dist=Math.sqrt(dx*dx+dy*dy)||1;
+    const spd=14;
+
+    const angles=t.triple?[-0.22,0,0.22]:[0];
+    angles.forEach(a=>{
+      const vx=(dx/dist)*spd*Math.cos(a)-(dy/dist)*spd*Math.sin(a);
+      const vy=(dy/dist)*spd*Math.cos(a)+(dx/dist)*spd*Math.sin(a);
+      gs.projs.push({
+        x:t.x,y:t.y,vx,vy,
+        dmg:t.dmg,aoe:t.aoe||0,
+        pierceLeft:t.pierce||1,
+        chain:t.chain||0,
+        dot:t.dot||false,dotDmg:t.dotDmg||0,dotDur:t.dotDur||0,
+        slow:t.slowFactor||0,
+        immune:[],
+        homing:t.homing&&a===0,target:t.homing?tgt:null,
+        hitSet:new Set(),
+        life:2500,dead:false,
+        color:t.color,speed:spd,
+        ttype:t.type,leaddmg:t.leaddmg||false,
+        towerId:t.id
+      });
+    });
+  });
+}
+
+// ================================================================
+// PROJECTILE UPDATE
+// ================================================================
+function updateProjs(projs,bloons,gs,dt){
+  for(let i=projs.length-1;i>=0;i--){
+    const p=projs[i];
+    if(p.dead){projs.splice(i,1);continue;}
+
+    // Spike: stationary, waits for bloons
+    if(p.isSpike){
+      p.life-=dt;
+      if(p.life<=0){p.dead=true;projs.splice(i,1);continue;}
+      for(let j=0;j<bloons.length;j++){
+        const b=bloons[j];
+        if(b.dead||p.hitSet.has(b.id))continue;
+        if(Math.hypot(b.x-p.x,b.y-p.y)<12){
+          hitProj(p,b,bloons,gs);
+          if(p.pierceLeft<=0){p.dead=true;break;}
+        }
+      }
+      continue;
+    }
+
+    // Mortar: flies to target location then explodes
+    if(p.isMortar){
+      p.life-=dt;
+      const dx=p.targetX-p.x,dy=p.targetY-p.y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<12||p.life<=0){
+        // Explode
+        bloons.forEach(b=>{
+          if(!b.dead&&Math.hypot(b.x-p.x,b.y-p.y)<p.aoe)hitProj(p,b,bloons,gs);
+        });
+        p.dead=true;projs.splice(i,1);continue;
+      }
+      p.x+=dx/d*8*(dt/16);p.y+=dy/d*8*(dt/16);
+      continue;
+    }
+
+    // Homing
+    if(p.homing&&p.target&&!p.target.dead){
+      const dx=p.target.x-p.x,dy=p.target.y-p.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<10){
+        hitProj(p,p.target,bloons,gs);
+        if(p.aoe>0)bloons.forEach(b2=>{if(!b2.dead&&b2!==p.target&&Math.hypot(b2.x-p.x,b2.y-p.y)<p.aoe)hitProj(p,b2,bloons,gs);});
+        p.dead=true;projs.splice(i,1);continue;
+      }
+      p.vx=dx/d*p.speed;p.vy=dy/d*p.speed;
+    }
+
+    p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);
+    p.life-=dt;
+    if(p.life<=0){p.dead=true;projs.splice(i,1);continue;}
+
+    let hit=false;
+    for(let j=bloons.length-1;j>=0;j--){
+      const b=bloons[j];
+      if(b.dead||p.hitSet.has(b.id))continue;
+      if(Math.hypot(b.x-p.x,b.y-p.y)<(b.big?22:10)){
+        hitProj(p,b,bloons,gs);
+        if(p.aoe>0){
+          bloons.forEach(b2=>{if(!b2.dead&&b2!==b&&!p.hitSet.has(b2.id)&&Math.hypot(b2.x-p.x,b2.y-p.y)<p.aoe)hitProj(p,b2,bloons,gs);});
+          p.dead=true;hit=true;break;
+        }
+        if(p.pierceLeft<=0){p.dead=true;hit=true;break;}
+      }
+    }
+    if(hit)projs.splice(i,1);
+  }
+}
+
+function hitProj(p,b,bloons,gs){
+  if(b.immune.includes(p.ttype)&&!p.leaddmg)return;
+  if(p.hitSet.has(b.id))return;
+  p.hitSet.add(b.id);
+  p.pierceLeft--;
+  // Chain
+  if(p.chain>0){
+    const nearby=bloons.filter(b2=>!b2.dead&&b2!==b&&!p.hitSet.has(b2.id)&&Math.hypot(b2.x-b.x,b2.y-b.y)<100);
+    nearby.slice(0,p.chain).forEach(b2=>{
+      p.hitSet.add(b2.id);
+      b2.hp-=p.dmg;
+      if(b2.hp<=0)killBloon(gs,b2,p);
+    });
+  }
+  b.hp-=p.dmg;
+  if(p.slow>0)b.slowed=2.5;
+  if(p.dot&&p.dotDmg>0){b.dotTimer=p.dotDur;b.dotDmg=p.dotDmg;}
+  if(b.hp<=0)killBloon(gs,b,p);
+}
+
+function killBloon(gs,b,source,fromDot){
+  if(b.dead)return;
+  b.dead=true;
+  gs.kills++;
+  gs.money=Math.floor(gs.money+(b.reward||1)*(gs.mult||1));
+  // Kill credit
+  if(source&&source.towerId){
+    const t=gs.towers.find(x=>x.id===source.towerId);
+    if(t)t.kills++;
+  }
+  // Spawn children
+  const bt=BT[b.type];
+  if(bt&&bt.children&&bt.children.length>0&&gs.path&&gs.path.length>0){
+    bt.children.forEach(cid=>{
+      const cb=BT[cid];if(!cb)return;
+      gs.bloons.push({
+        id:Math.random().toString(36).slice(2),
+        type:cid,
+        hp:Math.ceil(cb.hp*(gs.hpMult||1)),
+        maxHp:Math.ceil(cb.hp*(gs.hpMult||1)),
+        speed:cb.speed,
+        reward:cb.reward||1,
+        immune:[...(cb.immune||[])],
+        color:cb.color,icon:cb.icon,
+        x:b.x,y:b.y,pi:b.pi,
+        dead:false,frozen:0,slowed:0,dotTimer:0,dotDmg:0,
+        big:cb.big||false,boss:cb.boss||false
+      });
+    });
+  }
+}
+
+// ================================================================
+// BOT AI — intelligent, tier-based
+// ================================================================
+function updateBotAI(gs,bot,dt){
+  bot.buyTimer=(bot.buyTimer||0)+dt;
+  // Reaction interval depends on tier (master reacts faster)
+  const reactionTime={noob:3000,beginner:2500,normal:2000,good:1600,expert:1200,master:900}[bot.tier]||2000;
+  if(bot.buyTimer<reactionTime)return;
+  bot.buyTimer=0;
+
+  const money=bot.money;
+  const wave=bot.wave||gs.wave;
+  const towerCount=bot.towers.length;
+
+  // ----- NOOB: random cheap tower, never upgrades -----
+  if(bot.tier==='noob'){
+    if(towerCount>=6||money<150)return;
+    const aff=TTYPES.filter(t=>t.cost<=money&&t.cost<=500);
+    if(!aff.length)return;
+    const chosen=aff[Math.floor(Math.random()*aff.length)];
+    botBuyTower(gs,bot,chosen);
+    return;
   }
 
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
+  // ----- BEGINNER: dart/bomb focus, rare upgrade -----
+  if(bot.tier==='beginner'){
+    // Rarely upgrade
+    if(towerCount>2&&Math.random()<0.15){
+      const ut=bot.towers.find(t=>t.p1lvl<1&&t.p1&&t.p1[0]&&bot.money>=t.p1[0].cost);
+      if(ut){bot.money-=ut.p1[0].cost;applyEffect(ut,ut.p1[0].e);ut.p1lvl++;return;}
+    }
+    if(towerCount>=8||money<200)return;
+    const prio=['dart','bomb','tack','ice'];
+    const chosen=prio.map(id=>TTYPES.find(t=>t.id===id&&t.cost<=money)).find(Boolean)||TTYPES.find(t=>t.cost<=money);
+    if(chosen)botBuyTower(gs,bot,chosen);
+    return;
   }
 
-})();
+  // ----- NORMAL: balanced, upgrades path 1 to lvl 2 -----
+  if(bot.tier==='normal'){
+    // Upgrade existing towers up to p1lvl 2
+    if(towerCount>1&&Math.random()<0.35){
+      const ut=bot.towers.filter(t=>t.p1lvl<2&&t.p1&&t.p1[t.p1lvl]&&bot.money>=t.p1[t.p1lvl].cost)
+                         .sort((a,b)=>b.kills-a.kills)[0];
+      if(ut){bot.money-=ut.p1[ut.p1lvl].cost;applyEffect(ut,ut.p1[ut.p1lvl].e);ut.p1lvl++;return;}
+    }
+    if(towerCount>=10||money<250)return;
+    const prio=['dart','bomb','ice','tack','lightning','boomr'];
+    const chosen=prio.map(id=>TTYPES.find(t=>t.id===id&&t.cost<=money)).find(Boolean)||TTYPES.find(t=>t.cost<=money);
+    if(chosen)botBuyTower(gs,bot,chosen);
+    return;
+  }
 
+  // ----- GOOD: smart upgrades, synergy awareness -----
+  if(bot.tier==='good'){
+    // Prefer upgrading high-kill towers
+    if(towerCount>2&&Math.random()<0.5){
+      const best=bot.towers.filter(t=>t.p1lvl<3&&t.p1&&t.p1[t.p1lvl]).sort((a,b)=>b.kills-a.kills)[0];
+      if(best&&bot.money>=best.p1[best.p1lvl].cost){
+        bot.money-=best.p1[best.p1lvl].cost;applyEffect(best,best.p1[best.p1lvl].e);best.p1lvl++;return;
+      }
+    }
+    // Save for sniper if wave>10
+    if(wave>=10&&!bot.towers.find(t=>t.type==='sniper')&&!bot.savingFor){
+      bot.savingFor='sniper';
+    }
+    if(bot.savingFor==='sniper'){
+      const sn=TTYPES.find(t=>t.id==='sniper');
+      if(bot.money>=sn.cost){bot.savingFor=null;botBuyTower(gs,bot,sn);return;}
+      if(bot.money<sn.cost*0.6)return;// saving
+    }
+    if(towerCount>=12||money<300)return;
+    const prio=['bomb','ice','lightning','dart','sniper','boomr','tack','wizard'];
+    const chosen=prio.map(id=>TTYPES.find(t=>t.id===id&&t.cost<=money)).find(Boolean)||TTYPES.find(t=>t.cost<=money);
+    if(chosen)botBuyTower(gs,bot,chosen);
+    return;
+  }
+
+  // ----- EXPERT: dual path, saves for strong towers, checks MOAB waves -----
+  if(bot.tier==='expert'){
+    // Upgrade: alternate p1 and p2
+    if(towerCount>1&&Math.random()<0.55){
+      const best=bot.towers
+        .filter(t=>(t.p1lvl<4||t.p2lvl<4)&&!t.supportMode)
+        .sort((a,b)=>b.kills-a.kills)[0];
+      if(best){
+        // Choose path
+        const usePath1=best.p1lvl<=best.p2lvl&&best.p1lvl<4;
+        const pth=usePath1?best.p1:best.p2;
+        const lvl=usePath1?best.p1lvl:best.p2lvl;
+        if(pth&&lvl<pth.length&&bot.money>=pth[lvl].cost){
+          bot.money-=pth[lvl].cost;applyEffect(best,pth[lvl].e);
+          if(usePath1)best.p1lvl++;else best.p2lvl++;
+          return;
+        }
+      }
+    }
+    // Save for super monkey on MOAB waves
+    if(wave>=18&&!bot.towers.find(t=>t.type==='super')&&!bot.savingFor){
+      bot.savingFor='super';
+    }
+    if(bot.savingFor){
+      const target=TTYPES.find(t=>t.id===bot.savingFor);
+      if(target&&bot.money>=target.cost){bot.savingFor=null;botBuyTower(gs,bot,target);return;}
+      if(target&&bot.money<target.cost*0.5)return;
+    }
+    if(towerCount>=14||money<400)return;
+    const prio=wave>=15?['super','heli','sniper','wizard','bomb','lightning','ninja']:
+                        ['bomb','sniper','lightning','wizard','dart','ice'];
+    const chosen=prio.map(id=>TTYPES.find(t=>t.id===id&&t.cost<=money)).find(Boolean)||TTYPES.find(t=>t.cost<=money&&t.cost>300);
+    if(chosen)botBuyTower(gs,bot,chosen);
+    return;
+  }
+
+  // ----- MASTER: optimal, saves for MOAB counters, max upgrades -----
+  if(bot.tier==='master'){
+    // Aggressively upgrade top towers to max on both paths
+    if(towerCount>0&&Math.random()<0.65){
+      const best=bot.towers
+        .filter(t=>!t.supportMode&&(t.p1lvl<4||t.p2lvl<4))
+        .sort((a,b)=>b.kills-a.kills)[0];
+      if(best){
+        const usePath1=best.p1lvl<4&&(best.p2lvl>=best.p1lvl||best.p2lvl>=4);
+        const pth=usePath1?best.p1:best.p2;
+        const lvl=usePath1?best.p1lvl:best.p2lvl;
+        if(pth&&lvl<pth.length&&bot.money>=pth[lvl].cost){
+          bot.money-=pth[lvl].cost;applyEffect(best,pth[lvl].e);
+          if(usePath1)best.p1lvl++;else best.p2lvl++;
+          return;
+        }
+      }
+    }
+    // Save for village/super monkey if not present
+    if(!bot.towers.find(t=>t.type==='village')&&wave>=5&&!bot.savingFor){bot.savingFor='village';}
+    if(!bot.towers.find(t=>t.type==='super')&&wave>=15&&bot.savingFor!=='super')bot.savingFor='super';
+    if(bot.savingFor){
+      const target=TTYPES.find(t=>t.id===bot.savingFor);
+      if(target&&bot.money>=target.cost){bot.savingFor=null;botBuyTower(gs,bot,target);return;}
+      if(target&&bot.money<target.cost*0.3)return;
+    }
+    if(towerCount>=16||money<500)return;
+    const prio=wave>=30?['super','heli','sniper','village','wizard','druid','alch','bomb','lightning']:
+               wave>=15?['super','sniper','bomb','village','lightning','wizard']:
+               ['bomb','sniper','lightning','ice','dart','wizard','ninja'];
+    const chosen=prio.map(id=>TTYPES.find(t=>t.id===id&&t.cost<=money)).find(Boolean)||TTYPES.find(t=>t.cost<=money&&t.cost>400);
+    if(chosen)botBuyTower(gs,bot,chosen);
+    return;
+  }
+}
+
+function botBuyTower(gs,bot,tt){
+  if(!tt||bot.money<tt.cost)return;
+  // Find valid position: not on path, not overlapping other towers, inside mini canvas
+  let placed=false;
+  for(let attempt=0;attempt<80;attempt++){
+    const x=20+Math.random()*(BOT_CW-40);
+    const y=20+Math.random()*(BOT_CH-40);
+    // Check path clearance
+    const pathOk=bot.path.every(p=>Math.hypot(p.x-x,p.y-y)>18);
+    // Check tower overlap
+    const overlapOk=bot.towers.every(t=>Math.hypot(t.x-x,t.y-y)>22);
+    if(pathOk&&overlapOk){
+      bot.money-=tt.cost;
+      placeTower(bot,tt,x,y,false);
+      placed=true;
+      break;
+    }
+  }
+}
+
+// ================================================================
+// RENDER — MAIN CANVAS
+// ================================================================
+function renderGame(){
+  if(!GS)return;
+  const canvas=document.getElementById('gameCanvas');
+  const ctx=canvas.getContext('2d');
+  const gs=GS;
+
+  // Background
+  ctx.fillStyle=CMAP.bg||'#2a7018';ctx.fillRect(0,0,CW,CH);
+  drawCheckerboard(ctx,CW,CH,24);
+  drawPathFull(ctx,gs.scaledPts,false);
+
+  // Range preview
+  if(selTowerType&&gs.hoverX>0){
+    const tt=TTYPES.find(t=>t.id===selTowerType);
+    if(tt&&tt.range<9000){
+      ctx.globalAlpha=0.12;ctx.fillStyle='#ffffff';
+      ctx.beginPath();ctx.arc(gs.hoverX,gs.hoverY,tt.range,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=0.3;ctx.strokeStyle='#ffffff';ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(gs.hoverX,gs.hoverY,tt.range,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=0.5;ctx.font='18px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(tt.icon,gs.hoverX,gs.hoverY);
+      ctx.globalAlpha=1;
+    }
+  }
+
+  // Towers
+  gs.towers.forEach(t=>{
+    if(selPlaced&&selPlaced.id===t.id&&t.range<9000){
+      ctx.globalAlpha=0.12;ctx.fillStyle='#ffffff';
+      ctx.beginPath();ctx.arc(t.x,t.y,t.range,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=0.25;ctx.strokeStyle='#ffffff';ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(t.x,t.y,t.range,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+    drawTower(ctx,t,14,false);
+  });
+
+  // Projectiles
+  gs.projs.forEach(p=>{
+    if(p.dead)return;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.aoe>0?5:3,0,Math.PI*2);ctx.fill();
+  });
+
+  // Bloons
+  gs.bloons.forEach(b=>drawBloon(ctx,b,false));
+
+  // Update details panel if tower selected
+  if(selPlaced){
+    const still=gs.towers.find(t=>t.id===selPlaced.id);
+    if(still)showTowerDetails(still);
+    else{selPlaced=null;document.getElementById('towerDetails').textContent='Turm auswählen oder platzieren';}
+  }
+}
+
+function drawCheckerboard(ctx,w,h,sz){
+  ctx.globalAlpha=0.06;ctx.fillStyle='#000';
+  for(let i=0;i<w;i+=sz)for(let j=0;j<h;j+=sz)
+    if((Math.floor(i/sz)+Math.floor(j/sz))%2===0)ctx.fillRect(i,j,sz,sz);
+  ctx.globalAlpha=1;
+}
+
+function drawPathFull(ctx,pts,mini){
+  if(!pts||pts.length<2)return;
+  const w1=mini?6:26,w2=mini?4:20;
+  ctx.strokeStyle='#b89030';ctx.lineWidth=w1;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.stroke();
+  ctx.strokeStyle='#d8b050';ctx.lineWidth=w2;
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.stroke();
+  const sr=mini?3:7;
+  ctx.fillStyle='#44ee70';ctx.beginPath();ctx.arc(pts[0].x,pts[0].y,sr,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#ee4444';ctx.beginPath();ctx.arc(pts[pts.length-1].x,pts[pts.length-1].y,sr,0,Math.PI*2);ctx.fill();
+}
+
+function drawTower(ctx,t,sz,mini){
+  // Shadow
+  ctx.globalAlpha=0.25;ctx.fillStyle='#000';
+  ctx.beginPath();ctx.ellipse(t.x,t.y+sz*0.55,sz*0.65,sz*0.22,0,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+  // Base
+  ctx.fillStyle=t.color||'#888';
+  ctx.beginPath();ctx.arc(t.x,t.y,sz,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(t.x,t.y,sz,0,Math.PI*2);ctx.stroke();
+  // Icon
+  ctx.font=`${sz}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(t.icon,t.x,t.y);
+  if(!mini){
+    const stars=(t.p1lvl||0)+(t.p2lvl||0);
+    if(stars>0){ctx.fillStyle='#ffcc00';ctx.font='7px Arial';ctx.fillText('★'.repeat(Math.min(stars,8)),t.x,t.y+sz+5);}
+  }
+  if(selPlaced&&selPlaced.id===t.id){
+    ctx.strokeStyle='#ffcc00';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(t.x,t.y,sz+2,0,Math.PI*2);ctx.stroke();
+  }
+}
+
+function drawBloon(ctx,b,mini){
+  if(b.dead)return;
+  const r=b.big?(b.boss?20:14):(mini?4:8);
+  if(b.boss&&!mini){
+    ctx.globalAlpha=0.25;ctx.fillStyle=b.color;
+    ctx.beginPath();ctx.arc(b.x,b.y,r+10,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+  }
+  ctx.fillStyle=b.frozen>0?'#6eb0ff':b.color;
+  ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=mini?0.5:1.2;
+  ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.stroke();
+  if(!mini&&b.hp<b.maxHp){
+    const bw=r*2.2;
+    ctx.fillStyle='#222';ctx.fillRect(b.x-r,b.y-r-5,bw,3);
+    ctx.fillStyle=b.hp/b.maxHp>0.5?'#44ee70':'#ee3333';
+    ctx.fillRect(b.x-r,b.y-r-5,bw*(b.hp/b.maxHp),3);
+  }
+  if(!mini){
+    ctx.font=b.big?'13px serif':'8px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(b.icon,b.x,b.y);
+  }
+}
+
+// ================================================================
+// BOT SCREENS RENDER
+// ================================================================
+function renderBotScreens(){
+  if(!GS)return;
+  GS.bots.forEach(b=>{
+    const canvas=document.getElementById('bcanvas-'+b.id);
+    if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle=CMAP.bg||'#2a7018';ctx.fillRect(0,0,BOT_CW,BOT_CH);
+    drawCheckerboard(ctx,BOT_CW,BOT_CH,12);
+    drawPathFull(ctx,b.scaledPts,true);
+    b.towers.forEach(t=>{
+      ctx.font='9px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(t.icon,t.x,t.y);
+    });
+    b.bloons.forEach(bl=>drawBloon(ctx,bl,true));
+    b.projs.forEach(p=>{
+      if(p.dead)return;
+      ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,1.5,0,Math.PI*2);ctx.fill();
+    });
+    const ll=document.getElementById('blives-'+b.id);
+    if(ll){
+      const tierColor={noob:'#ff8888',beginner:'#ffbb44',normal:'#ffff44',good:'#88ff88',expert:'#44bbff',master:'#cc88ff'}[b.tier]||'#fff';
+      ll.innerHTML=b.alive?`<span style="color:${tierColor}">${b.name}</span> ❤️${b.lives} 💰${b.money}`:`<span style="color:#ff4040">💀 ${b.name}</span>`;
+    }
+    if(!b.alive){
+      ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(0,0,BOT_CW,BOT_CH);
+      ctx.fillStyle='#ff4040';ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('💀',BOT_CW/2,BOT_CH/2);
+    }
+  });
+}
+
+function buildBotScreens(){
+  const area=document.getElementById('botArea');area.innerHTML='';
+  GS.bots.forEach(b=>{
+    const div=document.createElement('div');
+    div.className='bot-screen';div.id='bscreen-'+b.id;
+    div.style.borderColor=b.color;
+    div.innerHTML=`<div class="bot-label" id="blabel-${b.id}"><span id="blives-${b.id}" style="color:${b.color}">${b.name}</span><span style="color:var(--muted)">${b.elo} ELO</span></div><canvas class="bot-canvas" id="bcanvas-${b.id}" width="${BOT_CW}" height="${BOT_CH}"></canvas>`;
+    area.appendChild(div);
+  });
+}
+
+// ================================================================
+// HUD
+// ================================================================
+function updateHUD(){
+  if(!GS)return;
+  document.getElementById('hudLives').textContent=GS.lives;
+  document.getElementById('hudMoney').textContent=GS.money;
+  document.getElementById('hudWave').textContent=GS.wave;
+  document.getElementById('hudBloons').textContent=GS.bloons.length+(GS.waveQueue?GS.waveQueue.length:0);
+  if(GS.lives<=0&&!gameOver)endGame(false);
+}
+function togglePause(){paused=!paused;document.getElementById('pauseBtn').textContent=paused?'▶':'⏸';}
+function toggleSpeed(){
+  gameSpeed=gameSpeed===1?2:gameSpeed===2?3:1;
+  document.getElementById('speedBtn').textContent=gameSpeed===1?'2x':gameSpeed===2?'3x':'1x';
+}
+
+// ================================================================
+// END GAME
+// ================================================================
+function endGame(won){
+  if(gameOver)return;
+  gameOver=true;cancelAnimationFrame(RAF);
+  const gs=GS;const total=gs.bots.length+1;
+
+  // Rank: bots that have more kills+towers beat us
+  let place=1;
+  gs.bots.forEach(b=>{
+    const bp=b.towers.length*15+b.kills+b.lives*2;
+    const mp=gs.towers.length*15+gs.kills+gs.lives*2;
+    if(bp>mp)place++;
+  });
+  if(!won)place=total;
+
+  const K=32;let eloChange=0;
+  gs.bots.forEach(b=>{
+    const myScore=(total-place)/(Math.max(1,total-1));
+    const exp=1/(1+Math.pow(10,(b.elo-P.elo)/400));
+    eloChange+=K*(myScore-exp);
+  });
+  if(gs.bots.length)eloChange/=gs.bots.length;
+  eloChange+=Math.floor(gs.kills/12);
+  if(won)eloChange+=60;
+  eloChange=Math.round(eloChange);
+
+  const oldElo=P.elo;
+  P.elo=Math.max(0,P.elo+eloChange);
+  P.games++;if(place===1)P.wins++;
+  P.maxWave=Math.max(P.maxWave,gs.wave);
+  P.totalKills+=gs.kills;P.sumPlace+=place;
+  P.peakElo=Math.max(P.peakElo,P.elo);
+  P.hist=P.hist||[];
+  P.hist.push({place,tot:total,wave:gs.wave,kills:gs.kills,de:eloChange});
+  if(P.hist.length>25)P.hist.shift();
+  save();
+  BL.forEach(b=>{b.elo=Math.max(200,b.elo+Math.round((Math.random()-.5)*30));});
+  localStorage.setItem('btdBL5b',JSON.stringify(BL));
+
+  document.getElementById('endTitle').textContent=won?'🏆 Gewonnen!':gs.lives<=0?'💀 Alle Leben verloren!':'Spiel beendet';
+  document.getElementById('endTitle').style.color=won?'#44ee70':'#ff4040';
+  document.getElementById('endStats').innerHTML=
+    `Platz <b style="color:var(--gold)">${place}</b> von <b style="color:var(--gold)">${total}</b><br>`+
+    `Welle: <b>${gs.wave}</b>/${WAVES.length}<br>`+
+    `Abschüsse: <b>${gs.kills}</b><br>`+
+    `Türme: <b>${gs.towers.length}</b><br>`+
+    `ELO: <b>${oldElo}</b> → <b>${P.elo}</b> <span style="color:${eloChange>=0?'#44ee70':'#ff4040'}">${eloChange>=0?'+':''}${eloChange}</span>`;
+  document.getElementById('endOverlay').style.display='flex';
+  refreshTopUI();
+}
+
+function goHome(){
+  cancelAnimationFrame(RAF);
+  document.getElementById('endOverlay').style.display='none';
+  showScreen('homeScreen');
+  renderMapList();refreshTopUI();
+}
 </script>
 </body>
 </html>
