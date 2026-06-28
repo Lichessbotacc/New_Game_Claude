@@ -6,23 +6,32 @@
 <title>Myrmex — Ameisenkolonie</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --soil-void:   #160e09;
     --soil-panel:  #2a1c12;
     --soil-panel-2:#342417;
+    --soil-panel-3:#1f140d;
     --tunnel:      #6b4a30;
     --tunnel-lit:  #8a6440;
     --hairline:    #4a3422;
+    --hairline-lit:#5e4530;
     --leaf:        #8bab57;
     --leaf-dim:    #5c7438;
     --fungus:      #e3a35c;
     --fungus-dim:  #a9712f;
+    --water:       #6fa8b8;
+    --water-dim:   #3f6c7a;
     --cream:       #f3e8d3;
     --cream-dim:   #c9b896;
+    --cream-faint: #8a7a60;
     --alert:       #c8593c;
+    --alert-dim:   #8a3c28;
     --gold:        #d9b35b;
+    --gold-dim:    #a9863f;
+    --science:     #8e7bc4;
+    --science-dim: #5f4f8c;
     --shadow-deep: rgba(0,0,0,0.45);
     --r-card: 10px;
   }
@@ -43,10 +52,11 @@
   }
   .mono{font-family:'Space Mono', monospace;}
   button{font-family:inherit;}
+  p{margin:0 0 8px;}
 
   /* ---------- layout ---------- */
   .app{
-    max-width:1180px;
+    max-width:1280px;
     margin:0 auto;
     padding:18px 18px 40px;
   }
@@ -76,9 +86,22 @@
     color:var(--cream-dim);
     font-family:'Fraunces', serif;
   }
+  .species-pill{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--soil-panel);
+    border:1px solid var(--hairline);
+    border-radius:999px;
+    padding:5px 12px;
+    font-size:0.72rem;
+    color:var(--cream-dim);
+    cursor:default;
+  }
+  .species-pill .sp-ic{font-size:1rem;}
   .resources{
     display:flex;
-    gap:14px;
+    gap:10px;
     flex-wrap:wrap;
   }
   .res-chip{
@@ -94,18 +117,72 @@
   .res-chip .val{font-family:'Space Mono',monospace; font-size:0.92rem;}
   .res-chip .lbl{font-size:0.68rem; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.06em;}
   .res-chip.warn .val{color:var(--alert);}
+  .res-chip.cap .val{color:var(--gold);}
+
+  .season-strip{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    background:var(--soil-panel);
+    border:1px solid var(--hairline);
+    border-radius:var(--r-card);
+    padding:10px 16px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+  .season-info{display:flex; align-items:center; gap:10px; font-size:0.85rem;}
+  .season-icon{font-size:1.5rem;}
+  .season-bar-track{
+    width:160px; height:6px; border-radius:4px; background:var(--soil-panel-3);
+    overflow:hidden; border:1px solid var(--hairline);
+  }
+  .season-bar-fill{height:100%; background:linear-gradient(90deg, var(--leaf-dim), var(--leaf)); transition:width .4s;}
+  .season-name{font-weight:600;}
+  .season-desc{color:var(--cream-dim); font-size:0.76rem;}
 
   .layout{
     display:grid;
-    grid-template-columns:248px 1fr;
+    grid-template-columns:268px 1fr;
     gap:18px;
     align-items:start;
   }
-  @media (max-width: 820px){
+  @media (max-width: 880px){
     .layout{grid-template-columns:1fr;}
   }
 
-  /* ---------- sidebar ---------- */
+  /* ---------- tabs ---------- */
+  .tabbar{
+    display:flex;
+    gap:4px;
+    margin-bottom:14px;
+    background:var(--soil-panel-3);
+    border-radius:999px;
+    padding:4px;
+    border:1px solid var(--hairline);
+  }
+  .tab-btn{
+    flex:1;
+    background:transparent;
+    border:none;
+    color:var(--cream-dim);
+    font-size:0.74rem;
+    padding:7px 4px;
+    border-radius:999px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    transition:background .15s, color .15s;
+  }
+  .tab-btn .ic{font-size:0.95rem;}
+  .tab-btn:hover{color:var(--cream);}
+  .tab-btn.active{background:var(--soil-panel); color:var(--gold); box-shadow:0 0 0 1px var(--hairline-lit) inset;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* ---------- sidebar / panel ---------- */
   .panel{
     background:var(--soil-panel);
     border:1px solid var(--hairline);
@@ -121,6 +198,17 @@
     align-items:center;
     gap:6px;
   }
+  .panel h2 .count-badge{
+    margin-left:auto;
+    font-family:'Space Mono',monospace;
+    font-size:0.68rem;
+    color:var(--cream-dim);
+    background:var(--soil-panel-3);
+    border-radius:6px;
+    padding:1px 6px;
+  }
+  .panel-note{font-size:0.72rem; color:var(--cream-faint); line-height:1.5; margin-top:6px;}
+
   .build-btn{
     width:100%;
     display:flex;
@@ -145,11 +233,13 @@
     box-shadow:0 0 0 1px var(--gold) inset;
   }
   .build-btn.disabled{opacity:0.45; cursor:not-allowed;}
+  .build-btn.locked{opacity:0.4; cursor:not-allowed; position:relative;}
   .build-btn .ic{font-size:1.3rem; line-height:1.2; flex-shrink:0;}
   .build-btn .meta{flex:1; min-width:0;}
-  .build-btn .name{font-weight:600; font-size:0.88rem;}
+  .build-btn .name{font-weight:600; font-size:0.88rem; display:flex; align-items:center; gap:6px;}
   .build-btn .desc{font-size:0.72rem; color:var(--cream-dim); margin-top:2px; line-height:1.3;}
   .build-btn .cost{font-size:0.7rem; font-family:'Space Mono',monospace; margin-top:4px; color:var(--fungus);}
+  .lock-tag{font-size:0.6rem; background:var(--soil-panel-3); border:1px solid var(--hairline); border-radius:5px; padding:1px 5px; color:var(--cream-faint);}
 
   .stat-row{
     display:flex;
@@ -180,6 +270,40 @@
   }
   .cancel-btn:hover{border-color:var(--alert); color:var(--alert);}
 
+  /* caste assignment sliders */
+  .caste-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 0;
+    border-bottom:1px dashed var(--hairline);
+  }
+  .caste-row:last-child{border-bottom:none;}
+  .caste-row .ic{font-size:1.1rem; width:22px; text-align:center;}
+  .caste-row .lbl{flex:1; font-size:0.78rem;}
+  .caste-row .ctrl{display:flex; align-items:center; gap:6px;}
+  .caste-row button{
+    width:22px; height:22px;
+    border-radius:5px;
+    border:1px solid var(--hairline);
+    background:var(--soil-panel-2);
+    color:var(--cream);
+    cursor:pointer;
+    font-size:0.85rem;
+    line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .caste-row button:hover{border-color:var(--gold);}
+  .caste-row button:disabled{opacity:0.3; cursor:not-allowed;}
+  .caste-row .num{
+    font-family:'Space Mono',monospace; font-size:0.82rem; width:22px; text-align:center;
+  }
+  .caste-total-row{
+    display:flex; justify-content:space-between; font-size:0.74rem; color:var(--cream-faint);
+    margin-top:8px; padding-top:8px; border-top:1px solid var(--hairline);
+  }
+  .caste-total-row.over{color:var(--alert);}
+
   /* ---------- board ---------- */
   .board-wrap{
     background:
@@ -190,6 +314,29 @@
     overflow:auto;
     position:relative;
   }
+  .depth-tabs{
+    display:flex;
+    gap:6px;
+    margin-bottom:14px;
+  }
+  .depth-tab{
+    background:var(--soil-panel-2);
+    border:1px solid var(--hairline);
+    color:var(--cream-dim);
+    border-radius:8px;
+    padding:6px 12px;
+    font-size:0.76rem;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .depth-tab.active{border-color:var(--gold); color:var(--gold); background:#3a2a16;}
+  .depth-tab.locked{opacity:0.4; cursor:not-allowed;}
+  .depth-tab .badge-new{
+    background:var(--alert); color:var(--cream); font-size:0.55rem; padding:1px 4px; border-radius:4px;
+  }
+
   .tunnel-grid{
     display:grid;
     position:relative;
@@ -229,6 +376,12 @@
   .cell.room-fungus{background:linear-gradient(145deg, #f0b56e, var(--fungus-dim));}
   .cell.room-nursery{background:linear-gradient(145deg, #fbf1de, #cdb986); color:#3a2c14;}
   .cell.room-barracks{background:linear-gradient(145deg, #d8714f, #8e3a26);}
+  .cell.room-storage{background:linear-gradient(145deg, #c9a86a, #8a6a35);}
+  .cell.room-water{background:linear-gradient(145deg, #8fcbdb, var(--water-dim));}
+  .cell.room-compost{background:linear-gradient(145deg, #7a6a4a, #4a3e28);}
+  .cell.room-lab{background:linear-gradient(145deg, #b6a4e8, var(--science-dim));}
+  .cell.room-dairy{background:linear-gradient(145deg, #e8d9a0, #b39b54);}
+  .cell.room-vault{background:linear-gradient(145deg, #fff0c2, #c9a23a);}
   .cell.room-queen{
     background:radial-gradient(circle at 35% 30%, #fff3cf, var(--gold) 70%);
     color:#3a2a08;
@@ -244,6 +397,17 @@
     padding:1px 3px;
     font-family:'Space Mono',monospace;
     color:var(--cream-dim);
+  }
+  .cell .occ-badge{
+    position:absolute;
+    top:-6px; left:-4px;
+    background:var(--soil-void);
+    border:1px solid var(--gold);
+    border-radius:6px;
+    font-size:0.55rem;
+    padding:1px 3px;
+    font-family:'Space Mono',monospace;
+    color:var(--gold);
   }
   .conn{
     border-radius:5px;
@@ -267,6 +431,73 @@
   }
   .ant-dot.leaf::after{content:'';position:absolute; top:-3px; left:1px; width:4px; height:4px; background:var(--leaf); border-radius:1px; transform:rotate(20deg);}
   .ant-dot.fungus::after{content:'';position:absolute; top:-3px; left:1px; width:4px; height:4px; background:var(--fungus); border-radius:50%;}
+  .ant-dot.water::after{content:'';position:absolute; top:-3px; left:1px; width:4px; height:4px; background:var(--water); border-radius:50%;}
+
+  /* ---------- tech tree ---------- */
+  .tech-branch{margin-bottom:16px;}
+  .tech-branch-title{
+    font-size:0.78rem; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--cream-faint); margin-bottom:8px; display:flex; align-items:center; gap:6px;
+  }
+  .tech-card{
+    display:flex; align-items:flex-start; gap:10px;
+    background:var(--soil-panel-2);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    padding:10px;
+    margin-bottom:8px;
+  }
+  .tech-card.done{border-color:var(--leaf-dim); background:#283a1c;}
+  .tech-card.locked{opacity:0.5;}
+  .tech-card .ic{font-size:1.3rem;}
+  .tech-card .meta{flex:1;}
+  .tech-card .name{font-weight:600; font-size:0.85rem;}
+  .tech-card .desc{font-size:0.74rem; color:var(--cream-dim); margin-top:2px;}
+  .tech-card .cost{font-size:0.7rem; font-family:'Space Mono',monospace; color:var(--science); margin-top:4px;}
+  .tech-card button{
+    background:var(--science-dim); border:1px solid var(--science);
+    color:var(--cream); border-radius:6px; padding:6px 10px; font-size:0.72rem;
+    cursor:pointer; flex-shrink:0; align-self:center;
+  }
+  .tech-card button:hover{background:var(--science);}
+  .tech-card button:disabled{opacity:0.4; cursor:not-allowed;}
+  .tech-card .done-tag{color:var(--leaf); font-size:0.72rem; align-self:center; flex-shrink:0;}
+
+  /* ---------- encyclopedia ---------- */
+  .lex-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:8px;}
+  .lex-card{
+    background:var(--soil-panel-2); border:1px solid var(--hairline); border-radius:8px;
+    padding:10px; cursor:pointer; transition:border-color .15s;
+  }
+  .lex-card:hover{border-color:var(--gold-dim);}
+  .lex-card.locked{opacity:0.35; cursor:default;}
+  .lex-card .ic{font-size:1.6rem;}
+  .lex-card .name{font-weight:600; font-size:0.8rem; margin-top:4px;}
+  .lex-card .tag{font-size:0.65rem; color:var(--cream-faint);}
+  .lex-detail{
+    background:var(--soil-panel-2); border:1px solid var(--hairline-lit); border-radius:8px;
+    padding:14px; margin-top:12px; font-size:0.82rem; line-height:1.6; color:var(--cream-dim);
+  }
+  .lex-detail h3{color:var(--cream); font-size:1rem; margin:0 0 8px;}
+  .lex-detail .fact{margin-bottom:8px; padding-left:14px; border-left:2px solid var(--gold-dim);}
+
+  /* ---------- achievements ---------- */
+  .ach-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:10px;}
+  .ach-card{
+    display:flex; gap:10px; align-items:flex-start;
+    background:var(--soil-panel-2); border:1px solid var(--hairline); border-radius:8px; padding:10px;
+  }
+  .ach-card.unlocked{border-color:var(--gold-dim); background:#3a2c14;}
+  .ach-card .ic{font-size:1.5rem; opacity:0.5;}
+  .ach-card.unlocked .ic{opacity:1;}
+  .ach-card .name{font-weight:600; font-size:0.82rem;}
+  .ach-card .desc{font-size:0.72rem; color:var(--cream-dim); margin-top:2px;}
+
+  /* ---------- stat tab ---------- */
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:10px; margin-bottom:14px;}
+  .stat-box{background:var(--soil-panel-2); border:1px solid var(--hairline); border-radius:8px; padding:12px;}
+  .stat-box .big{font-family:'Space Mono',monospace; font-size:1.4rem; color:var(--gold);}
+  .stat-box .lbl{font-size:0.7rem; color:var(--cream-faint); text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
 
   /* ---------- log ---------- */
   .log-panel{
@@ -275,7 +506,7 @@
   .log-list{
     list-style:none;
     margin:0; padding:0;
-    max-height:150px;
+    max-height:170px;
     overflow-y:auto;
     font-size:0.8rem;
     display:flex;
@@ -290,6 +521,9 @@
   .log-list li.raid-fail{color:var(--alert); border-left-color:var(--alert);}
   .log-list li.raid-win{color:var(--leaf); border-left-color:var(--leaf);}
   .log-list li.fresh{color:var(--cream);}
+  .log-list li.tech{color:var(--science); border-left-color:var(--science);}
+  .log-list li.season{color:var(--fungus); border-left-color:var(--fungus);}
+  .log-list li.ach{color:var(--gold); border-left-color:var(--gold);}
   .log-time{font-family:'Space Mono',monospace; font-size:0.68rem; color:var(--cream-dim); margin-right:6px;}
 
   footer.appfoot{
@@ -302,7 +536,8 @@
     flex-wrap:wrap;
     gap:8px;
   }
-  .reset-btn{
+  .foot-actions{display:flex; gap:8px;}
+  .reset-btn, .speed-btn{
     background:transparent;
     border:1px solid var(--hairline);
     color:var(--cream-dim);
@@ -312,6 +547,8 @@
     cursor:pointer;
   }
   .reset-btn:hover{border-color:var(--alert); color:var(--alert);}
+  .speed-btn.active{border-color:var(--gold); color:var(--gold);}
+  .speed-btn:hover{border-color:var(--gold-dim);}
 
   .toast{
     position:fixed;
@@ -327,8 +564,51 @@
     transition:opacity .3s, transform .3s;
     pointer-events:none;
     z-index:50;
+    max-width:90vw;
+    text-align:center;
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* ---------- modal (species select / intro) ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(8,5,2,0.78);
+    display:flex; align-items:center; justify-content:center;
+    z-index:100; padding:20px;
+  }
+  .modal-box{
+    background:var(--soil-panel); border:1px solid var(--hairline-lit);
+    border-radius:14px; padding:26px; max-width:760px; width:100%;
+    max-height:88vh; overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+  }
+  .modal-box h2{font-size:1.4rem; margin:0 0 6px; color:var(--cream);}
+  .modal-sub{color:var(--cream-dim); font-size:0.88rem; margin-bottom:18px;}
+  .species-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:12px;}
+  .species-card{
+    background:var(--soil-panel-2); border:2px solid var(--hairline); border-radius:10px;
+    padding:14px; cursor:pointer; transition:border-color .15s, transform .12s;
+  }
+  .species-card:hover{border-color:var(--gold-dim); transform:translateY(-2px);}
+  .species-card .sp-head{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .species-card .sp-ic{font-size:2rem;}
+  .species-card .sp-name{font-weight:700; font-size:1rem; font-family:'Fraunces',serif;}
+  .species-card .sp-latin{font-size:0.72rem; font-style:italic; color:var(--cream-faint);}
+  .species-card .sp-desc{font-size:0.78rem; color:var(--cream-dim); line-height:1.5; margin-bottom:8px;}
+  .species-card .sp-trait{font-size:0.72rem; color:var(--leaf); margin-bottom:3px; display:flex; gap:6px;}
+  .species-card .sp-trait.con{color:var(--alert);}
+  .modal-skip{
+    display:block; margin:16px auto 0; background:transparent; border:none;
+    color:var(--cream-faint); font-size:0.76rem; cursor:pointer; text-decoration:underline;
+  }
+
+  .info-modal-body{font-size:0.85rem; line-height:1.6; color:var(--cream-dim);}
+  .info-modal-body h3{color:var(--gold); font-size:0.95rem; margin:14px 0 6px;}
+  .info-modal-body h3:first-child{margin-top:0;}
+  .modal-close-btn{
+    margin-top:18px; width:100%; background:var(--gold-dim); border:1px solid var(--gold);
+    color:#241509; font-weight:600; border-radius:8px; padding:9px; cursor:pointer; font-size:0.85rem;
+  }
+  .modal-close-btn:hover{background:var(--gold);}
 
   ::-webkit-scrollbar{width:8px; height:8px;}
   ::-webkit-scrollbar-thumb{background:var(--hairline); border-radius:4px;}
@@ -341,56 +621,438 @@
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+/* ============================================================
+   MYRMEX — DATENDEFINITIONEN
+   Artenwahl, Räume, Technologien, Lexikon, Achievements, Gefahren
+   ============================================================ */
 
+const SPECIES = {
+  formica: {
+    key:'formica', name:'Rote Waldameise', latin:'Formica rufa', icon:'🐜',
+    desc:'Baut riesige Nadelhügel und verteidigt sie mit Ameisensäure. Eine der bekanntesten heimischen Arten Europas.',
+    traits:[
+      {text:'+25% Verteidigungskraft (Säurespritzer)', good:true},
+      {text:'+15% Baracken-Kapazität', good:true},
+      {text:'-10% Pilzgarten-Ertrag (kein Pilzanbau in der Natur)', good:false}
+    ],
+    mods:{ defenseMult:1.25, barracksCapMult:1.15, fungusMult:0.9, forageMult:1.0, nurseryMult:1.0 },
+    color:'#c8593c',
+    fact:'Formica rufa kann bis zu 100 Millionen Ameisen umfassende Hügel über mehrere Jahrzehnte bewohnen und verteidigt sich durch gezieltes Verspritzen von Ameisensäure aus der Giftdrüse.'
+  },
+  atta: {
+    key:'atta', name:'Blattschneiderameise', latin:'Atta cephalotes', icon:'🍃',
+    desc:'Schneidet Blätter, um damit unterirdisch einen Pilz als einzige Nahrungsquelle zu kultivieren — Landwirtschaft, lange vor dem Menschen.',
+    traits:[
+      {text:'+40% Pilzgarten-Ertrag', good:true},
+      {text:'+20% Sammelertrag', good:true},
+      {text:'-15% Verteidigungskraft (keine Säure, kaum Wehrhaftigkeit)', good:false}
+    ],
+    mods:{ defenseMult:0.85, barracksCapMult:1.0, fungusMult:1.4, forageMult:1.2, nurseryMult:1.0 },
+    color:'#8bab57',
+    fact:'Blattschneiderameisen betreiben seit über 50 Millionen Jahren Landwirtschaft: Sie züchten einen Pilz der Gattung Leucoagaricus, der ausschließlich in ihren Kolonien existiert und Antibiotika-produzierende Bakterien zur Schädlingsabwehr trägt.'
+  },
+  lasius: {
+    key:'lasius', name:'Schwarze Wegameise', latin:'Lasius niger', icon:'🐾',
+    desc:'Die häufigste Gartenameise Mitteleuropas. Generalistin, melkt Blattläuse für Honigtau und passt sich fast jedem Lebensraum an.',
+    traits:[
+      {text:'Ausgewogen in allen Bereichen', good:true},
+      {text:'Honigtau-Melkerei verfügbar (Zusatzressource)', good:true},
+      {text:'Keine besonderen Schwächen', good:true}
+    ],
+    mods:{ defenseMult:1.0, barracksCapMult:1.0, fungusMult:1.0, forageMult:1.05, nurseryMult:1.05 },
+    color:'#6fa8b8',
+    fact:'Lasius niger pflegt regelrechte Symbiosen mit Blattläusen: Im Austausch für Schutz vor Fressfeinden „melkt" sie deren zuckerhaltige Ausscheidungen, den Honigtau — eine der wichtigsten Energiequellen vieler Kolonien.'
+  },
+  camponotus: {
+    key:'camponotus', name:'Rossameise', latin:'Camponotus herculeanus', icon:'🪵',
+    desc:'Die größte heimische Ameise. Nagt Gänge in morsches Holz statt Erde, hat enorm langlebige Königinnen und kräftige Mandibeln.',
+    traits:[
+      {text:'+30% Bevölkerungslimit durch Kinderstuben', good:true},
+      {text:'Königin lebt theoretisch unbegrenzt (kein Alterungsrisiko)', good:true},
+      {text:'-20% Grabgeschwindigkeit (härteres Substrat)', good:false}
+    ],
+    mods:{ defenseMult:1.05, barracksCapMult:1.0, fungusMult:1.0, forageMult:1.0, nurseryMult:1.3, digCostMult:1.2 },
+    color:'#d9b35b',
+    fact:'Camponotus-Königinnen können über 20 Jahre alt werden — eine der höchsten bekannten Lebenserwartungen im Insektenreich. Ihre kräftigen Mandibeln zernagen morsches Holz zu feinem „Sägemehl", das vor den Nesteingängen liegt.'
+  }
+};
+
+const ROOM_TYPES = {
+  forage: {
+    key:'forage', name:'Sammelgang', icon:'🍃', cls:'room-forage', tier:1,
+    cost:{leaves:10},
+    desc:'Sammelt Blattstücke aus der Umgebung. Braucht Arbeiterinnen als Sammlerinnen.',
+    caste:'forager',
+    requiresTech:null,
+  },
+  fungus: {
+    key:'fungus', name:'Pilzgarten', icon:'🍄', cls:'room-fungus', tier:1,
+    cost:{leaves:25},
+    desc:'Wandelt Blätter in nährendes Pilzfutter um. Braucht Pilzgärtnerinnen.',
+    caste:'gardener',
+    requiresTech:null,
+  },
+  nursery: {
+    key:'nursery', name:'Kinderstube', icon:'🥚', cls:'room-nursery', tier:1,
+    cost:{leaves:30, fungus:15},
+    desc:'Erhöht das Bevölkerungslimit und zieht Larven auf. Braucht Pflegerinnen.',
+    caste:'nurse',
+    requiresTech:null,
+  },
+  barracks: {
+    key:'barracks', name:'Kaserne', icon:'🛡', cls:'room-barracks', tier:1,
+    cost:{leaves:35, fungus:20},
+    desc:'Bildet bis zu 3 Soldatinnen zur Verteidigung aus.',
+    caste:'soldier',
+    requiresTech:null,
+  },
+  storage: {
+    key:'storage', name:'Lagerkammer', icon:'📦', cls:'room-storage', tier:1,
+    cost:{leaves:20},
+    desc:'Erhöht die maximale Lagerkapazität für Blätter und Pilzfutter um je 60.',
+    caste:null,
+    requiresTech:null,
+  },
+  water: {
+    key:'water', name:'Wasserspeicher', icon:'💧', cls:'room-water', tier:2,
+    cost:{leaves:30, fungus:10},
+    desc:'Sammelt Tau und Feuchtigkeit. Wasser wird im Winter und bei Trockenheit lebenswichtig.',
+    caste:'forager',
+    requiresTech:'irrigation',
+  },
+  compost: {
+    key:'compost', name:'Komposthaufen', icon:'♻️', cls:'room-compost', tier:2,
+    cost:{leaves:18, fungus:8},
+    desc:'Recycelt Abfälle und Kadaver zu Dünger, der den Pilzgarten beschleunigt.',
+    caste:'gardener',
+    requiresTech:'composting',
+  },
+  lab: {
+    key:'lab', name:'Forschungskammer', icon:'🔬', cls:'room-lab', tier:2,
+    cost:{leaves:40, fungus:25},
+    desc:'Erzeugt Wissenschaftspunkte zur Erforschung neuer Technologien.',
+    caste:'scholar',
+    requiresTech:'scouting',
+  },
+  dairy: {
+    key:'dairy', name:'Honigtau-Melkerei', icon:'🐛', cls:'room-dairy', tier:2,
+    cost:{leaves:28, fungus:14},
+    desc:'Nur möglich mit geeigneten Arten: Melkt Blattläuse für süßen Honigtau (Energie-Bonus).',
+    caste:'forager',
+    requiresTech:'aphid_husbandry',
+    speciesOnly:'lasius',
+  },
+  vault: {
+    key:'vault', name:'Königliche Schatzkammer', icon:'👑', cls:'room-vault', tier:3,
+    cost:{leaves:80, fungus:60},
+    desc:'Speichert Prestigepunkte der Kolonie — das ultimative Ziel großer Imperien.',
+    caste:null,
+    requiresTech:'royal_chamber',
+  },
+};
+
+const CASTES = {
+  forager: {key:'forager', name:'Sammlerin', icon:'🍃'},
+  gardener:{key:'gardener', name:'Pilzgärtnerin', icon:'🍄'},
+  nurse:   {key:'nurse', name:'Pflegerin', icon:'🥚'},
+  soldier: {key:'soldier', name:'Soldatin', icon:'🛡'},
+  scholar: {key:'scholar', name:'Forscherin', icon:'🔬'},
+  builder: {key:'builder', name:'Baumeisterin (frei)', icon:'⛏'},
+};
+
+const TECHS = {
+  // --- Sammel-Ast ---
+  better_mandibles: {
+    key:'better_mandibles', branch:'gather', name:'Verstärkte Mandibeln', icon:'🦷',
+    desc:'+20% Ertrag aller Sammelgänge.', cost:12,
+    requires:[], effect:{forageMult:1.2}
+  },
+  pheromone_trails: {
+    key:'pheromone_trails', branch:'gather', name:'Pheromonpfade', icon:'〜',
+    desc:'Sammlerinnen finden 25% häufiger Nahrung pro Tick.', cost:18,
+    requires:['better_mandibles'], effect:{forageMult:1.25}
+  },
+  irrigation: {
+    key:'irrigation', branch:'gather', name:'Feuchtigkeitsgänge', icon:'💧',
+    desc:'Schaltet den Wasserspeicher frei. Wasser wird verfügbar.', cost:15,
+    requires:[], effect:{unlockRoom:'water'}
+  },
+  aphid_husbandry: {
+    key:'aphid_husbandry', branch:'gather', name:'Blattlauszucht', icon:'🐛',
+    desc:'Schaltet die Honigtau-Melkerei frei (nur Lasius niger).', cost:22,
+    requires:['irrigation'], effect:{unlockRoom:'dairy'}
+  },
+  // --- Verteidigungs-Ast ---
+  acid_glands: {
+    key:'acid_glands', branch:'defense', name:'Vergrößerte Giftdrüsen', icon:'🧪',
+    desc:'+30% Verteidigungskraft pro Soldatin.', cost:14,
+    requires:[], effect:{soldierDefenseMult:1.3}
+  },
+  sentry_posts: {
+    key:'sentry_posts', branch:'defense', name:'Wachposten', icon:'👁',
+    desc:'Überfälle werden 8 Sekunden früher angekündigt.', cost:10,
+    requires:[], effect:{raidWarning:8}
+  },
+  fortified_walls: {
+    key:'fortified_walls', branch:'defense', name:'Verstärkte Wände', icon:'🧱',
+    desc:'Grundverteidigung +4, unabhängig von Soldatinnen.', cost:20,
+    requires:['sentry_posts'], effect:{baseDefenseBonus:4}
+  },
+  composting: {
+    key:'composting', branch:'defense', name:'Kompostierung', icon:'♻️',
+    desc:'Schaltet den Komposthaufen frei: weniger Verlust bei Niederlagen.', cost:16,
+    requires:[], effect:{unlockRoom:'compost'}
+  },
+  // --- Bevölkerungs-Ast ---
+  scouting: {
+    key:'scouting', branch:'pop', name:'Kundschafterinnen', icon:'🧭',
+    desc:'Schaltet die Forschungskammer frei.', cost:10,
+    requires:[], effect:{unlockRoom:'lab'}
+  },
+  royal_jelly: {
+    key:'royal_jelly', branch:'pop', name:'Königinnenfuttersaft', icon:'🍯',
+    desc:'+25% Nachwuchsgeschwindigkeit in Kinderstuben.', cost:18,
+    requires:[], effect:{nurseryProgressMult:1.25}
+  },
+  efficient_broods: {
+    key:'efficient_broods', branch:'pop', name:'Effiziente Brutpflege', icon:'🥚',
+    desc:'-20% Pilzfutterkosten pro neuer Ameise.', cost:20,
+    requires:['royal_jelly'], effect:{nurseryFungusMult:0.8}
+  },
+  royal_chamber: {
+    key:'royal_chamber', branch:'pop', name:'Königliche Architektur', icon:'🏛',
+    desc:'Schaltet die Schatzkammer frei — Prestige für die Ewigkeit.', cost:30,
+    requires:['scouting','efficient_broods'], effect:{unlockRoom:'vault'}
+  },
+};
+
+const THREATS = {
+  anteater: {
+    key:'anteater', name:'Ameisenbär', icon:'🦣',
+    desc:'Ein einzelner, hungriger Räuber gräbt die obersten Gänge auf.',
+    strengthMult:1.0,
+    fact:'Große Ameisenbären können mit ihrer langen, klebrigen Zunge bis zu 30.000 Insekten pro Tag aufnehmen, ohne je richtig zu kauen — sie besitzen keine Zähne.'
+  },
+  bird: {
+    key:'bird', name:'Grünspecht', icon:'🐦',
+    desc:'Ein Vogel hat den Hügel entdeckt und hackt sich zu den Vorräten vor.',
+    strengthMult:0.8,
+    fact:'Der Grünspecht ist in Europa auf Ameisen spezialisiert: Mit seiner bis zu 10 cm langen, klebrigen Zunge holt er sie direkt aus dem Bau.'
+  },
+  flood: {
+    key:'flood', name:'Starkregen', icon:'🌧',
+    desc:'Wasser dringt in die oberen Kammern ein und bedroht die Vorräte.',
+    strengthMult:0.7,
+    fact:'Viele Ameisenarten verschließen bei Regen aktiv ihre Nesteingänge mit Erde oder kleinen Steinchen, um ein Überfluten der Brutkammern zu verhindern.'
+  },
+  rival: {
+    key:'rival', name:'Rivalisierende Kolonie', icon:'⚔️',
+    desc:'Eine fremde Kolonie sondiert die Grenzen — und greift bei Schwäche an.',
+    strengthMult:1.2,
+    fact:'Territorialkriege zwischen benachbarten Ameisenkolonien können sich über Wochen hinziehen und enden manchmal mit der vollständigen Versklavung oder Vernichtung der schwächeren Kolonie.'
+  },
+  fungalInfection: {
+    key:'fungalInfection', name:'Schimmelbefall', icon:'🦠',
+    desc:'Ein fremder Schimmelpilz bedroht den Pilzgarten und die Vorräte.',
+    strengthMult:0.6,
+    fact:'Blattschneiderameisen tragen auf ihrem Panzer symbiotische Bakterien (Pseudonocardia), die Antibiotika produzieren — eine biologische Waffe gegen genau solche Schimmelpilze.'
+  }
+};
+
+const ACHIEVEMENTS = {
+  firstRoom: {key:'firstRoom', name:'Erste Grabung', icon:'⛏', desc:'Baue deinen ersten Raum.'},
+  tenAnts: {key:'tenAnts', name:'Wachsendes Volk', icon:'🐜', desc:'Erreiche 10 Ameisen.'},
+  fiftyAnts: {key:'fiftyAnts', name:'Großkolonie', icon:'🐜', desc:'Erreiche 50 Ameisen.'},
+  survivedRaid: {key:'survivedRaid', name:'Standhaft', icon:'🛡', desc:'Wehre einen Überfall erfolgreich ab.'},
+  firstTech: {key:'firstTech', name:'Forscherin', icon:'🔬', desc:'Erforsche die erste Technologie.'},
+  allTechs: {key:'allTechs', name:'Wissenschaftsimperium', icon:'🧠', desc:'Erforsche alle Technologien.'},
+  survivedWinter: {key:'survivedWinter', name:'Überwinterin', icon:'❄️', desc:'Überlebe einen vollen Winter.'},
+  vaultBuilt: {key:'vaultBuilt', name:'Erbe der Königin', icon:'👑', desc:'Baue die königliche Schatzkammer.'},
+  allRoomTypes: {key:'allRoomTypes', name:'Architektin', icon:'🏗', desc:'Baue mindestens einmal jeden freigeschalteten Raumtyp.'},
+  hundredLeaves: {key:'hundredLeaves', name:'Vollgepackt', icon:'🍃', desc:'Sammle 100 Blätter gleichzeitig auf Lager.'},
+  deepDigger: {key:'deepDigger', name:'Tiefenrausch', icon:'🕳', desc:'Grabe 20 Gänge.'},
+  oldColony: {key:'oldColony', name:'Jahreszeiten-Veteranin', icon:'🍂', desc:'Erlebe alle vier Jahreszeiten einmal.'},
+};
+
+const LEXICON = {
+  anatomy: {key:'anatomy', name:'Anatomie', icon:'🔬', unlockedFromStart:true,
+    facts:[
+      'Ameisen haben sechs Beine, ein dreigliedriges Exoskelett (Kopf, Brust, Hinterleib) und keine Lungen — sie atmen über feine Röhren, sogenannte Tracheen, direkt durch die Körperwand.',
+      'Das Gehirn einer Ameise besitzt etwa 250.000 Neuronen — winzig im Vergleich zum Menschen, aber hochgradig auf Geruchsverarbeitung spezialisiert.',
+      'Ameisen können das bis zu 50-fache ihres eigenen Körpergewichts tragen, dank eines extrem effizienten Hebelsystems in Hals und Mandibeln.'
+    ]},
+  colony: {key:'colony', name:'Kolonieleben', icon:'🏘', unlockedFromStart:true,
+    facts:[
+      'Eine Ameisenkolonie funktioniert als „Superorganismus": Einzelne Tiere sind fast bedeutungslos, aber das Kollektiv löst komplexe Probleme wie Wegfindung, Nestbau und Verteidigung.',
+      'Die Arbeitsteilung erfolgt oft altersabhängig: Junge Arbeiterinnen bleiben meist im Nest (Brutpflege), ältere übernehmen riskantere Aufgaben wie Nahrungssuche.',
+      'Manche Kolonien bestehen aus nur wenigen Dutzend Tieren, andere — etwa bei Argentinischen Ameisen — bilden „Superkolonien" über tausende Kilometer mit Milliarden Individuen.'
+    ]},
+  communication: {key:'communication', name:'Kommunikation', icon:'〜', unlockedFromStart:false, unlockAt:{ants:8},
+    facts:[
+      'Pheromone sind die wichtigste Sprache der Ameisen: Spurpheromone markieren Wege zu Futterquellen, Alarmpheromone warnen vor Gefahr.',
+      'Manche Arten nutzen zusätzlich Vibrationen (Stridulation) und Berührungen mit den Antennen, um Informationen über Distanz und Richtung von Futter zu übermitteln.',
+      'Tote Ameisen werden anhand chemischer Abbauprodukte (z. B. Ölsäure) erkannt — Artgenossen tragen die Leiche dann gezielt aus dem Nest zum „Friedhof".'
+    ]},
+  queen: {key:'queen', name:'Die Königin', icon:'👑', unlockedFromStart:false, unlockAt:{rooms:['nursery']},
+    facts:[
+      'Eine Königin legt nach der Gründung meist ein Leben lang Eier — bei manchen Arten mehrere tausend pro Tag im Höhepunkt der Legeperiode.',
+      'Vor der Koloniegründung verpaart sich eine junge Königin oft nur einmal in ihrem Leben, speichert die Spermien aber jahrzehntelang in einem speziellen Organ, der Spermatheka.',
+      'Stirbt die Königin ohne Nachfolgerin, ist die Kolonie meist zum Aussterben verurteilt — die Arbeiterinnen können selbst keine fruchtbaren Weibchen mehr produzieren.'
+    ]},
+  foraging: {key:'foraging', name:'Nahrungssuche', icon:'🍃', unlockedFromStart:false, unlockAt:{rooms:['forage']},
+    facts:[
+      'Manche Ameisenarten legen täglich Strecken zurück, die im Verhältnis zur Körpergröße menschlichen Marathons über hunderte Kilometer entsprechen würden.',
+      'Wüstenameisen wie Cataglyphis navigieren mit einem internen „Schrittzähler" und der Sonnenposition, um exakt zum Nest zurückzufinden — ganz ohne Pheromonspur.',
+      'Honigtau von Blattläusen, Zikaden und Schildläusen ist für viele Arten eine der ergiebigsten Energiequellen — manche Kolonien „besitzen" buchstäblich ganze Blattlauskolonien.'
+    ]},
+  fungiculture: {key:'fungiculture', name:'Pilzanbau', icon:'🍄', unlockedFromStart:false, unlockAt:{rooms:['fungus']},
+    facts:[
+      'Blattschneiderameisen zerkauen Blattmaterial zu einer Art Kompost, auf dem ein spezialisierter Pilz wächst — die einzige Nahrungsquelle für ihre Larven.',
+      'Der kultivierte Pilz existiert nirgendwo wild in der Natur mehr — er wurde über Jahrmillionen so stark domestiziert, dass er ohne die Ameisen nicht überleben kann.',
+      'Schädliche Schimmelpilze werden mit körpereigenen, antibiotikaproduzierenden Bakterien bekämpft — ein natürliches Pflanzenschutzmittel, das Wissenschaftler heute erforschen.'
+    ]},
+  defense: {key:'defense', name:'Verteidigung', icon:'🛡', unlockedFromStart:false, unlockAt:{rooms:['barracks']},
+    facts:[
+      'Soldatinnen vieler Arten haben überproportional große Köpfe und Mandibeln — spezialisiert allein auf Kampf und Verteidigung, nicht auf Nahrungssuche.',
+      'Manche Arten betreiben „Selbstmordverteidigung": Bei der malaysischen Ameise Colobopsis explodiert eine Arbeiterin und verklebt Angreifer mit giftigem Sekret.',
+      'Treiberameisen (Dorylus) bilden bei Gefahr lebende Ketten und Brücken aus ihren eigenen Körpern, um Lücken im Gelände zu überwinden oder Brut zu schützen.'
+    ]},
+  species: {key:'species', name:'Artenvielfalt', icon:'🌍', unlockedFromStart:true,
+    facts:[
+      'Weltweit sind über 13.000 Ameisenarten beschrieben — Schätzungen gehen von weit über 20.000 tatsächlich existierenden Arten aus.',
+      'Ameisen kommen auf allen Kontinenten außer der Antarktis vor und besiedeln Lebensräume von Wüsten bis Regenwald.',
+      'Schätzungen zufolge gibt es weltweit mehrere Billiarden einzelne Ameisen — ihre gemeinsame Biomasse übertrifft die aller wild lebenden Vögel und Säugetiere zusammen.'
+    ]},
+  seasons: {key:'seasons', name:'Jahreszeiten', icon:'🍂', unlockedFromStart:false, unlockAt:{seasonsSeen:2},
+    facts:[
+      'In gemäßigten Klimazonen verfallen viele Ameisenkolonien im Winter in eine Winterruhe (Diapause): Stoffwechsel und Aktivität sinken drastisch, um Energie zu sparen.',
+      'Vor dem Winter stellen Arbeiterinnen oft gezielt Vorräte zusammen und verschließen tiefere, frostsichere Kammern, in die sich die Königin zurückzieht.',
+      'Mit steigenden Temperaturen im Frühling beginnt die Kolonie wieder aktiv zu werden — oft ausgelöst durch Bodentemperatur statt Kalenderdatum.'
+    ]}
+};
+
+const SEASONS = ['spring','summer','autumn','winter'];
+const SEASON_INFO = {
+  spring: {name:'Frühling', icon:'🌱', desc:'Wachstumsphase: Erträge und Brutpflege laufen normal.', forageMult:1.0, fungusMult:1.0, nurseryMult:1.1, raidMult:0.9},
+  summer: {name:'Sommer', icon:'☀️', desc:'Hochsaison: Maximaler Sammelertrag, aber auch mehr Bedrohungen.', forageMult:1.25, fungusMult:1.1, nurseryMult:1.0, raidMult:1.15},
+  autumn: {name:'Herbst', icon:'🍂', desc:'Vorratszeit: Gute Erträge, Vorbereitung auf den Winter wichtig.', forageMult:1.1, fungusMult:1.0, nurseryMult:0.9, raidMult:1.0},
+  winter: {name:'Winter', icon:'❄️', desc:'Winterruhe: Kaum Sammelertrag, kein Nachwuchs ohne Wasser-Vorrat.', forageMult:0.35, fungusMult:0.5, nurseryMult:0.2, raidMult:0.5},
+};
+function appShellHtml(){
+  return `
   <header class="topbar">
     <div class="brand">
       <h1>🐜 Myrmex</h1>
       <span class="sub">eine Kolonie unter der Erde</span>
+      <span class="species-pill" id="speciesPill"></span>
     </div>
     <div class="resources" id="resourceBar"></div>
   </header>
 
+  <div class="season-strip" id="seasonStrip"></div>
+
+  <div class="tabbar" id="tabbar">
+    <button class="tab-btn active" data-tab="build"><span class="ic">🏗</span>Bauen</button>
+    <button class="tab-btn" data-tab="folk"><span class="ic">🐾</span>Volk</button>
+    <button class="tab-btn" data-tab="tech"><span class="ic">🔬</span>Forschung</button>
+    <button class="tab-btn" data-tab="lex"><span class="ic">📖</span>Lexikon</button>
+    <button class="tab-btn" data-tab="ach"><span class="ic">🏆</span>Erfolge</button>
+    <button class="tab-btn" data-tab="stats"><span class="ic">📊</span>Statistik</button>
+  </div>
+
   <div class="layout">
     <!-- SIDEBAR -->
     <div class="sidebar">
-      <div class="panel">
-        <h2>⛏ Graben</h2>
-        <button class="build-btn" id="digBtn" data-mode="dig">
-          <span class="ic">⛏</span>
-          <span class="meta">
-            <div class="name">Tunnel graben</div>
-            <div class="desc">Erweitert den Bau an einen angrenzenden Gang.</div>
-            <div class="cost" id="digCost">— Blätter</div>
-          </span>
-        </button>
+
+      <div class="tab-panel active" data-tabpanel="build">
+        <div class="panel">
+          <h2>⛏ Graben</h2>
+          <button class="build-btn" id="digBtn" data-mode="dig">
+            <span class="ic">⛏</span>
+            <span class="meta">
+              <div class="name">Tunnel graben</div>
+              <div class="desc">Erweitert den Bau an einen angrenzenden Gang.</div>
+              <div class="cost" id="digCost">— Blätter</div>
+            </span>
+          </button>
+        </div>
+        <div class="panel">
+          <h2>🏗 Bauen <span class="count-badge" id="roomCountBadge"></span></h2>
+          <div id="buildPalette"></div>
+        </div>
+        <div class="panel">
+          <h2>ℹ Auswahl</h2>
+          <div class="selected-info" id="selectedInfo">Wähle links eine Aktion, dann klicke auf den Bau.</div>
+          <button class="cancel-btn" id="cancelBtn" style="display:none;">Auswahl aufheben</button>
+        </div>
       </div>
 
-      <div class="panel">
-        <h2>🏗 Bauen</h2>
-        <div id="buildPalette"></div>
+      <div class="tab-panel" data-tabpanel="folk">
+        <div class="panel">
+          <h2>🐾 Volk</h2>
+          <div class="stat-row"><span>Ameisen</span><span class="v" id="statAnts">–</span></div>
+          <div class="stat-row"><span>Freie Arbeiterinnen</span><span class="v" id="statFree">–</span></div>
+          <div class="stat-row"><span>Arbeitsplätze gesamt</span><span class="v" id="statWorkersNeeded">–</span></div>
+          <div class="stat-row"><span>Effizienz</span><span class="v" id="statEfficiency">–</span></div>
+        </div>
+        <div class="panel">
+          <h2>🎚 Kasten-Zuweisung <span class="count-badge" id="casteAssignedBadge"></span></h2>
+          <div id="casteAssign"></div>
+          <p class="panel-note">Weise deine Arbeiterinnen Aufgaben zu. Jede Rolle braucht passende Räume, um wirksam zu sein. Nicht zugewiesene Ameisen zählen als freie Baumeisterinnen.</p>
+        </div>
       </div>
 
-      <div class="panel">
-        <h2>🐾 Volk</h2>
-        <div class="stat-row"><span>Ameisen</span><span class="v" id="statAnts">–</span></div>
-        <div class="stat-row"><span>Arbeitskraft benötigt</span><span class="v" id="statWorkersNeeded">–</span></div>
-        <div class="stat-row"><span>Soldatinnen</span><span class="v" id="statSoldiers">–</span></div>
-        <div class="stat-row"><span>Effizienz</span><span class="v" id="statEfficiency">–</span></div>
+      <div class="tab-panel" data-tabpanel="tech">
+        <div class="panel">
+          <h2>🔬 Wissenschaft</h2>
+          <div class="stat-row"><span>Punkte</span><span class="v" id="statScience">–</span></div>
+          <div class="stat-row"><span>Punkte / Sek</span><span class="v" id="statScienceRate">–</span></div>
+          <p class="panel-note">Forschungskammern (benötigen Tech „Kundschafterinnen") erzeugen Wissenschaftspunkte. Investiere sie in drei Forschungsästen.</p>
+        </div>
       </div>
 
-      <div class="panel">
-        <h2>ℹ Auswahl</h2>
-        <div class="selected-info" id="selectedInfo">Wähle links eine Aktion, dann klicke auf den Bau.</div>
-        <button class="cancel-btn" id="cancelBtn" style="display:none;">Auswahl aufheben</button>
+      <div class="tab-panel" data-tabpanel="lex">
+        <div class="panel">
+          <h2>📖 Lexikon <span class="count-badge" id="lexCountBadge"></span></h2>
+          <p class="panel-note">Echtes Wissen über Ameisen, freigeschaltet durch Spielfortschritt.</p>
+        </div>
       </div>
+
+      <div class="tab-panel" data-tabpanel="ach">
+        <div class="panel">
+          <h2>🏆 Erfolge <span class="count-badge" id="achCountBadge"></span></h2>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-tabpanel="stats">
+        <div class="panel">
+          <h2>📊 Statistik</h2>
+          <div class="stat-row"><span>Kolonie-Alter</span><span class="v" id="statAge2">–</span></div>
+          <div class="stat-row"><span>Gegrabene Gänge</span><span class="v" id="statDug">–</span></div>
+          <div class="stat-row"><span>Gebaute Räume</span><span class="v" id="statRooms">–</span></div>
+          <div class="stat-row"><span>Überfälle abgewehrt</span><span class="v" id="statRaidsWon">–</span></div>
+          <div class="stat-row"><span>Überfälle verloren</span><span class="v" id="statRaidsLost">–</span></div>
+          <div class="stat-row"><span>Blätter (gesamt gesammelt)</span><span class="v" id="statLeavesTotal">–</span></div>
+          <div class="stat-row"><span>Prestige (Schatzkammer)</span><span class="v" id="statPrestige">–</span></div>
+        </div>
+      </div>
+
     </div>
 
     <!-- BOARD -->
     <div class="board-area">
       <div class="board-wrap">
+        <div class="depth-tabs" id="depthTabs"></div>
         <div class="tunnel-grid" id="grid"></div>
       </div>
+
+      <!-- secondary content shown only on tech/lex/ach tabs, rendered inside board area on wide layouts -->
+      <div class="panel" id="techPanelWide" style="display:none;"></div>
+      <div class="panel" id="lexPanelWide" style="display:none;"></div>
+      <div class="panel" id="achPanelWide" style="display:none;"></div>
 
       <div class="panel log-panel">
         <h2>📜 Kolonie-Chronik</h2>
@@ -401,43 +1063,62 @@
 
   <footer class="appfoot">
     <span>Alter der Kolonie: <span class="mono" id="colonyAge">0:00</span> · nächster Überfall in <span class="mono" id="raidCountdown">–</span></span>
-    <button class="reset-btn" id="resetBtn">Kolonie zurücksetzen</button>
+    <div class="foot-actions">
+      <button class="speed-btn active" data-speed="1" id="speed1Btn">1×</button>
+      <button class="speed-btn" data-speed="2" id="speed2Btn">2×</button>
+      <button class="speed-btn" data-speed="3" id="speed3Btn">3×</button>
+      <button class="reset-btn" id="resetBtn">Kolonie zurücksetzen</button>
+    </div>
   </footer>
-</div>
+  `;
+}
 
-<div class="toast" id="toast"></div>
+function speciesModalHtml(){
+  const cards = Object.values(SPECIES).map(sp => `
+    <div class="species-card" data-species="${sp.key}" tabindex="0" role="button">
+      <div class="sp-head">
+        <span class="sp-ic">${sp.icon}</span>
+        <div>
+          <div class="sp-name">${sp.name}</div>
+          <div class="sp-latin">${sp.latin}</div>
+        </div>
+      </div>
+      <div class="sp-desc">${sp.desc}</div>
+      ${sp.traits.map(t => `<div class="sp-trait ${t.good?'':'con'}">${t.good?'✓':'△'} ${t.text}</div>`).join('')}
+    </div>
+  `).join('');
+  return `
+  <div class="modal-overlay" id="speciesModal">
+    <div class="modal-box">
+      <h2>🐜 Wähle deine Art</h2>
+      <div class="modal-sub">Jede Ameisenart hat reale biologische Eigenheiten, die dein Spiel beeinflussen. Die Wahl ist endgültig für diese Kolonie.</div>
+      <div class="species-grid">${cards}</div>
+    </div>
+  </div>`;
+}
 
-<script>
+function infoModalHtml(title, bodyHtml){
+  return `
+  <div class="modal-overlay" id="infoModal">
+    <div class="modal-box">
+      <h2>${title}</h2>
+      <div class="info-modal-body">${bodyHtml}</div>
+      <button class="modal-close-btn" id="infoModalCloseBtn">Verstanden</button>
+    </div>
+  </div>`;
+}
 (function(){
   "use strict";
 
   /* ===================== CONFIG ===================== */
-  const GR = 5, GC = 6;                 // logical room grid
+  const GR = 5, GC = 6;                 // logical room grid per depth level
   const QUEEN_R = 2, QUEEN_C = 2;
   const CELL = 54, CONN = 16;
-
-  const ROOM_TYPES = {
-    forage: {
-      name:'Sammelgang', icon:'🍃', cls:'room-forage',
-      cost:{leaves:10},
-      desc:'Sammelt Blattstücke aus der Umgebung.',
-    },
-    fungus: {
-      name:'Pilzgarten', icon:'🍄', cls:'room-fungus',
-      cost:{leaves:25},
-      desc:'Wandelt Blätter in nährendes Pilzfutter um.',
-    },
-    nursery: {
-      name:'Kinderstube', icon:'🥚', cls:'room-nursery',
-      cost:{leaves:30, fungus:15},
-      desc:'Erhöht das Bevölkerungslimit und zieht Larven auf.',
-    },
-    barracks: {
-      name:'Kaserne', icon:'🛡', cls:'room-barracks',
-      cost:{leaves:35, fungus:20},
-      desc:'Bildet bis zu 3 Soldatinnen zur Verteidigung aus.',
-    }
-  };
+  const DEPTHS = [
+    {key:'d0', name:'Oberboden', icon:'🌱', unlockCost:0},
+    {key:'d1', name:'Mittelschicht', icon:'🪵', unlockCost:60},
+    {key:'d2', name:'Tiefenkammern', icon:'💎', unlockCost:160},
+  ];
 
   const RATES = {
     leafPerForage: 0.9,
@@ -450,42 +1131,89 @@
     barracksCapacity: 3,
     digBaseCost: 8,
     digCostStep: 4,
+    storageBase: 80,
+    storagePerRoom: 60,
+    sciencePerLabRoom: 0.22,
+    waterPerRoom: 0.5,
+    waterUpkeepPerAnt: 0.015,
+    compostBonus: 0.3,
+    dairyHoneyPerRoom: 0.6,
   };
 
-  const SAVE_KEY = 'myrmex_save_v1';
+  const SAVE_KEY = 'myrmex_save_v2';
 
   /* ===================== STATE ===================== */
-  let cells = [];        // GR*GC logical cells {dug, room}
-  let resources = {leaves:18, fungus:4};
+  let cells = {};         // depthKey -> array of GR*GC logical cells {dug, room, builtAt}
+  let resources = {leaves:35, fungus:6, water:0, honey:0, science:0, prestige:0};
   let ants = 4;
   let antsCap = 6;
+  let casteCounts = {forager:0, gardener:0, nurse:0, soldier:0, scholar:0};
   let nurseryProgress = 0;
-  let mode = null;        // null | 'dig' | room key
+  let mode = null;         // null | 'dig' | room key
+  let activeDepth = 'd0';
+  let unlockedDepths = ['d0'];
   let ageSec = 0;
   let nextRaidIn = randRange(40,65);
+  let raidWarningGiven = false;
   let logEntries = [];
-  let antDotPool = [];
+  let speciesKey = null;
+  let activeTab = 'build';
+  let speedMult = 1;
+  let seasonIdx = 0;        // index into SEASONS
+  let seasonElapsed = 0;
+  let seasonDuration = 90;  // seconds per season at 1x speed
+  let seasonsSeenSet = [];
+  let techDone = {};        // key -> true
+  let unlockedRooms = {};   // key -> true (rooms without requiresTech always true)
+  let achievementsUnlocked = {};
+  let lexUnlocked = {};
+  let builtRoomTypesEver = {};
+  let lifetimeStats = {leavesTotal:0, dugTotal:0, roomsTotal:0, raidsWon:0, raidsLost:0};
+  let pendingLexDetail = null;
 
   function randRange(a,b){return Math.floor(a + Math.random()*(b-a));}
 
-  /* ===================== INIT ===================== */
-  function freshState(){
-    cells = [];
-    for(let r=0;r<GR;r++){
-      for(let c=0;c<GC;c++){
-        cells.push({r,c, dug:false, room:null});
-      }
-    }
-    cellAt(QUEEN_R,QUEEN_C).dug = true;
-    cellAt(QUEEN_R,QUEEN_C).room = 'queen';
-    resources = {leaves:18, fungus:4};
-    ants = 4; antsCap = 6; nurseryProgress = 0;
-    ageSec = 0; nextRaidIn = randRange(40,65);
-    logEntries = [];
-    addLog('Die Königin hat ihre erste Kammer gegraben. Die Kolonie beginnt.', 'fresh');
+  function speciesMods(){
+    if(!speciesKey || !SPECIES[speciesKey]) return {};
+    return SPECIES[speciesKey].mods || {};
   }
 
-  function cellAt(r,c){ return cells[r*GC+c]; }
+  /* ===================== INIT ===================== */
+  function freshState(keepSpecies){
+    cells = {};
+    DEPTHS.forEach(d=>{
+      const arr = [];
+      for(let r=0;r<GR;r++){
+        for(let c=0;c<GC;c++){
+          arr.push({r,c, dug:false, room:null});
+        }
+      }
+      cells[d.key] = arr;
+    });
+    cellAt('d0', QUEEN_R,QUEEN_C).dug = true;
+    cellAt('d0', QUEEN_R,QUEEN_C).room = 'queen';
+    resources = {leaves:35, fungus:6, water:0, honey:0, science:0, prestige:0};
+    ants = 4; antsCap = 6; nurseryProgress = 0;
+    casteCounts = {forager:0, gardener:0, nurse:0, soldier:0, scholar:0};
+    ageSec = 0; nextRaidIn = randRange(40,65); raidWarningGiven = false;
+    logEntries = [];
+    activeDepth = 'd0';
+    unlockedDepths = ['d0'];
+    activeTab = 'build';
+    speedMult = 1;
+    seasonIdx = 0; seasonElapsed = 0; seasonsSeenSet = [SEASONS[0]];
+    techDone = {};
+    unlockedRooms = {};
+    achievementsUnlocked = {};
+    lexUnlocked = {};
+    builtRoomTypesEver = {};
+    lifetimeStats = {leavesTotal:0, dugTotal:0, roomsTotal:0, raidsWon:0, raidsLost:0};
+    if(!keepSpecies) speciesKey = null;
+    addLog('Die Königin hat ihre erste Kammer gegraben. Die Kolonie beginnt.', 'fresh');
+    checkLexUnlocks();
+  }
+
+  function cellAt(depth, r,c){ return cells[depth][r*GC+c]; }
   function idx(r,c){ return r*GC+c; }
   function inBounds(r,c){ return r>=0 && r<GR && c>=0 && c<GC; }
 
@@ -493,127 +1221,258 @@
     return [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].filter(([nr,nc])=>inBounds(nr,nc));
   }
 
-  function isDiggable(r,c){
-    const cell = cellAt(r,c);
+  function isDiggable(depth, r,c){
+    const cell = cellAt(depth, r,c);
     if(cell.dug) return false;
-    return neighbors(r,c).some(([nr,nc])=>cellAt(nr,nc).dug);
+    // depth 0 needs adjacency; deeper levels need adjacency too, but the very first cell
+    // of an unlocked deeper level starts pre-dug to act as the entrance shaft.
+    return neighbors(r,c).some(([nr,nc])=>cellAt(depth, nr,nc).dug);
   }
 
-  function digCost(){
-    const dugCount = cells.filter(c=>c.dug).length;
-    return RATES.digBaseCost + dugCount * RATES.digCostStep;
+  function digCost(depth){
+    const dugCount = cells[depth].filter(c=>c.dug).length;
+    const mods = speciesMods();
+    const base = RATES.digBaseCost + dugCount * RATES.digCostStep;
+    return Math.round(base * (mods.digCostMult || 1));
+  }
+
+  function isRoomUnlocked(key){
+    const def = ROOM_TYPES[key];
+    if(!def) return false;
+    if(def.speciesOnly && def.speciesOnly !== speciesKey) return false;
+    if(!def.requiresTech) return true;
+    return !!techDone[def.requiresTech];
+  }
+
+  function storageCap(){
+    const storageRooms = allCellsFlat().filter(c=>c.room==='storage').length;
+    return RATES.storageBase + storageRooms * RATES.storagePerRoom;
+  }
+
+  function allCellsFlat(){
+    let out = [];
+    DEPTHS.forEach(d=> out = out.concat(cells[d.key]));
+    return out;
+  }
+
+  function roomsOfType(type){
+    return allCellsFlat().filter(c=>c.room===type);
   }
 
   /* ===================== ECONOMY TICK ===================== */
-  function tick(){
-    ageSec++;
-    const forageRooms = cells.filter(c=>c.room==='forage');
-    const fungusRooms  = cells.filter(c=>c.room==='fungus');
-    const nurseryRooms = cells.filter(c=>c.room==='nursery');
-    const barracksRooms= cells.filter(c=>c.room==='barracks');
+  const state = {lastSoldiers:0, lastWorkersNeeded:0, lastEfficiency:1, lastScienceRate:0};
 
-    const workersNeeded = forageRooms.length + fungusRooms.length + nurseryRooms.length + barracksRooms.length;
-    const efficiency = workersNeeded>0 ? Math.min(1, ants/workersNeeded) : 1;
+  function currentSeasonInfo(){ return SEASON_INFO[SEASONS[seasonIdx]]; }
 
-    // foraging
-    if(forageRooms.length>0){
-      const gain = forageRooms.length * RATES.leafPerForage * efficiency;
-      resources.leaves += gain;
-      if(Math.random() < 0.5*efficiency){
-        const src = forageRooms[randRange(0,forageRooms.length)];
-        spawnAntDot(src, cellAt(QUEEN_R,QUEEN_C), 'leaf');
+  function advanceSeasonIfNeeded(){
+    seasonElapsed++;
+    if(seasonElapsed >= seasonDuration){
+      seasonElapsed = 0;
+      const prevWinter = SEASONS[seasonIdx]==='winter';
+      seasonIdx = (seasonIdx+1) % SEASONS.length;
+      const name = SEASON_INFO[SEASONS[seasonIdx]].name;
+      addLog(`Die Jahreszeit wechselt zu ${name}.`, 'season');
+      if(!seasonsSeenSet.includes(SEASONS[seasonIdx])) seasonsSeenSet.push(SEASONS[seasonIdx]);
+      if(prevWinter){
+        unlockAchievement('survivedWinter');
+        flashToast('❄️ Ihr habt den Winter überlebt!');
       }
+      if(seasonsSeenSet.length>=4) unlockAchievement('oldColony');
+      checkLexUnlocks();
     }
+  }
 
-    // fungus conversion
-    if(fungusRooms.length>0){
-      const wanted = fungusRooms.length * RATES.fungusLeafCost * efficiency;
-      const used = Math.min(wanted, resources.leaves);
-      const ratio = wanted>0 ? used/wanted : 0;
-      resources.leaves -= used;
-      resources.fungus += fungusRooms.length * RATES.fungusPerFungusRoom * efficiency * ratio;
-      if(Math.random() < 0.4*efficiency*ratio){
-        const src = fungusRooms[randRange(0,fungusRooms.length)];
-        spawnAntDot(src, cellAt(QUEEN_R,QUEEN_C), 'fungus');
-      }
-    }
-
-    // nursery growth
-    antsCap = 6 + nurseryRooms.length * 4;
-    if(nurseryRooms.length>0 && ants < antsCap){
-      nurseryProgress += nurseryRooms.length * RATES.nurseryProgressPerSec * efficiency;
-      if(nurseryProgress >= 1){
-        const cost = RATES.nurseryFungusPerAnt;
-        if(resources.fungus >= cost){
-          resources.fungus -= cost;
-          ants += 1;
-          nurseryProgress -= 1;
-          addLog('Eine neue Arbeiterin hat ihre Larvenkammer verlassen.', 'fresh');
-        } else {
-          nurseryProgress = 0.99; // wait for fungus
+  function techEffectValue(key, fallback){
+    let v = fallback;
+    Object.values(TECHS).forEach(t=>{
+      if(techDone[t.key] && t.effect && t.effect[key]!==undefined){
+        if(typeof t.effect[key] === 'number'){
+          v = (v===undefined?1:v) * t.effect[key];
         }
       }
+    });
+    return v;
+  }
+
+  function tick(){
+    ageSec += speedMult;
+    for(let s=0;s<speedMult;s++) advanceSeasonIfNeeded();
+
+    const mods = speciesMods();
+    const season = currentSeasonInfo();
+
+    const forageRooms = roomsOfType('forage');
+    const fungusRooms  = roomsOfType('fungus');
+    const nurseryRooms = roomsOfType('nursery');
+    const barracksRooms= roomsOfType('barracks');
+    const waterRooms = roomsOfType('water');
+    const compostRooms = roomsOfType('compost');
+    const labRooms = roomsOfType('lab');
+    const dairyRooms = roomsOfType('dairy');
+    const vaultRooms = roomsOfType('vault');
+
+    const workersNeeded = forageRooms.length + fungusRooms.length + nurseryRooms.length +
+      barracksRooms.length + waterRooms.length + compostRooms.length + labRooms.length + dairyRooms.length;
+    const efficiency = workersNeeded>0 ? Math.min(1, ants/Math.max(1,workersNeeded)) : 1;
+
+    const cap = storageCap();
+    const forageMult = (mods.forageMult||1) * season.forageMult * techEffectValue('forageMult',1);
+    const fungusMult = (mods.fungusMult||1) * season.fungusMult;
+    const nurseryMult = (mods.nurseryMult||1) * season.nurseryMult * techEffectValue('nurseryProgressMult',1);
+
+    for(let s=0;s<speedMult;s++){
+      // foraging - gated by assigned caste, capped by rooms
+      const activeForagers = Math.min(casteCounts.forager, forageRooms.length * 3);
+      const forageWorkRatio = forageRooms.length>0 ? Math.min(1, activeForagers/forageRooms.length) : 0;
+      if(forageRooms.length>0 && forageWorkRatio>0){
+        const gain = forageRooms.length * RATES.leafPerForage * forageMult * forageWorkRatio;
+        resources.leaves = Math.min(cap, resources.leaves + gain);
+        lifetimeStats.leavesTotal += gain;
+        if(Math.random() < 0.5*forageWorkRatio){
+          const src = forageRooms[randRange(0,forageRooms.length)];
+          spawnAntDot(src, queenCell(), 'leaf');
+        }
+      }
+
+      // water gathering (forager caste shared with water rooms too, simplified: scales with forager presence)
+      if(waterRooms.length>0 && casteCounts.forager>0){
+        const ratio = Math.min(1, casteCounts.forager / Math.max(1, forageRooms.length+waterRooms.length));
+        const gain = waterRooms.length * RATES.waterPerRoom * ratio;
+        resources.water = Math.min(cap*0.5, resources.water + gain);
+        if(Math.random()<0.25*ratio){
+          const src = waterRooms[randRange(0,waterRooms.length)];
+          spawnAntDot(src, queenCell(), 'water');
+        }
+      }
+      // water upkeep in winter
+      const waterUpkeep = ants * RATES.waterUpkeepPerAnt * (SEASONS[seasonIdx]==='winter'?2.2:1);
+      resources.water = Math.max(0, resources.water - waterUpkeep);
+
+      // dairy - honey production (lasius only, but room itself already gated)
+      if(dairyRooms.length>0 && casteCounts.forager>0){
+        resources.honey += dairyRooms.length * RATES.dairyHoneyPerRoom * 0.5;
+      }
+
+      // fungus conversion - gated by gardener caste
+      const activeGardeners = Math.min(casteCounts.gardener, fungusRooms.length * 3);
+      const gardenRatio = fungusRooms.length>0 ? Math.min(1, activeGardeners/fungusRooms.length) : 0;
+      if(fungusRooms.length>0 && gardenRatio>0){
+        const compostBonus = compostRooms.length>0 ? (1+RATES.compostBonus*Math.min(1,compostRooms.length/Math.max(1,fungusRooms.length))) : 1;
+        const wanted = fungusRooms.length * RATES.fungusLeafCost * gardenRatio;
+        const used = Math.min(wanted, resources.leaves);
+        const ratio = wanted>0 ? used/wanted : 0;
+        resources.leaves -= used;
+        const gain = fungusRooms.length * RATES.fungusPerFungusRoom * fungusMult * gardenRatio * ratio * compostBonus;
+        resources.fungus = Math.min(cap, resources.fungus + gain);
+        if(Math.random() < 0.4*gardenRatio*ratio){
+          const src = fungusRooms[randRange(0,fungusRooms.length)];
+          spawnAntDot(src, queenCell(), 'fungus');
+        }
+      }
+
+      // science from lab, gated by scholar caste
+      if(labRooms.length>0){
+        const scholarRatio = Math.min(1, casteCounts.scholar / Math.max(1,labRooms.length));
+        const gain = labRooms.length * RATES.sciencePerLabRoom * scholarRatio;
+        resources.science += gain;
+        state.lastScienceRate = gain;
+      } else {
+        state.lastScienceRate = 0;
+      }
+
+      // nursery growth - gated by nurse caste
+      antsCap = 6 + nurseryRooms.length * 4 + Math.round(4*(mods.nurseryMult>1?(mods.nurseryMult-1)*4:0));
+      const nurseActive = nurseryRooms.length>0 && casteCounts.nurse>0;
+      if(nurseActive && ants < antsCap && resources.water>=0){
+        const nurseRatio = Math.min(1, casteCounts.nurse / Math.max(1,nurseryRooms.length));
+        const winterPenalty = (SEASONS[seasonIdx]==='winter' && resources.water<2) ? 0.1 : 1;
+        nurseryProgress += nurseryRooms.length * RATES.nurseryProgressPerSec * nurseryMult * nurseRatio * winterPenalty;
+        if(nurseryProgress >= 1){
+          const fungusMultTech = techEffectValue('nurseryFungusMult',1);
+          const cost = RATES.nurseryFungusPerAnt * fungusMultTech;
+          if(resources.fungus >= cost){
+            resources.fungus -= cost;
+            ants += 1;
+            nurseryProgress -= 1;
+            addLog('Eine neue Arbeiterin hat ihre Larvenkammer verlassen.', 'fresh');
+            checkAchAntCount();
+          } else {
+            nurseryProgress = 0.99;
+          }
+        }
+      }
+
+      // raid countdown
+      nextRaidIn--;
+      const warnAt = techEffectValue('raidWarning',0) || 0;
+      if(!raidWarningGiven && warnAt>0 && nextRaidIn<=warnAt && nextRaidIn>0){
+        raidWarningGiven = true;
+        flashToast('⚠️ Wachposten melden Bewegung in der Nähe...');
+      }
+      if(nextRaidIn <= 0){
+        runRaid();
+        nextRaidIn = randRange(50,85);
+        raidWarningGiven = false;
+      }
+
+      resources.leaves = Math.max(0, Math.min(cap, resources.leaves));
+      resources.fungus = Math.max(0, Math.min(cap, resources.fungus));
     }
 
-    // soldiers derived (not stored ants, just capacity used for defense)
-    const idleAnts = Math.max(0, ants - workersNeeded);
-    const soldierCap = barracksRooms.length * RATES.barracksCapacity;
-    const soldiers = Math.min(idleAnts, soldierCap);
+    const idleAnts = Math.max(0, ants - (casteCounts.forager+casteCounts.gardener+casteCounts.nurse+casteCounts.soldier+casteCounts.scholar));
+    const soldierCap = barracksRooms.length * RATES.barracksCapacity * (mods.barracksCapMult||1);
+    const soldiers = Math.min(casteCounts.soldier, soldierCap);
 
-    state.lastSoldiers = soldiers;
+    state.lastSoldiers = Math.round(soldiers);
     state.lastWorkersNeeded = workersNeeded;
     state.lastEfficiency = efficiency;
 
-    // raid countdown
-    nextRaidIn--;
-    if(nextRaidIn <= 0){
-      runRaid(soldiers);
-      nextRaidIn = randRange(50,85);
-    }
-
-    resources.leaves = Math.max(0, resources.leaves);
-    resources.fungus = Math.max(0, resources.fungus);
-
-    renderTopline();
+    checkAchievementsPassive();
+    renderAll();
     save();
   }
 
-  const state = {lastSoldiers:0, lastWorkersNeeded:0, lastEfficiency:1};
+  function queenCell(){ return cellAt('d0', QUEEN_R, QUEEN_C); }
 
-  function runRaid(soldiers){
+  function runRaid(){
     const minutes = ageSec/60;
-    const raidStrength = 6 + minutes*1.6 + Math.random()*4;
-    const defense = RATES.baseDefense + soldiers*RATES.soldierDefense;
+    const threatKeys = Object.keys(THREATS);
+    const threat = THREATS[threatKeys[randRange(0,threatKeys.length)]];
+    const season = currentSeasonInfo();
+    const mods = speciesMods();
+
+    const raidStrength = (6 + minutes*1.6 + Math.random()*4) * threat.strengthMult * season.raidMult;
+    const baseDefBonus = techEffectValue('baseDefenseBonus',0) || 0;
+    const soldierDefMult = (mods.defenseMult||1) * techEffectValue('soldierDefenseMult',1);
+    const defense = RATES.baseDefense + baseDefBonus + state.lastSoldiers*RATES.soldierDefense*soldierDefMult;
+
     if(defense >= raidStrength){
       const bonus = Math.round(4 + Math.random()*6);
-      resources.leaves += bonus;
-      addLog(`Ein Ameisenbär griff an — eure ${soldiers} Soldatinnen haben ihn vertrieben. +${bonus} Blätter erbeutet.`, 'raid-win');
-      flashToast('Überfall abgewehrt! 🛡');
+      resources.leaves = Math.min(storageCap(), resources.leaves + bonus);
+      lifetimeStats.raidsWon++;
+      addLog(`${threat.icon} ${threat.name} griff an — eure ${Math.round(state.lastSoldiers)} Soldatinnen haben ihn vertrieben. +${bonus} Blätter erbeutet.`, 'raid-win');
+      flashToast(`Überfall abgewehrt! 🛡 (${threat.name})`);
+      unlockAchievement('survivedRaid');
     } else {
-      const lossLeaves = Math.round(resources.leaves*0.3);
-      const lossFungus = Math.round(resources.fungus*0.3);
+      const compostRooms = roomsOfType('compost');
+      const lossMult = compostRooms.length>0 ? 0.3 * 0.75 : 0.3;
+      const lossLeaves = Math.round(resources.leaves*lossMult);
+      const lossFungus = Math.round(resources.fungus*lossMult);
       resources.leaves -= lossLeaves;
       resources.fungus -= lossFungus;
       let antLoss = 0;
-      if(soldiers===0 && raidStrength > defense+5 && ants>2){
+      if(state.lastSoldiers===0 && raidStrength > defense+5 && ants>2){
         antLoss = 1; ants -= 1;
       }
-      addLog(`Ein Ameisenbär hat die Kolonie überrannt! Verloren: ${lossLeaves} Blätter, ${lossFungus} Pilzfutter${antLoss?', 1 Ameise':''}.`, 'raid-fail');
-      flashToast('Überfall! Die Kolonie wurde geplündert.');
+      lifetimeStats.raidsLost++;
+      addLog(`${threat.icon} ${threat.name} hat die Kolonie überrannt! Verloren: ${lossLeaves} Blätter, ${lossFungus} Pilzfutter${antLoss?', 1 Ameise':''}.`, 'raid-fail');
+      flashToast(`Überfall! ${threat.name} hat geplündert.`);
     }
+    pendingLexDetail = threat.key; // could surface threat fact somewhere later
   }
 
   /* ===================== ANT DOT ANIMATION ===================== */
-  function cellPixelCenter(cell){
-    const colLine = cell.c*2;   // 0-based column line of the cell within grid
-    const rowLine = cell.r*2;
-    const x = colLine*(CELL) + Math.floor(colLine/2)*0 + (colLine/2)*CONN + CELL/2;
-    const y = rowLine*(CELL) + (rowLine/2)*CONN + CELL/2;
-    return {x,y};
-  }
-  // Simplify with accurate track accumulation:
-  function trackPos(n){ // pixel offset of grid line "n" (0-based room/connector unit index)
-    // pattern: room, conn, room, conn, ... ; n counts rooms+connectors passed
+  function trackPos(n){
     let pos = 0;
     for(let i=0;i<n;i++){
       pos += (i%2===0) ? CELL : CONN;
@@ -630,6 +1489,7 @@
 
   function spawnAntDot(fromCell, toCell, kind){
     const grid = document.getElementById('grid');
+    if(!grid) return;
     const from = cellCenterPx(fromCell);
     const to = cellCenterPx(toCell);
     const dot = document.createElement('div');
@@ -649,9 +1509,70 @@
     }, 1150);
   }
 
-  /* ===================== RENDER ===================== */
+  /* ===================== TECH TREE LOGIC ===================== */
+  function canResearch(key){
+    const t = TECHS[key];
+    if(!t) return false;
+    if(techDone[key]) return false;
+    if(resources.science < t.cost) return false;
+    return t.requires.every(r=>techDone[r]);
+  }
+
+  function researchTech(key){
+    const t = TECHS[key];
+    if(!canResearch(key)) return;
+    resources.science -= t.cost;
+    techDone[key] = true;
+    if(t.effect && t.effect.unlockRoom) unlockedRooms[t.effect.unlockRoom] = true;
+    addLog(`Neue Technologie erforscht: ${t.name}.`, 'tech');
+    flashToast(`🔬 Erforscht: ${t.name}`);
+    if(Object.keys(techDone).length===1) unlockAchievement('firstTech');
+    if(Object.keys(techDone).length===Object.keys(TECHS).length) unlockAchievement('allTechs');
+    checkLexUnlocks();
+    renderAll(); save();
+  }
+
+  /* ===================== ACHIEVEMENTS ===================== */
+  function unlockAchievement(key){
+    if(achievementsUnlocked[key]) return;
+    achievementsUnlocked[key] = true;
+    const a = ACHIEVEMENTS[key];
+    if(a){
+      addLog(`🏆 Erfolg freigeschaltet: ${a.name}`, 'ach');
+      flashToast(`🏆 ${a.name}`);
+    }
+  }
+  function checkAchAntCount(){
+    if(ants>=10) unlockAchievement('tenAnts');
+    if(ants>=50) unlockAchievement('fiftyAnts');
+  }
+  function checkAchievementsPassive(){
+    checkAchAntCount();
+    if(resources.leaves>=100) unlockAchievement('hundredLeaves');
+    if(lifetimeStats.dugTotal>=20) unlockAchievement('deepDigger');
+    const allTypes = Object.keys(ROOM_TYPES).filter(k=>isRoomUnlocked(k));
+    if(allTypes.length>0 && allTypes.every(t=>builtRoomTypesEver[t])) unlockAchievement('allRoomTypes');
+  }
+
+  /* ===================== LEXICON UNLOCKS ===================== */
+  function checkLexUnlocks(){
+    Object.values(LEXICON).forEach(entry=>{
+      if(lexUnlocked[entry.key]) return;
+      if(entry.unlockedFromStart){ lexUnlocked[entry.key] = true; return; }
+      const cond = entry.unlockAt;
+      if(!cond) return;
+      let ok = true;
+      if(cond.ants && ants < cond.ants) ok = false;
+      if(cond.rooms && !cond.rooms.every(r=>builtRoomTypesEver[r])) ok = false;
+      if(cond.seasonsSeen && seasonsSeenSet.length < cond.seasonsSeen) ok = false;
+      if(ok) lexUnlocked[entry.key] = true;
+    });
+  }
+
+  /* ===================== GRID DOM ===================== */
   function buildGridDom(){
     const grid = document.getElementById('grid');
+    if(!grid) return;
     grid.innerHTML = '';
     const dispCols = GC*2-1, dispRows = GR*2-1;
     const colTemplate = [];
@@ -661,7 +1582,6 @@
     grid.style.gridTemplateColumns = colTemplate.join(' ');
     grid.style.gridTemplateRows = rowTemplate.join(' ');
 
-    // room cells
     for(let r=0;r<GR;r++){
       for(let c=0;c<GC;c++){
         const el = document.createElement('div');
@@ -674,7 +1594,6 @@
         grid.appendChild(el);
       }
     }
-    // horizontal connectors (between c and c+1, same row)
     for(let r=0;r<GR;r++){
       for(let c=0;c<GC-1;c++){
         const el = document.createElement('div');
@@ -685,7 +1604,6 @@
         grid.appendChild(el);
       }
     }
-    // vertical connectors (between r and r+1, same col)
     for(let r=0;r<GR-1;r++){
       for(let c=0;c<GC;c++){
         const el = document.createElement('div');
@@ -699,17 +1617,57 @@
     renderCells();
   }
 
+  function renderDepthTabs(){
+    const wrap = document.getElementById('depthTabs');
+    if(!wrap) return;
+    wrap.innerHTML = DEPTHS.map(d=>{
+      const unlocked = unlockedDepths.includes(d.key);
+      const active = d.key===activeDepth;
+      const canUnlock = !unlocked && resources.leaves>=d.unlockCost;
+      return `<button class="depth-tab ${active?'active':''} ${unlocked?'':'locked'}" data-depth="${d.key}" ${unlocked?'':'data-locked="1"'}>
+        <span>${d.icon}</span><span>${d.name}</span>
+        ${unlocked?'' : `<span class="lock-tag">🔒 ${d.unlockCost} 🍃</span>`}
+      </button>`;
+    }).join('');
+    wrap.querySelectorAll('.depth-tab').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const dk = btn.dataset.depth;
+        if(btn.dataset.locked){
+          const d = DEPTHS.find(x=>x.key===dk);
+          if(resources.leaves >= d.unlockCost){
+            resources.leaves -= d.unlockCost;
+            unlockedDepths.push(dk);
+            // pre-dig the entrance cell at top-left-ish so it's reachable
+            const entrance = cellAt(dk, 0, 0);
+            entrance.dug = true;
+            addLog(`Neue Ebene erschlossen: ${d.name}.`, 'fresh');
+            flashToast(`⛏ Ebene freigeschaltet: ${d.name}`);
+            activeDepth = dk;
+            buildGridDom();
+            renderAll(); save();
+          } else {
+            flashToast('Nicht genug Blätter, um diese Ebene zu erschließen.');
+          }
+        } else {
+          activeDepth = dk;
+          buildGridDom();
+          renderAll();
+        }
+      });
+    });
+  }
+
   function renderCells(){
     const grid = document.getElementById('grid');
-    // rooms
+    if(!grid) return;
     grid.querySelectorAll('[data-r][data-c]:not([data-type])').forEach(el=>{
       const r = +el.dataset.r, c = +el.dataset.c;
-      const cell = cellAt(r,c);
+      const cell = cellAt(activeDepth, r,c);
       el.className = 'cell';
       el.innerHTML = '';
       if(!cell.dug){
         el.classList.add('undug');
-        if(isDiggable(r,c) && mode==='dig') el.classList.add('diggable');
+        if(isDiggable(activeDepth, r,c) && mode==='dig') el.classList.add('diggable');
       } else if(cell.room){
         const def = ROOM_TYPES[cell.room] || (cell.room==='queen'? {icon:'👑',cls:'room-queen'} : null);
         el.classList.add('dug');
@@ -718,57 +1676,98 @@
           const pct = Math.min(99, Math.round(nurseryProgress*100));
           el.innerHTML += `<span class="badge">${pct}%</span>`;
         }
+        if(cell.room && cell.room!=='queen' && CASTES[ROOM_TYPES[cell.room].caste]){
+          // no per-room occupancy tracked individually (caste pool is global) - skip badge
+        }
       } else {
         el.classList.add('dug','empty');
         if(mode && ROOM_TYPES[mode]) el.classList.add('buildable');
         el.innerHTML = '<span style="opacity:.35;font-size:1.1rem;">·</span>';
       }
     });
-    // connectors
     grid.querySelectorAll('.conn').forEach(el=>{
       const r = +el.dataset.r, c = +el.dataset.c;
       let active;
-      if(el.dataset.type==='h') active = cellAt(r,c).dug && cellAt(r,c+1).dug;
-      else active = cellAt(r,c).dug && cellAt(r+1,c).dug;
+      if(el.dataset.type==='h') active = cellAt(activeDepth, r,c).dug && cellAt(activeDepth, r,c+1).dug;
+      else active = cellAt(activeDepth, r,c).dug && cellAt(activeDepth, r+1,c).dug;
       el.classList.toggle('active', active);
     });
   }
 
+  /* ===================== TOPBAR / RESOURCES ===================== */
   function fmt(n){ return Math.floor(n).toLocaleString('de-DE'); }
 
-  function renderTopline(){
-    document.getElementById('resourceBar').innerHTML = `
-      <div class="res-chip"><span class="ic">🍃</span><span class="val">${fmt(resources.leaves)}</span><span class="lbl">Blätter</span></div>
-      <div class="res-chip"><span class="ic">🍄</span><span class="val">${fmt(resources.fungus)}</span><span class="lbl">Pilzfutter</span></div>
+  function renderTopbar(){
+    const cap = storageCap();
+    const sp = speciesKey ? SPECIES[speciesKey] : null;
+    const pill = document.getElementById('speciesPill');
+    if(pill) pill.innerHTML = sp ? `<span class="sp-ic">${sp.icon}</span> ${sp.name}` : '';
+
+    const hasWater = unlockedRooms.water || techDone.irrigation;
+    const hasHoney = roomsOfType('dairy').length>0;
+    const hasScience = techDone.scouting || roomsOfType('lab').length>0;
+    const hasVault = roomsOfType('vault').length>0;
+
+    let chips = `
+      <div class="res-chip ${resources.leaves>=cap?'cap':''}"><span class="ic">🍃</span><span class="val">${fmt(resources.leaves)}/${fmt(cap)}</span><span class="lbl">Blätter</span></div>
+      <div class="res-chip ${resources.fungus>=cap?'cap':''}"><span class="ic">🍄</span><span class="val">${fmt(resources.fungus)}/${fmt(cap)}</span><span class="lbl">Pilzfutter</span></div>
       <div class="res-chip ${ants>=antsCap?'warn':''}"><span class="ic">🐜</span><span class="val">${ants}/${antsCap}</span><span class="lbl">Ameisen</span></div>
     `;
-    document.getElementById('digCost').textContent = `${digCost()} Blätter`;
-    document.getElementById('statAnts').textContent = `${ants} / ${antsCap}`;
-    document.getElementById('statWorkersNeeded').textContent = state.lastWorkersNeeded;
-    document.getElementById('statSoldiers').textContent = state.lastSoldiers;
-    document.getElementById('statEfficiency').textContent = Math.round(state.lastEfficiency*100)+'%';
-    const mm = Math.floor(ageSec/60), ss = ageSec%60;
-    document.getElementById('colonyAge').textContent = `${mm}:${String(ss).padStart(2,'0')}`;
-    document.getElementById('raidCountdown').textContent = `${nextRaidIn}s`;
-    renderPalette();
+    if(hasWater){
+      chips += `<div class="res-chip ${resources.water<2 && SEASONS[seasonIdx]==='winter' ?'warn':''}"><span class="ic">💧</span><span class="val">${fmt(resources.water)}</span><span class="lbl">Wasser</span></div>`;
+    }
+    if(hasHoney){
+      chips += `<div class="res-chip"><span class="ic">🍯</span><span class="val">${fmt(resources.honey)}</span><span class="lbl">Honigtau</span></div>`;
+    }
+    if(hasScience){
+      chips += `<div class="res-chip"><span class="ic">🔬</span><span class="val">${fmt(resources.science)}</span><span class="lbl">Wissenschaft</span></div>`;
+    }
+    if(hasVault){
+      chips += `<div class="res-chip"><span class="ic">👑</span><span class="val">${fmt(resources.prestige)}</span><span class="lbl">Prestige</span></div>`;
+    }
+    document.getElementById('resourceBar').innerHTML = chips;
   }
 
+  function renderSeasonStrip(){
+    const info = currentSeasonInfo();
+    const pct = Math.round((seasonElapsed/seasonDuration)*100);
+    document.getElementById('seasonStrip').innerHTML = `
+      <div class="season-info">
+        <span class="season-icon">${info.icon}</span>
+        <div>
+          <div class="season-name">${info.name}</div>
+          <div class="season-desc">${info.desc}</div>
+        </div>
+      </div>
+      <div class="season-bar-track"><div class="season-bar-fill" style="width:${pct}%"></div></div>
+    `;
+  }
+
+  /* ===================== BUILD PALETTE ===================== */
   function renderPalette(){
     const wrap = document.getElementById('buildPalette');
+    if(!wrap) return;
     wrap.innerHTML = '';
-    Object.entries(ROOM_TYPES).forEach(([key,def])=>{
-      const affordable = canAfford(def.cost);
+    const badge = document.getElementById('roomCountBadge');
+    const totalBuilt = allCellsFlat().filter(c=>c.room && c.room!=='queen').length;
+    if(badge) badge.textContent = totalBuilt + ' gebaut';
+
+    Object.values(ROOM_TYPES).forEach(def=>{
+      const unlocked = isRoomUnlocked(def.key);
+      const affordable = unlocked && canAfford(def.cost);
       const btn = document.createElement('button');
-      btn.className = 'build-btn' + (mode===key?' selected':'') + (!affordable?' disabled':'');
+      btn.className = 'build-btn' + (mode===def.key?' selected':'') + (!affordable?' disabled':'') + (!unlocked?' locked':'');
+      const lockTag = !unlocked ? `<span class="lock-tag">🔒 ${def.requiresTech ? 'Tech: '+(TECHS[def.requiresTech]?TECHS[def.requiresTech].name:'?') : (def.speciesOnly ? SPECIES[def.speciesOnly].name : '')}</span>` : '';
       btn.innerHTML = `
         <span class="ic">${def.icon}</span>
         <span class="meta">
-          <div class="name">${def.name}</div>
+          <div class="name">${def.name} ${lockTag}</div>
           <div class="desc">${def.desc}</div>
           <div class="cost">${costString(def.cost)}</div>
         </span>`;
       btn.addEventListener('click', ()=>{
-        mode = (mode===key) ? null : key;
+        if(!unlocked){ flashToast('Diese Kammer ist noch nicht freigeschaltet.'); return; }
+        mode = (mode===def.key) ? null : def.key;
         updateModeUi();
       });
       wrap.appendChild(btn);
@@ -776,10 +1775,189 @@
   }
 
   function costString(cost){
-    return Object.entries(cost).map(([k,v])=> `${v} ${k==='leaves'?'Blätter':'Pilzfutter'}`).join(' · ');
+    const map = {leaves:'Blätter', fungus:'Pilzfutter', water:'Wasser'};
+    return Object.entries(cost).map(([k,v])=> `${v} ${map[k]||k}`).join(' · ');
   }
   function canAfford(cost){
-    return Object.entries(cost).every(([k,v])=> resources[k] >= v);
+    return Object.entries(cost).every(([k,v])=> (resources[k]||0) >= v);
+  }
+
+  /* ===================== CASTE ASSIGNMENT ===================== */
+  function totalAssigned(){
+    return casteCounts.forager+casteCounts.gardener+casteCounts.nurse+casteCounts.soldier+casteCounts.scholar;
+  }
+
+  function renderCasteAssign(){
+    const wrap = document.getElementById('casteAssign');
+    if(!wrap) return;
+    const free = ants - totalAssigned();
+    const badge = document.getElementById('casteAssignedBadge');
+    if(badge) badge.textContent = `${totalAssigned()}/${ants}`;
+
+    const rows = Object.values(CASTES).filter(c=>c.key!=='builder').map(c=>{
+      const n = casteCounts[c.key]||0;
+      const roomCount = roomCountForCaste(c.key);
+      const cap = roomCapForCaste(c.key);
+      return `
+      <div class="caste-row">
+        <span class="ic">${c.icon}</span>
+        <span class="lbl">${c.name}<br><span style="color:var(--cream-faint); font-size:0.68rem;">${roomCount} Raum(e) · Kapazität ${cap}</span></span>
+        <span class="ctrl">
+          <button data-caste="${c.key}" data-dir="-1" ${n<=0?'disabled':''}>−</button>
+          <span class="num">${n}</span>
+          <button data-caste="${c.key}" data-dir="1" ${(free<=0 || n>=cap)?'disabled':''}>+</button>
+        </span>
+      </div>`;
+    }).join('');
+
+    wrap.innerHTML = rows + `
+      <div class="caste-total-row ${free<0?'over':''}">
+        <span>Freie Baumeisterinnen</span><span class="mono">${Math.max(0,free)}</span>
+      </div>`;
+
+    wrap.querySelectorAll('button[data-caste]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const c = btn.dataset.caste;
+        const dir = +btn.dataset.dir;
+        const free2 = ants - totalAssigned();
+        const cap = roomCapForCaste(c);
+        if(dir>0 && free2>0 && casteCounts[c]<cap) casteCounts[c]++;
+        if(dir<0 && casteCounts[c]>0) casteCounts[c]--;
+        renderAll(); save();
+      });
+    });
+  }
+
+  function roomCountForCaste(casteKey){
+    const roomKey = Object.values(ROOM_TYPES).find(r=>r.caste===casteKey);
+    if(!roomKey) return 0;
+    // multiple room types can share a caste (forager used by forage+water+dairy)
+    return Object.values(ROOM_TYPES).filter(r=>r.caste===casteKey).reduce((sum,r)=> sum + roomsOfType(r.key).length, 0);
+  }
+  function roomCapForCaste(casteKey){
+    const count = roomCountForCaste(casteKey);
+    if(casteKey==='soldier'){
+      const mods = speciesMods();
+      return Math.round(count * RATES.barracksCapacity * (mods.barracksCapMult||1));
+    }
+    return count * 3;
+  }
+
+  /* ===================== TECH TREE RENDER ===================== */
+  function renderTechPanel(){
+    const branches = {gather:'Sammeln & Vorrat', defense:'Verteidigung & Schutz', pop:'Bevölkerung & Wissen'};
+    const branchIcons = {gather:'🍃', defense:'🛡', pop:'🥚'};
+    let html = '';
+    Object.entries(branches).forEach(([bk,label])=>{
+      const techs = Object.values(TECHS).filter(t=>t.branch===bk);
+      html += `<div class="tech-branch"><div class="tech-branch-title">${branchIcons[bk]} ${label}</div>`;
+      techs.forEach(t=>{
+        const done = !!techDone[t.key];
+        const locked = !done && !t.requires.every(r=>techDone[r]);
+        const afford = canResearch(t.key);
+        html += `
+        <div class="tech-card ${done?'done':''} ${locked?'locked':''}">
+          <span class="ic">${t.icon}</span>
+          <span class="meta">
+            <div class="name">${t.name}</div>
+            <div class="desc">${t.desc}</div>
+            ${!done?`<div class="cost">${t.cost} 🔬 Wissenschaft${t.requires.length?' · benötigt: '+t.requires.map(r=>TECHS[r].name).join(', '):''}</div>`:''}
+          </span>
+          ${done? '<span class="done-tag">✓ erforscht</span>' : `<button data-tech="${t.key}" ${(!afford||locked)?'disabled':''}>Erforschen</button>`}
+        </div>`;
+      });
+      html += `</div>`;
+    });
+
+    document.getElementById('techPanelWide').innerHTML = `<h2>🌿 Forschungsbaum</h2>${html}`;
+    document.getElementById('techPanelWide').querySelectorAll('button[data-tech]').forEach(btn=>{
+      btn.addEventListener('click', ()=> researchTech(btn.dataset.tech));
+    });
+  }
+
+  /* ===================== LEXICON RENDER ===================== */
+  function renderLexPanel(){
+    const cards = Object.values(LEXICON).map(entry=>{
+      const unlocked = !!lexUnlocked[entry.key];
+      return `<div class="lex-card ${unlocked?'':'locked'}" data-lex="${entry.key}">
+        <div class="ic">${unlocked?entry.icon:'🔒'}</div>
+        <div class="name">${unlocked?entry.name:'???'}</div>
+        <div class="tag">${unlocked?(entry.facts.length+' Fakten'):'Gesperrt'}</div>
+      </div>`;
+    }).join('');
+    let detailHtml = '';
+    if(pendingLexDetail && lexUnlocked[pendingLexDetail]){
+      const e = LEXICON[pendingLexDetail];
+      detailHtml = `<div class="lex-detail"><h3>${e.icon} ${e.name}</h3>${e.facts.map(f=>`<div class="fact">${f}</div>`).join('')}</div>`;
+    }
+    const panel = document.getElementById('lexPanelWide');
+    panel.innerHTML = `<h2>📖 Lexikon der Kolonie</h2><div class="lex-grid">${cards}</div>${detailHtml}`;
+    panel.querySelectorAll('.lex-card').forEach(card=>{
+      card.addEventListener('click', ()=>{
+        const key = card.dataset.lex;
+        if(!lexUnlocked[key]){ flashToast('Dieser Lexikon-Eintrag ist noch gesperrt.'); return; }
+        pendingLexDetail = key;
+        renderLexPanel();
+        card.parentElement.nextElementSibling && card.parentElement.nextElementSibling.scrollIntoView({behavior:'smooth', block:'nearest'});
+      });
+    });
+    const badge = document.getElementById('lexCountBadge');
+    if(badge) badge.textContent = Object.values(lexUnlocked).filter(Boolean).length + '/' + Object.keys(LEXICON).length;
+  }
+
+  /* ===================== ACHIEVEMENTS RENDER ===================== */
+  function renderAchPanel(){
+    const cards = Object.values(ACHIEVEMENTS).map(a=>{
+      const unlocked = !!achievementsUnlocked[a.key];
+      return `<div class="ach-card ${unlocked?'unlocked':''}">
+        <span class="ic">${a.icon}</span>
+        <span class="meta">
+          <div class="name">${a.name}</div>
+          <div class="desc">${a.desc}</div>
+        </span>
+      </div>`;
+    }).join('');
+    document.getElementById('achPanelWide').innerHTML = `<h2>🏆 Erfolge der Kolonie</h2><div class="ach-grid">${cards}</div>`;
+    const badge = document.getElementById('achCountBadge');
+    if(badge) badge.textContent = Object.values(achievementsUnlocked).filter(Boolean).length + '/' + Object.keys(ACHIEVEMENTS).length;
+  }
+
+  /* ===================== STATS RENDER ===================== */
+  function renderStatsPanel(){
+    document.getElementById('statAge2').textContent = ageStr();
+    document.getElementById('statDug').textContent = lifetimeStats.dugTotal;
+    document.getElementById('statRooms').textContent = lifetimeStats.roomsTotal;
+    document.getElementById('statRaidsWon').textContent = lifetimeStats.raidsWon;
+    document.getElementById('statRaidsLost').textContent = lifetimeStats.raidsLost;
+    document.getElementById('statLeavesTotal').textContent = fmt(lifetimeStats.leavesTotal);
+    document.getElementById('statPrestige').textContent = fmt(resources.prestige);
+  }
+  function ageStr(){
+    const mm = Math.floor(ageSec/60), ss = ageSec%60;
+    return `${mm}:${String(ss).padStart(2,'0')}`;
+  }
+
+  /* ===================== MASTER RENDER ===================== */
+  function renderAll(){
+    renderTopbar();
+    renderSeasonStrip();
+    renderDepthTabs();
+    document.getElementById('digCost').textContent = `${digCost(activeDepth)} Blätter`;
+    document.getElementById('statAnts').textContent = `${ants} / ${antsCap}`;
+    document.getElementById('statFree').textContent = Math.max(0, ants-totalAssigned());
+    document.getElementById('statWorkersNeeded').textContent = state.lastWorkersNeeded;
+    document.getElementById('statEfficiency').textContent = Math.round(state.lastEfficiency*100)+'%';
+    document.getElementById('statScience').textContent = fmt(resources.science);
+    document.getElementById('statScienceRate').textContent = state.lastScienceRate.toFixed(2)+'/s';
+    document.getElementById('colonyAge').textContent = ageStr();
+    document.getElementById('raidCountdown').textContent = `${nextRaidIn}s`;
+    renderPalette();
+    renderCasteAssign();
+    renderCells();
+    if(activeTab==='tech') renderTechPanel();
+    if(activeTab==='lex') renderLexPanel();
+    if(activeTab==='ach') renderAchPanel();
+    if(activeTab==='stats') renderStatsPanel();
   }
 
   function updateModeUi(){
@@ -787,9 +1965,9 @@
     document.getElementById('cancelBtn').style.display = mode ? 'block' : 'none';
     const info = document.getElementById('selectedInfo');
     if(mode==='dig'){
-      info.textContent = `Klicke auf einen markierten Gang, um ihn für ${digCost()} Blätter zu graben.`;
+      info.textContent = `Klicke auf einen markierten Gang, um ihn für ${digCost(activeDepth)} Blätter zu graben.`;
     } else if(mode && ROOM_TYPES[mode]){
-      info.textContent = `Klicke auf eine leere, gegrabene Kammer, um „${ROOM_TYPES[mode].name}“ zu bauen.`;
+      info.textContent = `Klicke auf eine leere, gegrabene Kammer, um „${ROOM_TYPES[mode].name}" zu bauen.`;
     } else {
       info.textContent = 'Wähle links eine Aktion, dann klicke auf den Bau.';
     }
@@ -799,28 +1977,35 @@
 
   /* ===================== INTERACTION ===================== */
   function onCellClick(r,c){
-    const cell = cellAt(r,c);
+    const cell = cellAt(activeDepth, r,c);
     if(mode==='dig'){
-      if(!isDiggable(r,c)){ flashToast('Dieser Gang ist noch nicht erreichbar.'); return; }
-      const cost = digCost();
+      if(!isDiggable(activeDepth, r,c)){ flashToast('Dieser Gang ist noch nicht erreichbar.'); return; }
+      const cost = digCost(activeDepth);
       if(resources.leaves < cost){ flashToast('Nicht genug Blätter zum Graben.'); return; }
       resources.leaves -= cost;
       cell.dug = true;
+      lifetimeStats.dugTotal++;
       addLog('Ein neuer Gang wurde in die Erde gegraben.', 'fresh');
-      renderTopline(); renderCells(); save();
+      renderAll(); save();
       return;
     }
     if(mode && ROOM_TYPES[mode]){
+      if(!isRoomUnlocked(mode)){ flashToast('Diese Kammer ist noch nicht freigeschaltet.'); return; }
       if(!cell.dug || cell.room){ flashToast('Hier kann nichts gebaut werden.'); return; }
       const def = ROOM_TYPES[mode];
       if(!canAfford(def.cost)){ flashToast('Nicht genug Ressourcen.'); return; }
       Object.entries(def.cost).forEach(([k,v])=> resources[k]-=v);
       cell.room = mode;
+      lifetimeStats.roomsTotal++;
+      builtRoomTypesEver[mode] = true;
       addLog(`${def.name} wurde gebaut.`, 'fresh');
-      renderTopline(); renderCells(); save();
+      if(lifetimeStats.roomsTotal===1) unlockAchievement('firstRoom');
+      if(mode==='vault') unlockAchievement('vaultBuilt');
+      checkLexUnlocks();
+      checkAchievementsPassive();
+      renderAll(); save();
       return;
     }
-    // info click
     if(cell.room){
       const def = ROOM_TYPES[cell.room];
       if(def) flashToast(`${def.icon} ${def.name} — ${def.desc}`);
@@ -828,49 +2013,104 @@
     }
   }
 
-  document.getElementById('digBtn').addEventListener('click', ()=>{
-    mode = (mode==='dig') ? null : 'dig';
-    updateModeUi();
-  });
-  document.getElementById('cancelBtn').addEventListener('click', ()=>{
-    mode = null; updateModeUi();
-  });
-  document.getElementById('resetBtn').addEventListener('click', ()=>{
-    if(confirm('Die gesamte Kolonie wirklich auflösen und neu beginnen?')){
-      localStorage.removeItem(SAVE_KEY);
-      freshState();
-      buildGridDom();
-      renderTopline();
+  /* ===================== VAULT PRESTIGE TICKING (separate light tick) ===================== */
+  function vaultTick(){
+    const vaultRooms = roomsOfType('vault');
+    if(vaultRooms.length>0){
+      resources.prestige += vaultRooms.length * 0.05 * speedMult;
     }
-  });
+  }
+
+  /* ===================== TABS ===================== */
+  function setupTabs(){
+    document.querySelectorAll('.tab-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        activeTab = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b===btn));
+        document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active', p.dataset.tabpanel===activeTab));
+        document.getElementById('techPanelWide').style.display = activeTab==='tech' ? 'block':'none';
+        document.getElementById('lexPanelWide').style.display = activeTab==='lex' ? 'block':'none';
+        document.getElementById('achPanelWide').style.display = activeTab==='ach' ? 'block':'none';
+        renderAll();
+      });
+    });
+  }
+
+  function setupSpeedButtons(){
+    [1,2,3].forEach(s=>{
+      const btn = document.getElementById('speed'+s+'Btn');
+      if(!btn) return;
+      btn.addEventListener('click', ()=>{
+        speedMult = s;
+        document.querySelectorAll('.speed-btn').forEach(b=>b.classList.toggle('active', +b.dataset.speed===s));
+      });
+    });
+  }
 
   /* ===================== LOG / TOAST ===================== */
   function addLog(text, cls){
-    const time = `${Math.floor(ageSec/60)}:${String(ageSec%60).padStart(2,'0')}`;
+    const time = ageStr();
     logEntries.push({text,cls,time});
-    if(logEntries.length>60) logEntries.shift();
+    if(logEntries.length>80) logEntries.shift();
     renderLog();
   }
   function renderLog(){
     const list = document.getElementById('logList');
-    list.innerHTML = logEntries.slice(-40).map(e=>
+    if(!list) return;
+    list.innerHTML = logEntries.slice(-50).map(e=>
       `<li class="${e.cls||''}"><span class="log-time">${e.time}</span>${e.text}</li>`
     ).reverse().join('');
   }
   let toastTimer=null;
   function flashToast(msg){
     const t = document.getElementById('toast');
+    if(!t) return;
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+    toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+  }
+
+  /* ===================== SPECIES MODAL ===================== */
+  function showSpeciesModal(){
+    const app = document.getElementById('app');
+    const wrap = document.createElement('div');
+    wrap.innerHTML = speciesModalHtml();
+    document.body.appendChild(wrap.firstElementChild);
+    document.querySelectorAll('.species-card').forEach(card=>{
+      const pick = ()=>{
+        speciesKey = card.dataset.species;
+        const modal = document.getElementById('speciesModal');
+        if(modal) modal.remove();
+        addLog(`Die Kolonie hat sich als ${SPECIES[speciesKey].name} (${SPECIES[speciesKey].latin}) etabliert.`, 'fresh');
+        flashToast(`${SPECIES[speciesKey].icon} Art gewählt: ${SPECIES[speciesKey].name}`);
+        save();
+        renderAll();
+      };
+      card.addEventListener('click', pick);
+      card.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' ') pick(); });
+    });
+  }
+
+  /* ===================== INFO MODAL (room-build first-time tooltip helper) ===================== */
+  function showInfoModal(title, bodyHtml){
+    const wrap = document.createElement('div');
+    wrap.innerHTML = infoModalHtml(title, bodyHtml);
+    document.body.appendChild(wrap.firstElementChild);
+    document.getElementById('infoModalCloseBtn').addEventListener('click', ()=>{
+      const modal = document.getElementById('infoModal');
+      if(modal) modal.remove();
+    });
   }
 
   /* ===================== SAVE / LOAD ===================== */
   function save(){
     try{
       localStorage.setItem(SAVE_KEY, JSON.stringify({
-        cells, resources, ants, antsCap, nurseryProgress, ageSec, nextRaidIn, logEntries
+        v:2, cells, resources, ants, antsCap, casteCounts, nurseryProgress,
+        mode:null, activeDepth, unlockedDepths, ageSec, nextRaidIn, raidWarningGiven,
+        logEntries, speciesKey, speedMult, seasonIdx, seasonElapsed, seasonsSeenSet,
+        techDone, unlockedRooms, achievementsUnlocked, lexUnlocked, builtRoomTypesEver, lifetimeStats
       }));
     }catch(e){ /* storage unavailable, ignore */ }
   }
@@ -879,23 +2119,83 @@
       const raw = localStorage.getItem(SAVE_KEY);
       if(!raw) return false;
       const data = JSON.parse(raw);
+      if(data.v!==2) return false; // old/incompatible save -> fresh start
       cells = data.cells; resources = data.resources; ants = data.ants;
-      antsCap = data.antsCap; nurseryProgress = data.nurseryProgress;
+      antsCap = data.antsCap; casteCounts = data.casteCounts || {forager:0,gardener:0,nurse:0,soldier:0,scholar:0};
+      nurseryProgress = data.nurseryProgress;
+      activeDepth = data.activeDepth || 'd0';
+      unlockedDepths = data.unlockedDepths || ['d0'];
       ageSec = data.ageSec; nextRaidIn = data.nextRaidIn;
+      raidWarningGiven = data.raidWarningGiven || false;
       logEntries = data.logEntries || [];
+      speciesKey = data.speciesKey || null;
+      speedMult = data.speedMult || 1;
+      seasonIdx = data.seasonIdx || 0;
+      seasonElapsed = data.seasonElapsed || 0;
+      seasonsSeenSet = data.seasonsSeenSet || [SEASONS[0]];
+      techDone = data.techDone || {};
+      unlockedRooms = data.unlockedRooms || {};
+      achievementsUnlocked = data.achievementsUnlocked || {};
+      lexUnlocked = data.lexUnlocked || {};
+      builtRoomTypesEver = data.builtRoomTypesEver || {};
+      lifetimeStats = data.lifetimeStats || {leavesTotal:0,dugTotal:0,roomsTotal:0,raidsWon:0,raidsLost:0};
       return true;
     }catch(e){ return false; }
   }
 
   /* ===================== BOOT ===================== */
-  if(!load()){ freshState(); }
-  buildGridDom();
-  renderTopline();
-  renderLog();
-  updateModeUi();
-  setInterval(tick, 1000);
+  function boot(){
+    const app = document.getElementById('app');
+    app.innerHTML = appShellHtml();
+
+    const hadSave = load();
+    if(!hadSave){ freshState(true); }
+    checkLexUnlocks();
+
+    buildGridDom();
+    setupTabs();
+    setupSpeedButtons();
+
+    document.getElementById('digBtn').addEventListener('click', ()=>{
+      mode = (mode==='dig') ? null : 'dig';
+      updateModeUi();
+    });
+    document.getElementById('cancelBtn').addEventListener('click', ()=>{
+      mode = null; updateModeUi();
+    });
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      if(confirm('Die gesamte Kolonie wirklich auflösen und neu beginnen?')){
+        localStorage.removeItem(SAVE_KEY);
+        speciesKey = null;
+        freshState(false);
+        buildGridDom();
+        renderAll();
+        renderLog();
+        updateModeUi();
+        if(!speciesKey) showSpeciesModal();
+      }
+    });
+    document.querySelectorAll('.speed-btn').forEach(b=>b.classList.toggle('active', +b.dataset.speed===speedMult));
+
+    renderAll();
+    renderLog();
+    updateModeUi();
+
+    if(!speciesKey){
+      showSpeciesModal();
+    }
+
+    setInterval(()=>{ tick(); vaultTick(); }, 1000);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
 
 })();
+
 </script>
 </body>
 </html>
