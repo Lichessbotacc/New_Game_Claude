@@ -230,6 +230,16 @@ tr:last-child td{border-bottom:none;}
             <option value="aggressive">Aggressiv — sucht Angriffe & Schlagzüge</option>
             <option value="chaotic">Chaotisch — unberechenbar, viele Überraschungen</option>
           </select>
+          <label>Eröffnungspräferenz</label>
+          <select id="bot-opening">
+            <option value="any">Flexibel — Engine entscheidet</option>
+            <option value="e4">1.e4 — offene Spiele</option>
+            <option value="d4">1.d4 — geschlossene Spiele</option>
+            <option value="nf3">1.Nf3 — Réti/flexibel</option>
+            <option value="c4">1.c4 — Englisch</option>
+          </select>
+          <label>Avatar-Farbe</label>
+          <input type="text" id="bot-color" value="#a3d160" style="height:36px; padding:2px; cursor:pointer;" onfocus="this.type='color'">
         </div>
         <div>
           <label>Bevorzugte Zeitkontrolle</label>
@@ -240,9 +250,11 @@ tr:last-child td{border-bottom:none;}
             <option value="rapid">Rapid (10+0)</option>
             <option value="classical">Classical (30+0)</option>
           </select>
-          <label>Stärke: Level <span class="range-val" id="bot-level-val">3</span></label>
+          <label>Spielstärke: Level <span class="range-val" id="bot-level-val">3</span> / 8 (steuert die Stockfish Skill Level)</label>
           <input type="range" id="bot-level" min="1" max="8" value="3">
-          <label>Bedenkzeit: <span class="range-val" id="bot-speed-val">1.0s</span> pro Zug (im Live-Spiel)</label>
+          <label>Turnier-Bedenkzeit: <span class="range-val" id="bot-thinktime-val">300ms</span> pro Zug (Stockfish-Suchzeit in simulierten Partien)</label>
+          <input type="range" id="bot-thinktime" min="80" max="1500" step="20" value="300">
+          <label>Bedenkzeit: <span class="range-val" id="bot-speed-val">1.0s</span> pro Zug (im Live-Spiel gegen dich)</label>
           <input type="range" id="bot-speed" min="2" max="50" value="10">
         </div>
       </div>
@@ -407,6 +419,8 @@ const TC_LABEL = { ultrabullet:'UltraBullet ½+0', bullet:'Bullet 1+0', blitz:'B
 const TC_SHORT = { ultrabullet:'UltraBullet', bullet:'Bullet', blitz:'Blitz', rapid:'Rapid', classical:'Classical' };
 const TC_DURATION = { ultrabullet:10, bullet:15, blitz:20, rapid:40, classical:90 };
 const STYLE_LABEL = { solid:'Solide', aggressive:'Aggressiv', chaotic:'Chaotisch' };
+const OPENING_LABEL = { any:'Flexibel', e4:'1.e4', d4:'1.d4', nf3:'1.Nf3', c4:'1.c4' };
+const OPENING_FIRST_MOVE = { e4:'e4', d4:'d4', nf3:'Nf3', c4:'c4' };
 const START_ELO = 1500;
 const MAX_FINISHED_TOURNAMENTS = 15;
 const MAX_LOGS_PER_TOURNAMENT = 25;
@@ -476,6 +490,9 @@ function migrateState(){
     if(b.draws===undefined) b.draws=0;
     if(b.losses===undefined) b.losses=0;
     if(!b.tc || !TC_LIST.includes(b.tc)) b.tc='blitz';
+    if(!b.opening) b.opening='any';
+    if(!b.color) b.color='#a3d160';
+    if(!b.thinkTime) b.thinkTime=300;
   });
   Object.values(state.tournaments).forEach(t=>{
     if(!TC_LIST.includes(t.tc)) t.tc='blitz';
@@ -534,6 +551,9 @@ document.getElementById('bot-level').addEventListener('input', e=>{
 document.getElementById('bot-speed').addEventListener('input', e=>{
   document.getElementById('bot-speed-val').textContent = (e.target.value/10).toFixed(1)+'s';
 });
+document.getElementById('bot-thinktime').addEventListener('input', e=>{
+  document.getElementById('bot-thinktime-val').textContent = e.target.value+'ms';
+});
 
 function createBot(){
   const nameInput = document.getElementById('bot-name');
@@ -541,14 +561,17 @@ function createBot(){
   if(!name) name = 'Bot-'+uid().slice(0,4);
   const level = parseInt(document.getElementById('bot-level').value,10);
   const speed = parseInt(document.getElementById('bot-speed').value,10)/10;
+  const thinkTime = parseInt(document.getElementById('bot-thinktime').value,10) || 300;
   const flag = document.getElementById('bot-flag').value;
   const style = document.getElementById('bot-style').value;
+  const opening = document.getElementById('bot-opening').value;
+  const color = document.getElementById('bot-color').value || '#a3d160';
   const tc = document.getElementById('bot-tc').value;
   const id = uid();
   // every bot starts at exactly 1500 in every time control, like a fresh Lichess account
   const ratings = {};
   TC_LIST.forEach(t=>{ ratings[t] = START_ELO; });
-  state.bots[id] = { id, name, level, speed, flag, style, tc, ratings, created: Date.now(), wins:0, draws:0, losses:0 };
+  state.bots[id] = { id, name, level, speed, thinkTime, flag, style, opening, color, tc, ratings, created: Date.now(), wins:0, draws:0, losses:0 };
   let joined=0;
   Object.values(state.tournaments).forEach(t=>{
     if(getTStatus(t)==='finished') return;
@@ -590,12 +613,15 @@ function renderBots(){
   if(bots.length===0){ wrap.innerHTML = '<div class="empty">Noch keine Bots erstellt.</div>'; return; }
   wrap.innerHTML = bots.map(b=>{
     const title = botTitle(b);
+    const skill = levelToSkill(b.level);
     return `
-    <div class="bot-card">
+    <div class="bot-card" style="border-left:3px solid ${escapeHtml(b.color||'#a3d160')};">
       <h3><span class="bot-avatar">${b.flag||'🤖'}</span>${escapeHtml(b.name)} ${title?`<span class="bot-tag title">${title}</span>`:''}<span class="bot-tag" style="background:var(--accent-dark);">BOT</span></h3>
-      <div class="stat-row"><span>Level</span><b>${b.level} / 8</b></div>
+      <div class="stat-row"><span>Level</span><b>${b.level} / 8 (Stockfish Skill ${skill})</b></div>
       <div class="stat-row"><span>Stil</span><b>${STYLE_LABEL[b.style]||'Solide'}</b></div>
+      <div class="stat-row"><span>Eröffnung</span><b>${OPENING_LABEL[b.opening]||'Flexibel'}</b></div>
       <div class="stat-row"><span>Bevorzugte TC</span><b>${TC_SHORT[b.tc]||'Blitz'}</b></div>
+      <div class="stat-row"><span>Turnier-Bedenkzeit</span><b>${b.thinkTime||300}ms</b></div>
       <div class="stat-row"><span>Tempo (live)</span><b>${b.speed.toFixed(1)}s/Zug</b></div>
       <div class="stat-row"><span>Bilanz</span><b>${b.wins}S / ${b.draws}U / ${b.losses}N</b></div>
       <div class="rating-grid">
@@ -854,7 +880,7 @@ function styleAdjust(san, color, style){
   }
   return color==='w'?bonus:-bonus;
 }
-function botMove(game, bot){
+function botMoveLocal(game, bot){
   const moves = game.moves();
   if(moves.length===0) return null;
   const chaosFactor = bot.style==='chaotic' ? 1.6 : 1;
@@ -874,6 +900,142 @@ function botMove(game, bot){
     if(whiteToMove ? val>bestVal : val<bestVal){ bestVal=val; bestMove=m; }
   }
   return bestMove;
+}
+
+/* ===================== STOCKFISH ENGINE (real engine moves, runs in a Worker) ===================== */
+const STOCKFISH_URL = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
+let sfWorker = null;
+let sfReady = false;
+let sfFailed = false;
+let sfQueue = Promise.resolve();
+let sfPendingResolve = null;
+let sfMultiPvLines = {};
+
+function setEngineStatus(text, isWarnToast){
+  const txt = document.getElementById('perf-led-text');
+  if(txt && !queueRunning) txt.textContent = text;
+  if(isWarnToast) toast(text);
+}
+
+function waitForMessage(worker, includes, timeoutMs){
+  return new Promise((resolve, reject)=>{
+    const timer = setTimeout(()=>{ worker.removeEventListener('message', onMsg); reject(new Error('Zeitüberschreitung beim Warten auf: '+includes)); }, timeoutMs);
+    function onMsg(e){
+      const line = typeof e.data === 'string' ? e.data : '';
+      if(line.indexOf(includes)>=0){
+        clearTimeout(timer);
+        worker.removeEventListener('message', onMsg);
+        resolve(line);
+      }
+    }
+    worker.addEventListener('message', onMsg);
+  });
+}
+
+async function initStockfish(){
+  try{
+    if(typeof Worker === 'undefined') throw new Error('Web Worker werden von diesem Browser nicht unterstützt');
+    setEngineStatus('Lade Stockfish…', false);
+    const resp = await fetch(STOCKFISH_URL);
+    if(!resp.ok) throw new Error('Stockfish-Download fehlgeschlagen: HTTP '+resp.status);
+    const code = await resp.text();
+    // load cross-origin worker script via blob (workers can't be created directly from a foreign URL)
+    const blobUrl = URL.createObjectURL(new Blob([code], {type:'application/javascript'}));
+    sfWorker = new Worker(blobUrl);
+    sfWorker.onerror = (e)=>{ console.error('Stockfish worker runtime error', e); };
+    const uciokP = waitForMessage(sfWorker, 'uciok', 10000);
+    sfWorker.postMessage('uci');
+    await uciokP;
+    const readyP = waitForMessage(sfWorker, 'readyok', 8000);
+    sfWorker.postMessage('isready');
+    await readyP;
+    sfWorker.postMessage('setoption name MultiPV value 3');
+    sfWorker.addEventListener('message', handleEngineLine);
+    sfReady = true;
+    setEngineStatus('Stockfish bereit', false);
+  }catch(e){
+    console.error('Stockfish-Initialisierung fehlgeschlagen, nutze Ersatz-Engine:', e);
+    sfFailed = true;
+    setEngineStatus('Stockfish nicht verfügbar — Ersatz-Engine aktiv', true);
+  }
+}
+
+function handleEngineLine(e){
+  const line = typeof e.data === 'string' ? e.data : '';
+  if(line.indexOf('info')===0 && line.indexOf('multipv')>=0 && line.indexOf(' pv ')>=0){
+    const mpvMatch = line.match(/multipv (\d+)/);
+    const pvMatch = line.match(/ pv (\S+)/);
+    if(mpvMatch && pvMatch) sfMultiPvLines[mpvMatch[1]] = pvMatch[1];
+  } else if(line.indexOf('bestmove')===0){
+    const parts = line.split(' ');
+    const mv = parts[1];
+    const candidates = Object.keys(sfMultiPvLines).sort((a,b)=>a-b).map(k=>sfMultiPvLines[k]);
+    sfMultiPvLines = {};
+    if(sfPendingResolve){
+      const r = sfPendingResolve; sfPendingResolve = null;
+      r({ best: (mv && mv!=='(none)') ? mv : null, candidates });
+    }
+  }
+}
+
+// bot level 1-8 -> Stockfish "Skill Level" 0-20 (0 = weakest/most blunder-prone, 20 = full strength)
+function levelToSkill(level){ return Math.max(0, Math.min(20, Math.round((level-1)/7*20))); }
+function levelToDepthCap(level){ return Math.max(2, Math.min(16, Math.round(2+level*1.7))); }
+
+// single shared engine -> requests are queued and processed strictly one at a time
+function requestEngineMove(fen, bot){
+  const job = ()=> new Promise((resolve)=>{
+    sfPendingResolve = resolve;
+    const skill = levelToSkill(bot.level);
+    const depthCap = levelToDepthCap(bot.level);
+    const movetime = bot.thinkTime || 300;
+    sfWorker.postMessage('setoption name Skill Level value '+skill);
+    sfWorker.postMessage('position fen '+fen);
+    sfWorker.postMessage('go depth '+depthCap+' movetime '+movetime);
+  });
+  sfQueue = sfQueue.then(job, job);
+  return sfQueue;
+}
+
+// pick among Stockfish's top candidate moves according to the bot's style
+function pickFromCandidates(game, bot, candidates, bestUci){
+  const pool = (candidates && candidates.length) ? candidates : (bestUci ? [bestUci] : []);
+  if(pool.length===0) return bestUci;
+  if(bot.style==='aggressive'){
+    for(const uci of pool){ if(game.get(uci.slice(2,4))) return uci; } // prefer a capture among the top lines
+    return pool[0];
+  }
+  if(bot.style==='chaotic'){
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+  return pool[0]; // solid: always the engine's actual best move
+}
+
+// returns a SAN move string (or null) — uses real Stockfish when available, otherwise the local fallback engine
+async function getBotMoveAsync(game, bot){
+  const moves = game.moves();
+  if(moves.length===0) return null;
+
+  if(game.history().length===0 && bot.opening && bot.opening!=='any'){
+    const wanted = OPENING_FIRST_MOVE[bot.opening];
+    if(wanted && moves.includes(wanted)) return wanted;
+  }
+
+  if(sfReady && !sfFailed){
+    try{
+      const fen = game.fen();
+      const { best, candidates } = await requestEngineMove(fen, bot);
+      const uci = pickFromCandidates(game, bot, candidates, best) || best;
+      if(uci && uci.length>=4){
+        const from = uci.slice(0,2), to = uci.slice(2,4), promo = uci.length>4 ? uci.slice(4,5) : undefined;
+        const verbose = game.moves({verbose:true}).find(v=>v.from===from && v.to===to && (!promo || v.promotion===promo));
+        if(verbose) return verbose.san;
+      }
+    }catch(e){
+      console.error('Stockfish-Zuganfrage fehlgeschlagen, nutze Ersatz-Engine für diesen Zug:', e);
+    }
+  }
+  return botMoveLocal(game, bot);
 }
 
 function updateElo(t, idWhite, idBlack, result){
@@ -959,7 +1121,7 @@ function finalizeJob(job){
   saveState(false);
 }
 
-function tickSimulation(){
+async function tickSimulation(){
   if(simPaused){
     setTimeout(tickSimulation, PAUSED_TICK_MS);
     return;
@@ -981,18 +1143,24 @@ function tickSimulation(){
     liveGames[job.tId] = { white: bw.name, black: bb.name, moves: activeJob.moves };
   }
 
-  // play exactly one ply per tick -> heaviest single unit of work is one minimax search (depth <=3)
-  const game = activeJob.game;
-  if(!game.game_over() && activeJob.moves.length < 160){
-    const bot = game.turn()==='w' ? activeJob.bw : activeJob.bb;
-    const m = botMove(game, bot);
-    if(m){ game.move(m); activeJob.moves.push(m); }
-    else { activeJob.moves.push(null); } // safety, shouldn't happen since game_over() would catch it
+  // play exactly one ply per tick -> the worker (Stockfish) or fallback search runs without blocking the UI thread
+  const job = activeJob;
+  const game = job.game;
+  if(!game.game_over() && job.moves.length < 160){
+    const bot = game.turn()==='w' ? job.bw : job.bb;
+    const m = await getBotMoveAsync(game, bot);
+    if(activeJob !== job){
+      // job was cancelled (bot deleted / tournament ended) while we were waiting on the engine -> drop this stale move
+      setTimeout(tickSimulation, MOVE_TICK_MS);
+      return;
+    }
+    if(m){ game.move(m); job.moves.push(m); }
+    else { job.moves.push(null); } // safety, shouldn't happen since game_over() would catch it
   }
 
-  if(game.game_over() || activeJob.moves.length >= 160){
-    finalizeJob(activeJob);
-    activeJob = null;
+  if(game.game_over() || job.moves.length >= 160){
+    finalizeJob(job);
+    if(activeJob === job) activeJob = null;
   } else {
     refreshOpenViews(false); // throttled, cheap
   }
@@ -1162,9 +1330,11 @@ function onSquareClick(sqName){
   renderBoard();
 }
 
-function doBotMove(){
+async function doBotMove(){
   if(playGame.game_over()) { updatePlayStatus(); return; }
-  const m = botMove(playGame, playBot);
+  const liveBot = Object.assign({}, playBot, { thinkTime: Math.max(80, Math.round(playBot.speed*1000)) });
+  const m = await getBotMoveAsync(playGame, liveBot);
+  if(playGame !== playGame) return; // safety no-op (kept for symmetry with tournament guard pattern)
   if(m){
     const verbose = playGame.moves({verbose:true}).find(v=>v.san===m);
     playGame.move(m);
