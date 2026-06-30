@@ -11,7 +11,7 @@
   --text:#bababa; --text-bright:#e9e9e9; --muted:#7a766f;
   --accent:#759900; --accent-bright:#a3d160; --accent-dark:#4f6a06;
   --danger:#cc3333; --light-sq:#f0d9b5; --dark-sq:#b58863;
-  --gold:#d4af37; --blue:#3692e7;
+  --gold:#d4af37; --blue:#3692e7; --purple:#9d6fd6;
   font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
 }
 *{box-sizing:border-box;}
@@ -24,6 +24,9 @@ header{
 }
 .logo{font-size:21px; font-weight:700; color:var(--text-bright); letter-spacing:-0.5px;}
 .logo span{color:var(--accent-bright);}
+.perf-led{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); margin-left:14px;}
+.perf-led i{width:7px; height:7px; border-radius:50%; background:var(--accent); display:inline-block; transition:background .3s;}
+.perf-led.busy i{background:var(--gold);}
 nav{display:flex; gap:4px; flex-wrap:wrap;}
 nav button{
   background:transparent; border:none; color:var(--text); font-size:14px;
@@ -31,7 +34,7 @@ nav button{
 }
 nav button:hover{background:var(--bg3); color:var(--text-bright);}
 nav button.active{color:var(--accent-bright); background:var(--bg3); font-weight:600;}
-main{max-width:1140px; margin:0 auto; padding:22px 16px 60px;}
+main{max-width:1180px; margin:0 auto; padding:22px 16px 60px;}
 .view{display:none;}
 .view.active{display:block;}
 h1{color:var(--text-bright); font-size:26px; margin:0 0 4px;}
@@ -48,6 +51,12 @@ h1{color:var(--text-bright); font-size:26px; margin:0 0 4px;}
 .btn.danger{background:transparent; color:var(--danger); border:1px solid var(--danger);}
 .btn.danger:hover{background:var(--danger); color:#fff;}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
+.tab-row{display:flex; gap:4px; margin-bottom:14px; flex-wrap:wrap;}
+.tab-row button{
+  background:var(--bg3); border:1px solid var(--line); color:var(--text); font-size:13px;
+  padding:7px 13px; border-radius:14px; cursor:pointer; transition:.15s;
+}
+.tab-row button.active{background:var(--accent-dark); border-color:var(--accent); color:#fff; font-weight:600;}
 label{display:block; font-size:13px; color:var(--muted); margin:10px 0 4px;}
 input[type=text], select{
   width:100%; background:var(--bg3); border:1px solid var(--line); color:var(--text-bright);
@@ -60,11 +69,15 @@ input[type=range]{width:100%; accent-color:var(--accent);}
 .checkbox-row{display:flex; align-items:center; gap:8px; margin-top:14px;}
 .checkbox-row input{width:16px; height:16px; accent-color:var(--accent);}
 .checkbox-row label{margin:0; color:var(--text);}
-.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;}
 .bot-card{background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:14px;}
-.bot-card h3{margin:0 0 6px; font-size:15px; color:var(--text-bright); display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+.bot-card h3{margin:0 0 8px; font-size:15px; color:var(--text-bright); display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
 .bot-avatar{width:26px; height:26px; border-radius:50%; background:var(--accent-dark); display:inline-flex; align-items:center; justify-content:center; font-size:14px;}
 .bot-tag{font-size:9.5px; font-weight:700; background:var(--blue); color:#fff; padding:1px 5px; border-radius:3px; letter-spacing:.5px;}
+.bot-tag.title{background:var(--gold); color:#222;}
+.rating-grid{display:grid; grid-template-columns:1fr 1fr; gap:3px 10px; margin:8px 0;}
+.rating-grid div{font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; background:var(--bg3); padding:3px 7px; border-radius:3px;}
+.rating-grid div b{color:var(--text-bright);}
 .stat-row{display:flex; justify-content:space-between; font-size:12.5px; color:var(--muted); margin:3px 0;}
 .stat-row b{color:var(--text);}
 .badge{display:inline-block; font-size:11px; padding:2px 7px; border-radius:10px; font-weight:600;}
@@ -100,6 +113,7 @@ tr:last-child td{border-bottom:none;}
 .sq.light{background:var(--light-sq);}
 .sq.dark{background:var(--dark-sq);}
 .sq.selected{outline:3px solid var(--accent-bright); outline-offset:-3px;}
+.sq.lastmove{box-shadow:inset 0 0 0 999px rgba(255,213,0,.25);}
 .sq.legal::after{content:''; position:absolute; width:28%; height:28%; border-radius:50%; background:rgba(0,0,0,.28);}
 .sq.legal.capture::after{width:80%; height:80%; border-radius:50%; background:transparent; border:5px solid rgba(0,0,0,.28);}
 .side-panel{flex:1; min-width:240px;}
@@ -121,6 +135,8 @@ tr:last-child td{border-bottom:none;}
 .result-b{color:var(--text);}
 .result-d{color:var(--muted);}
 .warn{background:#3a2f12; border:1px solid #5a4a1a; color:#e0c27a; padding:10px 14px; border-radius:5px; font-size:13px; margin-bottom:14px;}
+.tc-pill-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
+.tc-pill{font-size:10.5px; padding:2px 7px; border-radius:9px; background:var(--bg3); color:var(--muted); border:1px solid var(--line);}
 @media(max-width:680px){
   .logo{font-size:17px;} nav button{padding:7px 9px; font-size:12.5px;}
   .form-grid, .form-grid.three{grid-template-columns:1fr;}
@@ -130,7 +146,10 @@ tr:last-child td{border-bottom:none;}
 <body>
 
 <header>
-  <div class="logo">li<span>bot</span>chess<span style="color:var(--muted); font-weight:400; font-size:12px;">.local</span></div>
+  <div style="display:flex; align-items:center;">
+    <div class="logo">li<span>bot</span>chess<span style="color:var(--muted); font-weight:400; font-size:12px;">.local</span></div>
+    <span class="perf-led" id="perf-led"><i></i><span id="perf-led-text">Engine bereit</span></span>
+  </div>
   <nav id="nav">
     <button data-view="lobby" class="active">Lobby</button>
     <button data-view="bots">Bots</button>
@@ -145,7 +164,7 @@ tr:last-child td{border-bottom:none;}
   <!-- LOBBY -->
   <div class="view active" id="view-lobby">
     <h1>Lobby</h1>
-    <div class="subtitle">Erstelle Bots mit eigener Stärke, Spielstil & Zeitkontrolle. Sie treten automatisch jedem stündlichen und jedem von dir erstellten Turnier bei.</div>
+    <div class="subtitle">Erstelle Bots mit eigener Stärke, Spielstil & Zeitkontrolle. Jeder Bot hat eine eigene Elo pro Zeitkontrolle — genau wie auf Lichess.</div>
     <div id="lobby-warn"></div>
     <div class="grid" style="margin-bottom:18px;">
       <div class="card"><h2>Aktive Bots</h2><div style="font-size:30px; color:var(--accent-bright); font-weight:700;" id="stat-bots">0</div></div>
@@ -161,7 +180,7 @@ tr:last-child td{border-bottom:none;}
   <!-- BOTS -->
   <div class="view" id="view-bots">
     <h1>Bots verwalten</h1>
-    <div class="subtitle">Stärke 1 (sehr schwach) bis 8 (sehr stark) — angelehnt an Lichess-Stockfish-Level. Jeder Bot bekommt eine eigene Elo-Wertung.</div>
+    <div class="subtitle">Stärke 1 (sehr schwach) bis 8 (sehr stark). Jeder Bot startet mit 1500 Elo in jeder Zeitkontrolle und entwickelt sich getrennt nach Ultrabullet, Bullet, Blitz, Rapid und Classical.</div>
     <div class="card">
       <h2>Neuen Bot erstellen</h2>
       <div class="form-grid">
@@ -194,6 +213,7 @@ tr:last-child td{border-bottom:none;}
         <div>
           <label>Bevorzugte Zeitkontrolle</label>
           <select id="bot-tc">
+            <option value="ultrabullet">UltraBullet (½+0)</option>
             <option value="bullet">Bullet (1+0)</option>
             <option value="blitz" selected>Blitz (5+0)</option>
             <option value="rapid">Rapid (10+0)</option>
@@ -216,7 +236,7 @@ tr:last-child td{border-bottom:none;}
   <!-- TOURNAMENTS -->
   <div class="view" id="view-tournaments">
     <h1>Turniere</h1>
-    <div class="subtitle">Stündliche System-Arenas laufen automatisch. Eigene Turniere kannst du jederzeit mit eigenen Regeln starten.</div>
+    <div class="subtitle">Stündliche System-Arenas laufen automatisch (wechselnd Ultrabullet/Bullet/Blitz/Rapid). Eigene Turniere kannst du jederzeit mit eigenen Regeln starten.</div>
     <div class="card">
       <h2>Eigenes Turnier erstellen</h2>
       <div class="form-grid">
@@ -225,6 +245,7 @@ tr:last-child td{border-bottom:none;}
           <input type="text" id="t-name" placeholder="z.B. Freitagabend-Blitz">
           <label>Zeitkontrolle</label>
           <select id="t-tc" onchange="onTcChange()">
+            <option value="ultrabullet">UltraBullet (½+0)</option>
             <option value="bullet">Bullet (1+0)</option>
             <option value="blitz" selected>Blitz (5+0)</option>
             <option value="rapid">Rapid (10+0)</option>
@@ -243,18 +264,18 @@ tr:last-child td{border-bottom:none;}
           <input type="text" id="t-rounds" value="7">
           <div class="checkbox-row">
             <input type="checkbox" id="t-rated" checked>
-            <label for="t-rated">Gewertet (verändert Elo der Bots)</label>
+            <label for="t-rated">Gewertet (verändert Elo der Bots in dieser Zeitkontrolle)</label>
           </div>
         </div>
       </div>
       <div class="form-grid" style="margin-top:4px;">
         <div>
           <label>Min. Bot-Level (Teilnahmebeschränkung)</label>
-          <select id="t-minlevel">${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>
+          <select id="t-minlevel"></select>
         </div>
         <div>
           <label>Max. Bot-Level (Teilnahmebeschränkung)</label>
-          <select id="t-maxlevel">${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${n===8?'selected':''}>${n}</option>`).join('')}</select>
+          <select id="t-maxlevel"></select>
         </div>
       </div>
       <div class="checkbox-row">
@@ -278,7 +299,7 @@ tr:last-child td{border-bottom:none;}
       <div class="card" style="flex:2; min-width:300px;">
         <h2>Rangliste</h2>
         <table>
-          <thead><tr><th>#</th><th>Bot</th><th>Level</th><th>Elo</th><th>Punkte</th><th>Partien</th></tr></thead>
+          <thead><tr><th>#</th><th>Bot</th><th>Level</th><th>Elo (TC)</th><th>Punkte</th><th>Partien</th></tr></thead>
           <tbody id="td-standings"></tbody>
         </table>
       </div>
@@ -292,7 +313,8 @@ tr:last-child td{border-bottom:none;}
   <!-- LEADERBOARD -->
   <div class="view" id="view-leaderboard">
     <h1>Globale Rangliste</h1>
-    <div class="subtitle">Elo-Wertung über alle gewerteten Turniere hinweg, beginnend bei 600 + Level×150.</div>
+    <div class="subtitle">Wie auf Lichess: jede Zeitkontrolle hat ihre eigene Elo. Start ist 1500.</div>
+    <div class="tab-row" id="lb-tabs"></div>
     <div class="card">
       <table>
         <thead><tr><th>#</th><th>Bot</th><th>Titel</th><th>Level</th><th>Stil</th><th>Elo</th><th>S/U/N</th></tr></thead>
@@ -314,6 +336,7 @@ tr:last-child td{border-bottom:none;}
         <div id="board"></div>
         <div style="margin-top:10px;" class="small" id="play-status"></div>
         <button class="btn secondary" style="margin-top:10px;" onclick="resetPlayGame()">Neues Spiel</button>
+        <button class="btn secondary" style="margin-top:10px;" onclick="backToPicker()">Anderen Bot wählen</button>
       </div>
       <div class="side-panel card">
         <h2>Gegner</h2>
@@ -329,24 +352,60 @@ tr:last-child td{border-bottom:none;}
 <div class="toast" id="toast"></div>
 
 <script>
+/* ===================== CONSTANTS ===================== */
+const TC_LIST = ['ultrabullet','bullet','blitz','rapid','classical'];
+const TC_LABEL = { ultrabullet:'UltraBullet ½+0', bullet:'Bullet 1+0', blitz:'Blitz 5+0', rapid:'Rapid 10+0', classical:'Classical 30+0' };
+const TC_SHORT = { ultrabullet:'UltraBullet', bullet:'Bullet', blitz:'Blitz', rapid:'Rapid', classical:'Classical' };
+const TC_DURATION = { ultrabullet:10, bullet:15, blitz:20, rapid:40, classical:90 };
+const STYLE_LABEL = { solid:'Solide', aggressive:'Aggressiv', chaotic:'Chaotisch' };
+const START_ELO = 1500;
+const MAX_FINISHED_TOURNAMENTS = 15; // keep history bounded so it never bogs the page down
+const MATCH_DELAY_MS = 90; // gap between simulated games -> keeps UI responsive
+const ROUND_BUILD_INTERVAL_MS = 8000;
+
 /* ===================== STATE ===================== */
 let state = { bots:{}, tournaments:{}, lastHourlyBucket:null, gamesPlayed:0 };
+let matchQueue = []; // {tId, idWhite, idBlack}
+let queueRunning = false;
 
 async function loadState(){
   try{
-    const r = await window.storage.get('app-state-v2', false);
+    const r = await window.storage.get('app-state-v3', false);
     if(r && r.value) state = JSON.parse(r.value);
   }catch(e){ /* first run */ }
+  migrateState();
   ensureHourly();
+  cleanupTournaments();
   renderAll();
 }
 let saveTimer=null;
 function saveState(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(async ()=>{
-    try{ await window.storage.set('app-state-v2', JSON.stringify(state), false); }
+    try{ await window.storage.set('app-state-v3', JSON.stringify(state), false); }
     catch(e){ console.error('save failed', e); }
-  }, 250);
+  }, 400);
+}
+
+// migrate bots/tournaments created under the old single-rating schema
+function migrateState(){
+  Object.values(state.bots).forEach(b=>{
+    if(!b.ratings){
+      const base = (typeof b.rating === 'number') ? b.rating : (600 + (b.level||3)*150);
+      b.ratings = {};
+      TC_LIST.forEach(tc=>{ b.ratings[tc] = base; });
+      delete b.rating;
+    }
+    if(b.wins===undefined) b.wins=0;
+    if(b.draws===undefined) b.draws=0;
+    if(b.losses===undefined) b.losses=0;
+    if(!b.tc || !TC_LIST.includes(b.tc)) b.tc='blitz';
+  });
+  Object.values(state.tournaments).forEach(t=>{
+    if(!TC_LIST.includes(t.tc)) t.tc='blitz';
+    if(!t.gamesLog) t.gamesLog=[];
+    if(t.roundInProgress===undefined) t.roundInProgress=false;
+  });
 }
 
 /* ===================== UTIL ===================== */
@@ -357,14 +416,15 @@ function toast(msg){
   setTimeout(()=>t.classList.remove('show'), 2600);
 }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-const TC_LABEL = { bullet:'Bullet 1+0', blitz:'Blitz 5+0', rapid:'Rapid 10+0', classical:'Classical 30+0' };
-const TC_DURATION = { bullet:15, blitz:20, rapid:40, classical:90 };
-const STYLE_LABEL = { solid:'Solide', aggressive:'Aggressiv', chaotic:'Chaotisch' };
 
+function botRating(bot, tc){ return Math.round((bot.ratings && bot.ratings[tc]) || START_ELO); }
+function botBestRating(bot){ return Math.max(...TC_LIST.map(tc=>botRating(bot, tc))); }
 function botTitle(bot){
-  if(bot.rating>=2000) return 'GM';
-  if(bot.rating>=1700) return 'IM';
-  if(bot.rating>=1400) return 'FM';
+  const r = botBestRating(bot);
+  if(r>=2000) return 'GM';
+  if(r>=1800) return 'IM';
+  if(r>=1650) return 'FM';
+  if(r>=1500+1) return 'CM';
   return '';
 }
 
@@ -401,8 +461,10 @@ function createBot(){
   const style = document.getElementById('bot-style').value;
   const tc = document.getElementById('bot-tc').value;
   const id = uid();
-  const rating = 600 + level*150;
-  state.bots[id] = { id, name, level, speed, flag, style, tc, rating, created: Date.now(), wins:0, draws:0, losses:0 };
+  const seed = START_ELO + (level-4)*60; // stronger level -> slightly higher starting elo in every TC
+  const ratings = {};
+  TC_LIST.forEach(t=>{ ratings[t] = seed; });
+  state.bots[id] = { id, name, level, speed, flag, style, tc, ratings, created: Date.now(), wins:0, draws:0, losses:0 };
   // auto-join every open tournament (respecting its participation rules)
   let joined=0;
   Object.values(state.tournaments).forEach(t=>{
@@ -432,6 +494,7 @@ function deleteBot(id){
     t.participants = t.participants.filter(p=>p!==id);
     delete t.standings[id];
   });
+  matchQueue = matchQueue.filter(m=>m.idWhite!==id && m.idBlack!==id);
   saveState();
   renderAll();
 }
@@ -445,13 +508,15 @@ function renderBots(){
     const title = botTitle(b);
     return `
     <div class="bot-card">
-      <h3><span class="bot-avatar">${b.flag||'🤖'}</span>${escapeHtml(b.name)} ${title?`<span class="bot-tag">${title}</span>`:''}<span class="bot-tag" style="background:var(--accent-dark);">BOT</span></h3>
+      <h3><span class="bot-avatar">${b.flag||'🤖'}</span>${escapeHtml(b.name)} ${title?`<span class="bot-tag title">${title}</span>`:''}<span class="bot-tag" style="background:var(--accent-dark);">BOT</span></h3>
       <div class="stat-row"><span>Level</span><b>${b.level} / 8</b></div>
-      <div class="stat-row"><span>Elo</span><b>${Math.round(b.rating)}</b></div>
       <div class="stat-row"><span>Stil</span><b>${STYLE_LABEL[b.style]||'Solide'}</b></div>
-      <div class="stat-row"><span>Zeitkontrolle</span><b>${TC_LABEL[b.tc]||'Blitz'}</b></div>
-      <div class="stat-row"><span>Tempo</span><b>${b.speed.toFixed(1)}s/Zug</b></div>
+      <div class="stat-row"><span>Bevorzugte TC</span><b>${TC_SHORT[b.tc]||'Blitz'}</b></div>
+      <div class="stat-row"><span>Tempo (live)</span><b>${b.speed.toFixed(1)}s/Zug</b></div>
       <div class="stat-row"><span>Bilanz</span><b>${b.wins}S / ${b.draws}U / ${b.losses}N</b></div>
+      <div class="rating-grid">
+        ${TC_LIST.map(tc=>`<div><span>${TC_SHORT[tc]}</span><b>${botRating(b,tc)}</b></div>`).join('')}
+      </div>
       <div style="margin-top:10px; display:flex; gap:8px;">
         <button class="btn secondary" style="flex:1;" onclick="pickBotForPlay('${b.id}')">Spielen</button>
         <button class="btn danger" onclick="deleteBot('${b.id}')">✕</button>
@@ -474,6 +539,13 @@ function onTcChange(){
   document.getElementById('t-duration').value = TC_DURATION[tc];
 }
 
+function populateLevelSelects(){
+  const minSel = document.getElementById('t-minlevel');
+  const maxSel = document.getElementById('t-maxlevel');
+  minSel.innerHTML = [1,2,3,4,5,6,7,8].map(n=>`<option value="${n}">${n}</option>`).join('');
+  maxSel.innerHTML = [1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${n===8?'selected':''}>${n}</option>`).join('');
+}
+
 function createTournament(opts){
   let name, durationMin, tc, format, rounds, rated, minLevel, maxLevel, tcMatch, system=false;
   if(opts){
@@ -486,8 +558,8 @@ function createTournament(opts){
     format = document.getElementById('t-format').value;
     rounds = parseInt(document.getElementById('t-rounds').value,10) || 7;
     rated = document.getElementById('t-rated').checked;
-    minLevel = parseInt(document.getElementById('t-minlevel').value,10);
-    maxLevel = parseInt(document.getElementById('t-maxlevel').value,10);
+    minLevel = parseInt(document.getElementById('t-minlevel').value,10) || 1;
+    maxLevel = parseInt(document.getElementById('t-maxlevel').value,10) || 8;
     tcMatch = document.getElementById('t-tcmatch').checked;
   }
   const id = uid();
@@ -495,7 +567,7 @@ function createTournament(opts){
     id, name, system, tc, format, rounds: rounds||7, rated: rated!==false,
     minLevel: minLevel||1, maxLevel: maxLevel||8, tcMatch: !!tcMatch,
     startTime: Date.now(), durationMin,
-    participants: [], standings: {}, gamesLog: [], roundsDone:0, finishedEarly:false
+    participants: [], standings: {}, gamesLog: [], roundsDone:0, finishedEarly:false, roundInProgress:false
   };
   Object.values(state.bots).forEach(b=>{
     if(eligible(b, t)){ t.participants.push(b.id); t.standings[b.id] = { score:0, games:0 }; }
@@ -515,10 +587,20 @@ function ensureHourly(){
   if(state.lastHourlyBucket !== bucket){
     state.lastHourlyBucket = bucket;
     const d = new Date();
-    const tcs = ['bullet','blitz','rapid'];
+    const tcs = ['ultrabullet','bullet','blitz','rapid'];
     const tc = tcs[d.getHours()%tcs.length];
-    const label = `Stündliche ${TC_LABEL[tc].split(' ')[0]}-Arena · ${String(d.getHours()).padStart(2,'0')}:00`;
+    const label = `Stündliche ${TC_SHORT[tc]}-Arena · ${String(d.getHours()).padStart(2,'0')}:00`;
     createTournament({ name:label, durationMin:60, tc, format:'arena', rounds:0, rated:true, minLevel:1, maxLevel:8, tcMatch:false });
+    cleanupTournaments();
+  }
+}
+
+// keep the saved state small & the simulation tick fast: archive old finished tournaments
+function cleanupTournaments(){
+  const all = Object.values(state.tournaments);
+  const finished = all.filter(t=>getTStatus(t)==='finished').sort((a,b)=>b.startTime-a.startTime);
+  if(finished.length > MAX_FINISHED_TOURNAMENTS){
+    finished.slice(MAX_FINISHED_TOURNAMENTS).forEach(t=>{ delete state.tournaments[t.id]; });
   }
 }
 
@@ -581,7 +663,7 @@ function renderTDetail(){
       <td class="${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':''}">${i+1}</td>
       <td>${r.bot.flag||''} ${escapeHtml(r.bot.name)}</td>
       <td>${r.bot.level}</td>
-      <td>${Math.round(r.bot.rating)}</td>
+      <td>${botRating(r.bot, t.tc)}</td>
       <td><b>${r.score}</b></td>
       <td>${r.games}</td>
     </tr>`).join('') : '<tr><td colspan="6" class="empty">Keine Teilnehmer</td></tr>';
@@ -596,8 +678,16 @@ function renderTDetail(){
   }).join('') : '<div class="empty">Noch keine Partien gespielt.</div>';
 }
 
+let lbTc = 'blitz';
+function renderLeaderboardTabs(){
+  const wrap = document.getElementById('lb-tabs');
+  wrap.innerHTML = TC_LIST.map(tc=>`<button class="${tc===lbTc?'active':''}" onclick="setLbTc('${tc}')">${TC_SHORT[tc]}</button>`).join('');
+}
+function setLbTc(tc){ lbTc = tc; renderLeaderboard(); }
+
 function renderLeaderboard(){
-  const bots = Object.values(state.bots).sort((a,b)=>b.rating-a.rating);
+  renderLeaderboardTabs();
+  const bots = Object.values(state.bots).sort((a,b)=>botRating(b,lbTc)-botRating(a,lbTc));
   document.getElementById('lb-table').innerHTML = bots.length ? bots.map((b,i)=>`
     <tr>
       <td class="${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':''}">${i+1}</td>
@@ -605,7 +695,7 @@ function renderLeaderboard(){
       <td>${botTitle(b)||'—'}</td>
       <td>${b.level}</td>
       <td>${STYLE_LABEL[b.style]||'Solide'}</td>
-      <td><b>${Math.round(b.rating)}</b></td>
+      <td><b>${botRating(b,lbTc)}</b></td>
       <td>${b.wins}/${b.draws}/${b.losses}</td>
     </tr>`).join('') : '<tr><td colspan="7" class="empty">Noch keine Bots.</td></tr>';
 }
@@ -696,54 +786,102 @@ function updateElo(t, idWhite, idBlack, result){
   if(!t.rated) return;
   const bw = state.bots[idWhite], bb = state.bots[idBlack];
   if(!bw || !bb) return;
+  const tc = t.tc;
   const K = 24;
-  const expW = 1/(1+Math.pow(10, (bb.rating-bw.rating)/400));
+  const rw = botRating(bw, tc), rb = botRating(bb, tc);
+  const expW = 1/(1+Math.pow(10, (rb-rw)/400));
   const expB = 1 - expW;
   const scoreW = result==='1-0' ? 1 : result==='0-1' ? 0 : 0.5;
   const scoreB = 1 - scoreW;
-  bw.rating += K*(scoreW-expW);
-  bb.rating += K*(scoreB-expB);
+  bw.ratings[tc] = rw + K*(scoreW-expW);
+  bb.ratings[tc] = rb + K*(scoreB-expB);
 }
 
-/* ===================== TOURNAMENT SIMULATION LOOP ===================== */
-function simulateRound(){
-  let changed=false;
+/* ===================== TOURNAMENT SIMULATION (chunked, non-blocking) ===================== */
+function setPerfBusy(busy){
+  const led = document.getElementById('perf-led');
+  const txt = document.getElementById('perf-led-text');
+  led.classList.toggle('busy', busy);
+  txt.textContent = busy ? 'Simuliert Partien…' : 'Engine bereit';
+}
+
+// builds one round's worth of pairings for every live tournament and queues them
+function buildRounds(){
   Object.values(state.tournaments).forEach(t=>{
     if(getTStatus(t)!=='live') return;
+    if(t.roundInProgress) return; // previous round's matches still queued/playing
     const ids = t.participants.filter(id=>state.bots[id]);
     if(ids.length<2) return;
     if(t.format==='swiss' && t.roundsDone>=t.rounds){ t.finishedEarly=true; return; }
     const shuffled = [...ids].sort(()=>Math.random()-0.5);
+    let queued=0;
     for(let i=0;i+1<shuffled.length;i+=2){
       const idA=shuffled[i], idB=shuffled[i+1];
-      const botA=state.bots[idA], botB=state.bots[idB];
       const whiteFirst = Math.random()<0.5;
-      const botWhite = whiteFirst?botA:botB, botBlack = whiteFirst?botB:botA;
-      const idWhite = whiteFirst?idA:idB, idBlack = whiteFirst?idB:idA;
+      matchQueue.push({
+        tId: t.id,
+        idWhite: whiteFirst?idA:idB,
+        idBlack: whiteFirst?idB:idA
+      });
+      queued++;
+    }
+    if(queued>0) t.roundInProgress = true;
+  });
+  if(matchQueue.length>0) runQueue();
+}
+
+function runQueue(){
+  if(queueRunning) return;
+  queueRunning = true;
+  setPerfBusy(true);
+  stepQueue();
+}
+
+function stepQueue(){
+  if(matchQueue.length===0){
+    queueRunning=false;
+    setPerfBusy(false);
+    saveState();
+    refreshOpenViews();
+    return;
+  }
+  const job = matchQueue.shift();
+  const t = state.tournaments[job.tId];
+  if(t && getTStatus(t)==='live'){
+    const botWhite = state.bots[job.idWhite], botBlack = state.bots[job.idBlack];
+    if(botWhite && botBlack){
       const { result, plies } = playFullGame(botWhite, botBlack);
-      t.standings[idWhite].games++; t.standings[idBlack].games++;
-      if(result==='1-0'){ t.standings[idWhite].score+=2; botWhite.wins++; botBlack.losses++; }
-      else if(result==='0-1'){ t.standings[idBlack].score+=2; botBlack.wins++; botWhite.losses++; }
-      else { t.standings[idWhite].score+=1; t.standings[idBlack].score+=1; botWhite.draws++; botBlack.draws++; }
-      updateElo(t, idWhite, idBlack, result);
+      t.standings[job.idWhite] = t.standings[job.idWhite] || {score:0,games:0};
+      t.standings[job.idBlack] = t.standings[job.idBlack] || {score:0,games:0};
+      t.standings[job.idWhite].games++; t.standings[job.idBlack].games++;
+      if(result==='1-0'){ t.standings[job.idWhite].score+=2; botWhite.wins++; botBlack.losses++; }
+      else if(result==='0-1'){ t.standings[job.idBlack].score+=2; botBlack.wins++; botWhite.losses++; }
+      else { t.standings[job.idWhite].score+=1; t.standings[job.idBlack].score+=1; botWhite.draws++; botBlack.draws++; }
+      updateElo(t, job.idWhite, job.idBlack, result);
       t.gamesLog.push({ white:botWhite.name, black:botBlack.name, result, plies, ts:Date.now() });
       if(t.gamesLog.length>60) t.gamesLog.shift();
       state.gamesPlayed++;
-      changed=true;
     }
-    if(t.format==='swiss') t.roundsDone++;
-  });
-  if(changed){
-    saveState();
-    if(document.getElementById('view-tdetail').classList.contains('active')) renderTDetail();
-    if(document.getElementById('view-lobby').classList.contains('active')) renderLobby();
-    if(document.getElementById('view-tournaments').classList.contains('active')) renderTournaments();
-    if(document.getElementById('view-leaderboard').classList.contains('active')) renderLeaderboard();
   }
+  // was this the last queued match for this tournament's round?
+  if(t && !matchQueue.some(m=>m.tId===job.tId)){
+    t.roundInProgress = false;
+    if(t.format==='swiss') t.roundsDone++;
+  }
+  // yield back to the browser before the next game so the page never freezes
+  setTimeout(stepQueue, MATCH_DELAY_MS);
+}
+
+function refreshOpenViews(){
+  if(document.getElementById('view-tdetail').classList.contains('active')) renderTDetail();
+  if(document.getElementById('view-lobby').classList.contains('active')) renderLobby();
+  if(document.getElementById('view-tournaments').classList.contains('active')) renderTournaments();
+  if(document.getElementById('view-leaderboard').classList.contains('active')) renderLeaderboard();
+  if(document.getElementById('view-bots').classList.contains('active')) renderBots();
 }
 
 /* ===================== PLAY VS BOT ===================== */
-let playGame=null, playBot=null, selectedSq=null;
+let playGame=null, playBot=null, selectedSq=null, lastMoveSquares=[];
 
 function renderPlayPicker(){
   const wrap = document.getElementById('play-bot-list');
@@ -751,8 +889,14 @@ function renderPlayPicker(){
   wrap.innerHTML = bots.length ? bots.map(b=>`
     <div class="bsl-item" onclick="pickBotForPlay('${b.id}')">
       <span><span class="bot-avatar" style="margin-right:8px;">${b.flag||'🤖'}</span>${escapeHtml(b.name)}</span>
-      <span class="tag">Level ${b.level} · ${Math.round(b.rating)} Elo</span>
+      <span class="tag">Level ${b.level} · ${botRating(b,b.tc)} (${TC_SHORT[b.tc]})</span>
     </div>`).join('') : '<div class="empty">Erstelle zuerst einen Bot.</div>';
+}
+
+function backToPicker(){
+  document.getElementById('play-pick').style.display='block';
+  document.getElementById('play-area').style.display='none';
+  playBot=null;
 }
 
 function pickBotForPlay(id){
@@ -767,12 +911,13 @@ function pickBotForPlay(id){
 function resetPlayGame(){
   playGame = new Chess();
   selectedSq = null;
+  lastMoveSquares = [];
   document.getElementById('play-opponent-info').innerHTML = `
     <div class="stat-row"><span>Name</span><b>${playBot.flag||''} ${escapeHtml(playBot.name)}</b></div>
     <div class="stat-row"><span>Level</span><b>${playBot.level}/8</b></div>
-    <div class="stat-row"><span>Elo</span><b>${Math.round(playBot.rating)}</b></div>
     <div class="stat-row"><span>Stil</span><b>${STYLE_LABEL[playBot.style]||'Solide'}</b></div>
-    <div class="stat-row"><span>Tempo</span><b>${playBot.speed.toFixed(1)}s/Zug</b></div>`;
+    <div class="stat-row"><span>Tempo</span><b>${playBot.speed.toFixed(1)}s/Zug</b></div>
+    <div class="tc-pill-row">${TC_LIST.map(tc=>`<span class="tc-pill">${TC_SHORT[tc]} ${botRating(playBot,tc)}</span>`).join('')}</div>`;
   document.getElementById('play-history').innerHTML='';
   renderBoard();
   updatePlayStatus();
@@ -792,6 +937,7 @@ function renderBoard(){
       const div = document.createElement('div');
       div.className = 'sq ' + (((r+c)%2===0)?'light':'dark');
       if(selectedSq===sqName) div.classList.add('selected');
+      if(lastMoveSquares.includes(sqName)) div.classList.add('lastmove');
       if(legalTargets.includes(sqName)){
         div.classList.add('legal');
         if(piece) div.classList.add('capture');
@@ -817,6 +963,7 @@ function onSquareClick(sqName){
     const match = moves.find(m=>m.to===sqName);
     if(match){
       playGame.move({from:selectedSq, to:sqName, promotion:'q'});
+      lastMoveSquares=[selectedSq, sqName];
       selectedSq=null;
       renderBoard();
       logHistory();
@@ -836,7 +983,11 @@ function onSquareClick(sqName){
 function doBotMove(){
   if(playGame.game_over()) { updatePlayStatus(); return; }
   const m = botMove(playGame, playBot);
-  if(m) playGame.move(m);
+  if(m){
+    const verbose = playGame.moves({verbose:true}).find(v=>v.san===m);
+    playGame.move(m);
+    if(verbose) lastMoveSquares=[verbose.from, verbose.to];
+  }
   renderBoard();
   logHistory();
   updatePlayStatus();
@@ -879,9 +1030,10 @@ function renderAll(){
     document.body.insertAdjacentHTML('afterbegin', '<div class="warn" style="margin:14px;">Schach-Engine konnte nicht geladen werden (Netzwerk blockiert cdnjs.cloudflare.com). Bitte Seite neu laden.</div>');
     return;
   }
+  populateLevelSelects();
   await loadState();
   setInterval(ensureHourly, 30000);
-  setInterval(simulateRound, 6000);
+  setInterval(buildRounds, ROUND_BUILD_INTERVAL_MS);
 })();
 </script>
 </body>
