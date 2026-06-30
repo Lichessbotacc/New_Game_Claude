@@ -27,6 +27,9 @@ header{
 .perf-led{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); margin-left:14px;}
 .perf-led i{width:7px; height:7px; border-radius:50%; background:var(--accent); display:inline-block; transition:background .3s;}
 .perf-led.busy i{background:var(--gold);}
+.save-led{font-size:10.5px; color:var(--muted); margin-left:10px;}
+.save-led.ok{color:var(--accent-bright);}
+.save-led.err{color:var(--danger);}
 nav{display:flex; gap:4px; flex-wrap:wrap;}
 nav button{
   background:transparent; border:none; color:var(--text); font-size:14px;
@@ -34,6 +37,11 @@ nav button{
 }
 nav button:hover{background:var(--bg3); color:var(--text-bright);}
 nav button.active{color:var(--accent-bright); background:var(--bg3); font-weight:600;}
+.pause-btn{
+  background:var(--bg3); border:1px solid var(--line); color:var(--text); font-size:12.5px;
+  padding:6px 11px; border-radius:4px; cursor:pointer; margin-left:10px;
+}
+.pause-btn:hover{background:var(--line); color:var(--text-bright);}
 main{max-width:1180px; margin:0 auto; padding:22px 16px 60px;}
 .view{display:none;}
 .view.active{display:block;}
@@ -101,8 +109,10 @@ tr:last-child td{border-bottom:none;}
 .rank-1{color:var(--gold); font-weight:700;}
 .rank-2{color:#c0c0c0; font-weight:700;}
 .rank-3{color:#cd7f32; font-weight:700;}
-.log-line{font-size:12.5px; color:var(--muted); padding:4px 0; border-bottom:1px dotted var(--line);}
+.log-line{font-size:12.5px; color:var(--muted); padding:5px 0; border-bottom:1px dotted var(--line); display:flex; justify-content:space-between; align-items:center; gap:8px;}
 .log-line b{color:var(--text);}
+.log-line .view-link{background:none; border:1px solid var(--line); color:var(--accent-bright); font-size:11px; padding:2px 8px; border-radius:9px; cursor:pointer; white-space:nowrap;}
+.log-line .view-link:hover{background:var(--bg3);}
 .board-wrap{display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;}
 #board{
   width:480px; max-width:92vw; aspect-ratio:1; display:grid;
@@ -137,6 +147,15 @@ tr:last-child td{border-bottom:none;}
 .warn{background:#3a2f12; border:1px solid #5a4a1a; color:#e0c27a; padding:10px 14px; border-radius:5px; font-size:13px; margin-bottom:14px;}
 .tc-pill-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
 .tc-pill{font-size:10.5px; padding:2px 7px; border-radius:9px; background:var(--bg3); color:var(--muted); border:1px solid var(--line);}
+.live-game-panel{display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;}
+.mini-board{width:220px; max-width:60vw; aspect-ratio:1; display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr); border:2px solid var(--bg3); border-radius:3px; overflow:hidden; flex-shrink:0;}
+.mini-board .sq{font-size:min(6vw,22px); cursor:default;}
+.modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.65); display:flex; align-items:center; justify-content:center; z-index:200; padding:16px;}
+.modal-box{background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:18px; max-width:380px; width:100%; max-height:90vh; overflow-y:auto;}
+.replay-controls{display:flex; gap:8px; justify-content:center; margin-top:12px;}
+.replay-controls button{flex:1;}
+.pulse{display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--danger); margin-right:5px; animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 @media(max-width:680px){
   .logo{font-size:17px;} nav button{padding:7px 9px; font-size:12.5px;}
   .form-grid, .form-grid.three{grid-template-columns:1fr;}
@@ -149,6 +168,8 @@ tr:last-child td{border-bottom:none;}
   <div style="display:flex; align-items:center;">
     <div class="logo">li<span>bot</span>chess<span style="color:var(--muted); font-weight:400; font-size:12px;">.local</span></div>
     <span class="perf-led" id="perf-led"><i></i><span id="perf-led-text">Engine bereit</span></span>
+    <span class="save-led" id="save-led">●</span>
+    <button class="pause-btn" id="pause-btn" onclick="toggleSimPause()">⏸ Pause</button>
   </div>
   <nav id="nav">
     <button data-view="lobby" class="active">Lobby</button>
@@ -164,7 +185,7 @@ tr:last-child td{border-bottom:none;}
   <!-- LOBBY -->
   <div class="view active" id="view-lobby">
     <h1>Lobby</h1>
-    <div class="subtitle">Erstelle Bots mit eigener Stärke, Spielstil & Zeitkontrolle. Jeder Bot hat eine eigene Elo pro Zeitkontrolle — genau wie auf Lichess.</div>
+    <div class="subtitle">Erstelle Bots mit eigener Stärke, Spielstil & Zeitkontrolle. Jeder Bot startet bei 1500 Elo pro Zeitkontrolle — genau wie auf Lichess.</div>
     <div id="lobby-warn"></div>
     <div class="grid" style="margin-bottom:18px;">
       <div class="card"><h2>Aktive Bots</h2><div style="font-size:30px; color:var(--accent-bright); font-weight:700;" id="stat-bots">0</div></div>
@@ -293,8 +314,21 @@ tr:last-child td{border-bottom:none;}
   <!-- TOURNAMENT DETAIL -->
   <div class="view" id="view-tdetail">
     <button class="btn secondary" onclick="switchView('tournaments')" style="margin-bottom:14px;">← Zurück</button>
-    <h1 id="td-name">Turnier</h1>
+    <div class="flex-between">
+      <h1 id="td-name">Turnier</h1>
+      <button class="btn danger" id="td-end-btn" onclick="endTournamentEarly()" style="display:none;">Turnier beenden</button>
+    </div>
     <div class="subtitle" id="td-meta"></div>
+    <div class="card" id="td-live-card" style="display:none;">
+      <h2><span class="pulse"></span>Live-Partie</h2>
+      <div class="live-game-panel">
+        <div class="mini-board" id="td-live-board"></div>
+        <div>
+          <div class="small" id="td-live-label"></div>
+          <div class="small" id="td-live-moves" style="max-height:140px; overflow-y:auto; margin-top:6px; max-width:260px;"></div>
+        </div>
+      </div>
+    </div>
     <div class="board-wrap">
       <div class="card" style="flex:2; min-width:300px;">
         <h2>Rangliste</h2>
@@ -349,6 +383,21 @@ tr:last-child td{border-bottom:none;}
 
 </main>
 
+<!-- REPLAY MODAL -->
+<div class="modal-overlay" id="replay-modal" style="display:none;">
+  <div class="modal-box">
+    <div class="flex-between"><h2 id="replay-title" style="font-size:15px; margin:0;">Partie</h2><button class="btn secondary" onclick="closeReplay()">✕</button></div>
+    <div class="mini-board" id="replay-board" style="margin:14px auto 0; width:260px;"></div>
+    <div class="small" style="text-align:center; margin-top:8px;" id="replay-move-label"></div>
+    <div class="replay-controls">
+      <button class="btn secondary" onclick="replayStep(-9999)">⏮</button>
+      <button class="btn secondary" onclick="replayStep(-1)">←</button>
+      <button class="btn secondary" onclick="replayStep(1)">→</button>
+      <button class="btn secondary" onclick="replayStep(9999)">⏭</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -359,42 +408,69 @@ const TC_SHORT = { ultrabullet:'UltraBullet', bullet:'Bullet', blitz:'Blitz', ra
 const TC_DURATION = { ultrabullet:10, bullet:15, blitz:20, rapid:40, classical:90 };
 const STYLE_LABEL = { solid:'Solide', aggressive:'Aggressiv', chaotic:'Chaotisch' };
 const START_ELO = 1500;
-const MAX_FINISHED_TOURNAMENTS = 15; // keep history bounded so it never bogs the page down
-const MATCH_DELAY_MS = 90; // gap between simulated games -> keeps UI responsive
+const MAX_FINISHED_TOURNAMENTS = 15;
+const MAX_LOGS_PER_TOURNAMENT = 25;
+const MOVE_TICK_MS = 35;        // one ply per tick -> never blocks the main thread for long
+const PAUSED_TICK_MS = 500;
 const ROUND_BUILD_INTERVAL_MS = 8000;
+const REFRESH_THROTTLE_MS = 900;
 
 /* ===================== STATE ===================== */
 let state = { bots:{}, tournaments:{}, lastHourlyBucket:null, gamesPlayed:0 };
-let matchQueue = []; // {tId, idWhite, idBlack}
+let matchQueue = [];     // {tId, idWhite, idBlack}
+let activeJob = null;    // {tId, idWhite, idBlack, bw, bb, game, moves:[]}
+let liveGames = {};      // tId -> {white, black, moves:[]}  (transient, not saved)
 let queueRunning = false;
+let simPaused = false;
+let lastRefresh = 0;
 
 async function loadState(){
   try{
-    const r = await window.storage.get('app-state-v3', false);
+    const r = await window.storage.get('app-state-v4', false);
     if(r && r.value) state = JSON.parse(r.value);
-  }catch(e){ /* first run */ }
+    setSaveLed('ok');
+  }catch(e){
+    // no saved state yet (first run) - that's fine
+  }
   migrateState();
   ensureHourly();
   cleanupTournaments();
   renderAll();
 }
-let saveTimer=null;
-function saveState(){
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(async ()=>{
-    try{ await window.storage.set('app-state-v3', JSON.stringify(state), false); }
-    catch(e){ console.error('save failed', e); }
-  }, 400);
-}
 
-// migrate bots/tournaments created under the old single-rating schema
+let saveTimer=null, saveFailToastShown=false;
+function setSaveLed(status){
+  const el = document.getElementById('save-led');
+  if(!el) return;
+  el.className = 'save-led ' + (status==='ok'?'ok':status==='err'?'err':'');
+  el.title = status==='ok' ? 'Zuletzt gespeichert' : status==='err' ? 'Speichern fehlgeschlagen' : 'Speichert...';
+}
+function saveState(immediate){
+  clearTimeout(saveTimer);
+  const run = async ()=>{
+    try{
+      const res = await window.storage.set('app-state-v4', JSON.stringify(state), false);
+      if(res){ setSaveLed('ok'); saveFailToastShown=false; }
+      else { setSaveLed('err'); }
+    }catch(e){
+      setSaveLed('err');
+      console.error('save failed', e);
+      if(!saveFailToastShown){ saveFailToastShown=true; toast('Speichern fehlgeschlagen — Fortschritt bleibt evtl. nicht erhalten.'); }
+    }
+  };
+  if(immediate){ run(); return; }
+  saveTimer = setTimeout(run, 350);
+}
+// safety-net: save periodically regardless of what triggered changes
+setInterval(()=>saveState(false), 4000);
+window.addEventListener('beforeunload', ()=>{ try{ window.storage.set('app-state-v4', JSON.stringify(state), false); }catch(e){} });
+
 function migrateState(){
   Object.values(state.bots).forEach(b=>{
     if(!b.ratings){
-      const base = (typeof b.rating === 'number') ? b.rating : (600 + (b.level||3)*150);
+      state.gamesPlayed = state.gamesPlayed || 0;
       b.ratings = {};
-      TC_LIST.forEach(tc=>{ b.ratings[tc] = base; });
-      delete b.rating;
+      TC_LIST.forEach(tc=>{ b.ratings[tc] = START_ELO; });
     }
     if(b.wins===undefined) b.wins=0;
     if(b.draws===undefined) b.draws=0;
@@ -405,6 +481,8 @@ function migrateState(){
     if(!TC_LIST.includes(t.tc)) t.tc='blitz';
     if(!t.gamesLog) t.gamesLog=[];
     if(t.roundInProgress===undefined) t.roundInProgress=false;
+    // backfill gid for any legacy entries without one
+    t.gamesLog.forEach(g=>{ if(!g.gid) g.gid = uid(); if(!g.moves) g.moves=[]; });
   });
 }
 
@@ -443,6 +521,12 @@ document.getElementById('nav').addEventListener('click', e=>{
   if(e.target.tagName==='BUTTON') switchView(e.target.dataset.view);
 });
 
+function toggleSimPause(){
+  simPaused = !simPaused;
+  document.getElementById('pause-btn').textContent = simPaused ? '▶ Fortsetzen' : '⏸ Pause';
+  toast(simPaused ? 'Simulation pausiert.' : 'Simulation läuft weiter.');
+}
+
 /* ===================== BOT CREATION ===================== */
 document.getElementById('bot-level').addEventListener('input', e=>{
   document.getElementById('bot-level-val').textContent = e.target.value;
@@ -461,11 +545,10 @@ function createBot(){
   const style = document.getElementById('bot-style').value;
   const tc = document.getElementById('bot-tc').value;
   const id = uid();
-  const seed = START_ELO + (level-4)*60; // stronger level -> slightly higher starting elo in every TC
+  // every bot starts at exactly 1500 in every time control, like a fresh Lichess account
   const ratings = {};
-  TC_LIST.forEach(t=>{ ratings[t] = seed; });
+  TC_LIST.forEach(t=>{ ratings[t] = START_ELO; });
   state.bots[id] = { id, name, level, speed, flag, style, tc, ratings, created: Date.now(), wins:0, draws:0, losses:0 };
-  // auto-join every open tournament (respecting its participation rules)
   let joined=0;
   Object.values(state.tournaments).forEach(t=>{
     if(getTStatus(t)==='finished') return;
@@ -477,9 +560,9 @@ function createBot(){
     }
   });
   nameInput.value='';
-  saveState();
+  saveState(true);
   renderAll();
-  toast(`Bot "${name}" erstellt und ${joined} offenen Turnieren beigetreten.`);
+  toast(`Bot "${name}" erstellt (1500 Elo) und ${joined} offenen Turnieren beigetreten.`);
 }
 
 function eligible(bot, t){
@@ -495,7 +578,8 @@ function deleteBot(id){
     delete t.standings[id];
   });
   matchQueue = matchQueue.filter(m=>m.idWhite!==id && m.idBlack!==id);
-  saveState();
+  if(activeJob && (activeJob.idWhite===id || activeJob.idBlack===id)) activeJob = null;
+  saveState(true);
   renderAll();
 }
 
@@ -573,13 +657,26 @@ function createTournament(opts){
     if(eligible(b, t)){ t.participants.push(b.id); t.standings[b.id] = { score:0, games:0 }; }
   });
   state.tournaments[id] = t;
-  saveState();
+  saveState(true);
   if(!opts){
     document.getElementById('t-name').value='';
     renderAll();
     toast(`Turnier "${name}" gestartet — ${t.participants.length} Bots sind beigetreten.`);
   }
   return t;
+}
+
+function endTournamentEarly(){
+  const t = state.tournaments[currentTId];
+  if(!t) return;
+  t.finishedEarly = true;
+  t.roundInProgress = false;
+  matchQueue = matchQueue.filter(m=>m.tId!==t.id);
+  if(activeJob && activeJob.tId===t.id) activeJob = null;
+  delete liveGames[t.id];
+  saveState(true);
+  renderTDetail();
+  toast(`Turnier "${t.name}" wurde beendet.`);
 }
 
 function ensureHourly(){
@@ -595,7 +692,6 @@ function ensureHourly(){
   }
 }
 
-// keep the saved state small & the simulation tick fast: archive old finished tournaments
 function cleanupTournaments(){
   const all = Object.values(state.tournaments);
   const finished = all.filter(t=>getTStatus(t)==='finished').sort((a,b)=>b.startTime-a.startTime);
@@ -653,6 +749,19 @@ function renderTDetail(){
   document.getElementById('td-name').textContent = t.name;
   document.getElementById('td-meta').textContent =
     `${status==='live'?'Live':status==='finished'?'Beendet':'Geplant'} · ${TC_LABEL[t.tc]} · ${t.format==='swiss'?'Schweizer System ('+t.rounds+' Runden)':'Arena'} · ${t.rated?'Gewertet':'Ungewertet'} · ${t.participants.length} Teilnehmer (Level ${t.minLevel}-${t.maxLevel})`;
+  document.getElementById('td-end-btn').style.display = status==='live' ? 'inline-block' : 'none';
+
+  const lg = liveGames[t.id];
+  const liveCard = document.getElementById('td-live-card');
+  if(status==='live' && lg && lg.moves.length>0){
+    liveCard.style.display='block';
+    renderMiniBoardFromMoves('td-live-board', lg.moves);
+    document.getElementById('td-live-label').innerHTML = `<b>${escapeHtml(lg.white)}</b> vs <b>${escapeHtml(lg.black)}</b> &middot; Zug ${lg.moves.length}`;
+    let mv=''; for(let i=0;i<lg.moves.length;i+=2){ mv += `${(i/2+1)}. ${lg.moves[i]||''} ${lg.moves[i+1]||''}<br>`; }
+    document.getElementById('td-live-moves').innerHTML = mv;
+  } else {
+    liveCard.style.display='none';
+  }
 
   const rows = Object.entries(t.standings)
     .map(([bid,s])=>({bot:state.bots[bid], ...s}))
@@ -674,7 +783,7 @@ function renderTDetail(){
     const txt = g.result==='1/2-1/2'
       ? `<span class="result-d">${escapeHtml(g.white)} ½–½ ${escapeHtml(g.black)}</span>`
       : `<span class="result-w">${escapeHtml(w)}</span> besiegt <span class="result-b">${escapeHtml(w===g.white?g.black:g.white)}</span>`;
-    return `<div class="log-line">${txt} <span class="tag">${g.plies} Züge</span></div>`;
+    return `<div class="log-line"><span>${txt} <span class="tag">${g.plies} Züge</span></span>${g.moves&&g.moves.length?`<button class="view-link" onclick="openReplay('${t.id}','${g.gid}')">Ansehen</button>`:''}</div>`;
   }).join('') : '<div class="empty">Noch keine Partien gespielt.</div>';
 }
 
@@ -766,21 +875,6 @@ function botMove(game, bot){
   }
   return bestMove;
 }
-function playFullGame(botWhite, botBlack){
-  const game = new Chess();
-  let plies=0;
-  while(!game.game_over() && plies<160){
-    const bot = game.turn()==='w' ? botWhite : botBlack;
-    const m = botMove(game, bot);
-    if(!m) break;
-    game.move(m);
-    plies++;
-  }
-  let result;
-  if(game.in_checkmate()) result = game.turn()==='w' ? '0-1' : '1-0';
-  else result = '1/2-1/2';
-  return { result, plies };
-}
 
 function updateElo(t, idWhite, idBlack, result){
   if(!t.rated) return;
@@ -797,7 +891,7 @@ function updateElo(t, idWhite, idBlack, result){
   bb.ratings[tc] = rb + K*(scoreB-expB);
 }
 
-/* ===================== TOURNAMENT SIMULATION (chunked, non-blocking) ===================== */
+/* ============= TOURNAMENT SIMULATION (one ply per tick = never blocks) ============= */
 function setPerfBusy(busy){
   const led = document.getElementById('perf-led');
   const txt = document.getElementById('perf-led-text');
@@ -805,11 +899,10 @@ function setPerfBusy(busy){
   txt.textContent = busy ? 'Simuliert Partien…' : 'Engine bereit';
 }
 
-// builds one round's worth of pairings for every live tournament and queues them
 function buildRounds(){
   Object.values(state.tournaments).forEach(t=>{
     if(getTStatus(t)!=='live') return;
-    if(t.roundInProgress) return; // previous round's matches still queued/playing
+    if(t.roundInProgress) return;
     const ids = t.participants.filter(id=>state.bots[id]);
     if(ids.length<2) return;
     if(t.format==='swiss' && t.roundsDone>=t.rounds){ t.finishedEarly=true; return; }
@@ -818,66 +911,157 @@ function buildRounds(){
     for(let i=0;i+1<shuffled.length;i+=2){
       const idA=shuffled[i], idB=shuffled[i+1];
       const whiteFirst = Math.random()<0.5;
-      matchQueue.push({
-        tId: t.id,
-        idWhite: whiteFirst?idA:idB,
-        idBlack: whiteFirst?idB:idA
-      });
+      matchQueue.push({ tId: t.id, idWhite: whiteFirst?idA:idB, idBlack: whiteFirst?idB:idA });
       queued++;
     }
     if(queued>0) t.roundInProgress = true;
   });
-  if(matchQueue.length>0) runQueue();
+  if((matchQueue.length>0 || activeJob) && !queueRunning) runQueue();
 }
 
 function runQueue(){
   if(queueRunning) return;
   queueRunning = true;
   setPerfBusy(true);
-  stepQueue();
+  tickSimulation();
 }
 
-function stepQueue(){
-  if(matchQueue.length===0){
-    queueRunning=false;
-    setPerfBusy(false);
-    saveState();
-    refreshOpenViews();
-    return;
-  }
-  const job = matchQueue.shift();
-  const t = state.tournaments[job.tId];
-  if(t && getTStatus(t)==='live'){
-    const botWhite = state.bots[job.idWhite], botBlack = state.bots[job.idBlack];
-    if(botWhite && botBlack){
-      const { result, plies } = playFullGame(botWhite, botBlack);
-      t.standings[job.idWhite] = t.standings[job.idWhite] || {score:0,games:0};
-      t.standings[job.idBlack] = t.standings[job.idBlack] || {score:0,games:0};
-      t.standings[job.idWhite].games++; t.standings[job.idBlack].games++;
-      if(result==='1-0'){ t.standings[job.idWhite].score+=2; botWhite.wins++; botBlack.losses++; }
-      else if(result==='0-1'){ t.standings[job.idBlack].score+=2; botBlack.wins++; botWhite.losses++; }
-      else { t.standings[job.idWhite].score+=1; t.standings[job.idBlack].score+=1; botWhite.draws++; botBlack.draws++; }
-      updateElo(t, job.idWhite, job.idBlack, result);
-      t.gamesLog.push({ white:botWhite.name, black:botBlack.name, result, plies, ts:Date.now() });
-      if(t.gamesLog.length>60) t.gamesLog.shift();
-      state.gamesPlayed++;
-    }
-  }
-  // was this the last queued match for this tournament's round?
-  if(t && !matchQueue.some(m=>m.tId===job.tId)){
+function checkRoundDone(tId){
+  const t = state.tournaments[tId];
+  if(!t) return;
+  const stillQueued = matchQueue.some(m=>m.tId===tId) || (activeJob && activeJob.tId===tId);
+  if(!stillQueued){
     t.roundInProgress = false;
     if(t.format==='swiss') t.roundsDone++;
   }
-  // yield back to the browser before the next game so the page never freezes
-  setTimeout(stepQueue, MATCH_DELAY_MS);
 }
 
-function refreshOpenViews(){
+function finalizeJob(job){
+  const t = state.tournaments[job.tId];
+  delete liveGames[job.tId];
+  if(!t || getTStatus(t)!=='live'){ checkRoundDone(job.tId); return; }
+  const game = job.game;
+  let result;
+  if(game.in_checkmate()) result = game.turn()==='w' ? '0-1' : '1-0';
+  else result = '1/2-1/2';
+  const plies = job.moves.length;
+  t.standings[job.idWhite] = t.standings[job.idWhite] || {score:0,games:0};
+  t.standings[job.idBlack] = t.standings[job.idBlack] || {score:0,games:0};
+  t.standings[job.idWhite].games++; t.standings[job.idBlack].games++;
+  if(result==='1-0'){ t.standings[job.idWhite].score+=2; job.bw.wins++; job.bb.losses++; }
+  else if(result==='0-1'){ t.standings[job.idBlack].score+=2; job.bb.wins++; job.bw.losses++; }
+  else { t.standings[job.idWhite].score+=1; t.standings[job.idBlack].score+=1; job.bw.draws++; job.bb.draws++; }
+  updateElo(t, job.idWhite, job.idBlack, result);
+  t.gamesLog.push({ gid: uid(), white: job.bw.name, black: job.bb.name, result, plies, moves: job.moves.slice(), ts: Date.now() });
+  if(t.gamesLog.length > MAX_LOGS_PER_TOURNAMENT) t.gamesLog.shift();
+  state.gamesPlayed++;
+  checkRoundDone(job.tId);
+  saveState(false);
+}
+
+function tickSimulation(){
+  if(simPaused){
+    setTimeout(tickSimulation, PAUSED_TICK_MS);
+    return;
+  }
+  if(!activeJob){
+    if(matchQueue.length===0){
+      queueRunning=false;
+      setPerfBusy(false);
+      saveState(false);
+      refreshOpenViews(true);
+      return;
+    }
+    const job = matchQueue.shift();
+    const t = state.tournaments[job.tId];
+    if(!t || getTStatus(t)!=='live'){ checkRoundDone(job.tId); setTimeout(tickSimulation, MOVE_TICK_MS); return; }
+    const bw = state.bots[job.idWhite], bb = state.bots[job.idBlack];
+    if(!bw || !bb){ checkRoundDone(job.tId); setTimeout(tickSimulation, MOVE_TICK_MS); return; }
+    activeJob = { tId: job.tId, idWhite: job.idWhite, idBlack: job.idBlack, bw, bb, game: new Chess(), moves: [] };
+    liveGames[job.tId] = { white: bw.name, black: bb.name, moves: activeJob.moves };
+  }
+
+  // play exactly one ply per tick -> heaviest single unit of work is one minimax search (depth <=3)
+  const game = activeJob.game;
+  if(!game.game_over() && activeJob.moves.length < 160){
+    const bot = game.turn()==='w' ? activeJob.bw : activeJob.bb;
+    const m = botMove(game, bot);
+    if(m){ game.move(m); activeJob.moves.push(m); }
+    else { activeJob.moves.push(null); } // safety, shouldn't happen since game_over() would catch it
+  }
+
+  if(game.game_over() || activeJob.moves.length >= 160){
+    finalizeJob(activeJob);
+    activeJob = null;
+  } else {
+    refreshOpenViews(false); // throttled, cheap
+  }
+  setTimeout(tickSimulation, MOVE_TICK_MS);
+}
+
+function refreshOpenViews(force){
+  const now = Date.now();
+  if(!force && now - lastRefresh < REFRESH_THROTTLE_MS) return;
+  lastRefresh = now;
   if(document.getElementById('view-tdetail').classList.contains('active')) renderTDetail();
   if(document.getElementById('view-lobby').classList.contains('active')) renderLobby();
   if(document.getElementById('view-tournaments').classList.contains('active')) renderTournaments();
   if(document.getElementById('view-leaderboard').classList.contains('active')) renderLeaderboard();
   if(document.getElementById('view-bots').classList.contains('active')) renderBots();
+}
+
+/* ===================== MINI BOARD (live + replay) ===================== */
+const PIECE_SYMBOLS = {p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
+function renderMiniBoardFromMoves(elId, moves, uptoIdx){
+  const game = new Chess();
+  const n = (uptoIdx===undefined) ? moves.length : uptoIdx;
+  for(let i=0;i<n;i++){ if(moves[i]) game.move(moves[i]); }
+  const el = document.getElementById(elId);
+  if(!el) return;
+  el.innerHTML='';
+  const board = game.board();
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const piece = board[r][c];
+      const div = document.createElement('div');
+      div.className = 'sq ' + (((r+c)%2===0)?'light':'dark');
+      if(piece){
+        div.textContent = PIECE_SYMBOLS[piece.type];
+        div.style.color = piece.color==='w' ? '#fdfdfd' : '#222';
+        div.style.textShadow = piece.color==='w' ? '0 0 2px #000' : '0 0 2px #fff8';
+      }
+      el.appendChild(div);
+    }
+  }
+}
+
+/* ===================== GAME REPLAY ===================== */
+let replayState = null;
+function openReplay(tId, gid){
+  const t = state.tournaments[tId];
+  if(!t) return;
+  const g = t.gamesLog.find(x=>x.gid===gid);
+  if(!g || !g.moves || g.moves.length===0){ toast('Für diese Partie ist kein Zugverlauf gespeichert.'); return; }
+  replayState = { moves: g.moves, idx: g.moves.length };
+  document.getElementById('replay-title').textContent = `${g.white} vs ${g.black} (${g.result})`;
+  document.getElementById('replay-modal').style.display='flex';
+  renderReplay();
+}
+function renderReplay(){
+  if(!replayState) return;
+  renderMiniBoardFromMoves('replay-board', replayState.moves, replayState.idx);
+  document.getElementById('replay-move-label').textContent = `Zug ${replayState.idx} / ${replayState.moves.length}`;
+}
+function replayStep(delta){
+  if(!replayState) return;
+  let n = replayState.idx + delta;
+  n = Math.max(0, Math.min(replayState.moves.length, n));
+  replayState.idx = n;
+  renderReplay();
+}
+function closeReplay(){
+  document.getElementById('replay-modal').style.display='none';
+  replayState=null;
 }
 
 /* ===================== PLAY VS BOT ===================== */
@@ -943,9 +1127,7 @@ function renderBoard(){
         if(piece) div.classList.add('capture');
       }
       if(piece){
-        const symbols = {p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
-        const sym = symbols[piece.type];
-        div.textContent = sym;
+        div.textContent = PIECE_SYMBOLS[piece.type];
         div.style.color = piece.color==='w' ? '#fdfdfd' : '#222';
         div.style.textShadow = piece.color==='w' ? '0 0 2px #000' : '0 0 2px #fff8';
       }
