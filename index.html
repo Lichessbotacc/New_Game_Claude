@@ -3,1717 +3,681 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bloons TD Arena</title>
+<title>lichess.org · Bot Edition</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0-beta.8/chess.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ui-bg:#0f0c00;--ui-card:#1a1400;--ui-border:#4a3800;
-  --gold:#ffcc00;--text:#fff5cc;--muted:#a08040;
+  --bg:#161512; --bg2:#1f1d1b; --bg3:#262421; --line:#3a3733;
+  --text:#bababa; --text-bright:#e9e9e9; --muted:#7a766f;
+  --accent:#759900; --accent-bright:#a3d160; --accent-dark:#4f6a06;
+  --danger:#cc3333; --light-sq:#f0d9b5; --dark-sq:#b58863;
+  --gold:#d4af37;
+  font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
 }
-body{font-family:Arial,sans-serif;background:#0a0800;color:var(--text);overflow-x:hidden;user-select:none}
-#app{max-width:1280px;margin:0 auto}
-.screen{display:none}.screen.active{display:block}
-#homeScreen{padding:14px}
-.logo{text-align:center;padding:14px 0 6px}
-.logo h1{font-size:30px;color:var(--gold);text-shadow:0 0 20px rgba(255,200,0,.5);letter-spacing:2px}
-.logo p{color:var(--muted);font-size:12px;margin-top:3px}
-.tabs{display:flex;border-bottom:2px solid var(--ui-border);margin-bottom:12px}
-.tab{padding:9px 18px;cursor:pointer;font-size:13px;color:var(--muted);border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.12s}
-.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
-.panel{display:none}.panel.active{display:block}
-.card{background:var(--ui-card);border:2px solid var(--ui-border);border-radius:10px;padding:12px;margin-bottom:10px}
-.card h3{font-size:13px;color:var(--gold);margin-bottom:8px}
-.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold;transition:.12s}
-.btn-primary{background:linear-gradient(135deg,#b86800,#e09000);color:#fff;border:2px solid #f0b020;box-shadow:0 2px 8px rgba(180,100,0,.5)}
-.btn-primary:hover{background:linear-gradient(135deg,#d08000,#ffb020)}
-.btn-secondary{background:#1e1600;color:var(--muted);border:1px solid var(--ui-border)}
-.metric{background:#0a0800;border-radius:7px;padding:8px;text-align:center;border:1px solid var(--ui-border)}
-.metric .val{font-size:18px;font-weight:bold;color:var(--gold)}
-.metric .lbl{font-size:10px;color:var(--muted);margin-top:2px}
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:8px}
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px}
-.elo-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:bold}
-.rank-bronze{background:#4a2000;color:#ffb060}
-.rank-silver{background:#303030;color:#d8d8d8}
-.rank-gold{background:#4a3800;color:#ffe050}
-.rank-plat{background:#002a4a;color:#70bbff}
-.rank-diamond{background:#001e4a;color:#90c8ff}
-.rank-master{background:#2e0050;color:#c070ff}
-select,input[type=text]{padding:6px 9px;background:#0a0800;border:1px solid var(--ui-border);border-radius:5px;color:var(--text);font-size:12px}
-input[type=range]{width:100%;accent-color:var(--gold)}
-#gameScreen{display:flex;flex-direction:column;height:100vh;overflow:hidden}
-#topHud{display:flex;align-items:center;gap:8px;background:var(--ui-bg);border-bottom:2px solid var(--ui-border);padding:5px 10px;flex-shrink:0;flex-wrap:wrap}
-.hv{font-weight:bold;color:var(--gold);font-size:14px}
-.hk{font-size:11px;color:var(--muted)}
-#mainArea{display:flex;flex:1;overflow:hidden}
-#leftPanel{width:148px;flex-shrink:0;background:var(--ui-bg);border-right:2px solid var(--ui-border);overflow-y:auto;padding:5px}
-#centerCol{display:flex;flex-direction:column;flex:1;overflow:hidden}
-#canvasWrap{position:relative;flex:1;overflow:hidden;min-height:0}
-#gameCanvas{display:block;cursor:crosshair}
-#rightPanel{width:158px;flex-shrink:0;background:var(--ui-bg);border-left:2px solid var(--ui-border);overflow-y:auto;padding:5px}
-#bottomArea{flex-shrink:0;background:var(--ui-bg);border-top:2px solid var(--ui-border);padding:5px 10px}
-#waveCtrl{display:flex;align-items:center;gap:8px;margin-bottom:3px}
-#waveLabel{font-size:12px;color:var(--text);flex:1}
-#waveBar{height:7px;background:#100c00;border-radius:4px;overflow:hidden;margin-bottom:3px}
-#waveBarIn{height:100%;background:linear-gradient(90deg,var(--gold),#ff8000);border-radius:4px;transition:width .25s;width:0%}
-#waveLog{font-size:10px;color:var(--muted);max-height:44px;overflow-y:auto}
-#waveLog .g{color:#44ee70}
-#waveLog .b{color:#ff4040}
-#botArea{display:flex;gap:5px;flex-wrap:wrap;padding:5px 8px;background:#080600;border-top:2px solid var(--ui-border);flex-shrink:0}
-.bot-screen{position:relative;border:2px solid #444;border-radius:5px;overflow:hidden;flex-shrink:0}
-.bot-label{position:absolute;top:0;left:0;right:0;background:rgba(0,0,0,.85);font-size:9px;padding:2px 4px;display:flex;justify-content:space-between;z-index:2;pointer-events:none;white-space:nowrap}
-.bot-canvas{display:block}
-.tbtn{width:100%;padding:4px 5px;margin-bottom:3px;background:#120e00;border:1px solid #2e2000;border-radius:5px;cursor:pointer;color:var(--text);font-size:9px;text-align:left;transition:.1s;display:flex;align-items:center;gap:4px}
-.tbtn:hover{border-color:var(--gold);background:#201400}
-.tbtn.sel{border-color:var(--gold);background:#2e1800;box-shadow:0 0 5px rgba(255,200,0,.35)}
-.tbtn-icon{font-size:16px;line-height:1;flex-shrink:0}
-.tbtn-name{font-size:9px;font-weight:bold;color:var(--gold)}
-.tbtn-cost{font-size:8px;color:var(--muted)}
-.upg-hdr{font-size:9px;color:var(--gold);margin-bottom:3px;font-weight:bold;margin-top:7px}
-.upg-row{width:100%;padding:4px 5px;background:#120e00;border:1px solid #2e2000;border-radius:4px;font-size:9px;cursor:pointer;color:var(--text);text-align:left;margin-bottom:2px;transition:.1s;display:block}
-.upg-row:hover:not([disabled]){border-color:var(--gold);background:#201000}
-.upg-row[disabled]{opacity:.3;cursor:not-allowed}
-.upg-row.done{background:#081400;border-color:#1e4000;color:#40a000;cursor:default}
-.sell-btn{width:100%;padding:4px;background:#200000;border:1px solid #500000;border-radius:4px;color:#ff5050;cursor:pointer;font-size:9px;margin-top:5px}
-.sell-btn:hover{background:#2e0000}
-#endOverlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:200}
-#endBox{background:var(--ui-card);border:2px solid var(--gold);border-radius:12px;padding:24px 28px;text-align:center;min-width:300px;max-width:420px}
-#endBox h2{font-size:22px;margin-bottom:10px}
-#endBox .stats{font-size:12px;line-height:2.2;color:var(--muted);margin-bottom:16px}
-.map-row{display:flex;gap:8px;margin-bottom:8px;cursor:pointer;padding:6px;border-radius:7px;border:2px solid transparent;transition:.1s}
-.map-row:hover{border-color:#6a5000}
-.map-row.msel{border-color:var(--gold);background:rgba(255,200,0,.06)}
-.map-thumb{border-radius:5px;flex-shrink:0}
-.map-info{font-size:11px;color:var(--muted);line-height:1.6}
-.map-info b{color:var(--text)}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+header{
+  background:var(--bg2); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 18px; height:54px; position:sticky; top:0; z-index:10;
+}
+.logo{font-size:21px; font-weight:700; color:var(--text-bright); letter-spacing:-0.5px;}
+.logo span{color:var(--accent-bright);}
+nav{display:flex; gap:4px;}
+nav button{
+  background:transparent; border:none; color:var(--text); font-size:14px;
+  padding:8px 14px; border-radius:4px; cursor:pointer; transition:.15s;
+}
+nav button:hover{background:var(--bg3); color:var(--text-bright);}
+nav button.active{color:var(--accent-bright); background:var(--bg3); font-weight:600;}
+main{max-width:1100px; margin:0 auto; padding:22px 16px 60px;}
+.view{display:none;}
+.view.active{display:block;}
+h1{color:var(--text-bright); font-size:26px; margin:0 0 4px;}
+.subtitle{color:var(--muted); font-size:14px; margin-bottom:20px;}
+.card{background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:18px; margin-bottom:16px;}
+.card h2{margin:0 0 12px; font-size:17px; color:var(--text-bright);}
+.btn{
+  background:var(--accent); color:#fff; border:none; padding:9px 16px;
+  border-radius:4px; font-size:14px; font-weight:600; cursor:pointer; transition:.15s;
+}
+.btn:hover{background:var(--accent-bright); color:#161512;}
+.btn.secondary{background:var(--bg3); color:var(--text);}
+.btn.secondary:hover{background:var(--line); color:var(--text-bright);}
+.btn.danger{background:transparent; color:var(--danger); border:1px solid var(--danger);}
+.btn.danger:hover{background:var(--danger); color:#fff;}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+label{display:block; font-size:13px; color:var(--muted); margin:10px 0 4px;}
+input[type=text], select{
+  width:100%; background:var(--bg3); border:1px solid var(--line); color:var(--text-bright);
+  padding:8px 10px; border-radius:4px; font-size:14px;
+}
+input[type=range]{width:100%; accent-color:var(--accent);}
+.range-val{color:var(--accent-bright); font-weight:600;}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px;}
+.bot-card{background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:14px;}
+.bot-card h3{margin:0 0 6px; font-size:15px; color:var(--text-bright); display:flex; align-items:center; gap:6px;}
+.bot-avatar{width:26px; height:26px; border-radius:50%; background:var(--accent-dark); display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff;}
+.stat-row{display:flex; justify-content:space-between; font-size:12.5px; color:var(--muted); margin:3px 0;}
+.stat-row b{color:var(--text);}
+.badge{display:inline-block; font-size:11px; padding:2px 7px; border-radius:10px; font-weight:600;}
+.badge.live{background:var(--danger); color:#fff;}
+.badge.finished{background:var(--bg3); color:var(--muted);}
+.badge.system{background:var(--accent-dark); color:#fff;}
+.t-list .t-row{
+  display:flex; align-items:center; justify-content:space-between; padding:12px 14px;
+  border-bottom:1px solid var(--line); cursor:pointer; transition:.1s;
+}
+.t-list .t-row:hover{background:var(--bg3);}
+.t-list .t-row:last-child{border-bottom:none;}
+.t-name{color:var(--text-bright); font-weight:600; font-size:14.5px;}
+.t-meta{color:var(--muted); font-size:12.5px; margin-top:2px;}
+table{width:100%; border-collapse:collapse; font-size:13.5px;}
+th{text-align:left; color:var(--muted); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--line); font-size:12px; text-transform:uppercase; letter-spacing:.5px;}
+td{padding:7px 8px; border-bottom:1px solid var(--line); color:var(--text);}
+tr:last-child td{border-bottom:none;}
+.rank-1{color:var(--gold); font-weight:700;}
+.rank-2{color:#c0c0c0; font-weight:700;}
+.rank-3{color:#cd7f32; font-weight:700;}
+.log-line{font-size:12.5px; color:var(--muted); padding:4px 0; border-bottom:1px dotted var(--line);}
+.log-line b{color:var(--text);}
+.board-wrap{display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;}
+#board{
+  width:480px; max-width:92vw; aspect-ratio:1; display:grid;
+  grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
+  border:3px solid var(--bg3); border-radius:3px; overflow:hidden;
+}
+.sq{display:flex; align-items:center; justify-content:center; font-size:min(7vw,38px); cursor:pointer; user-select:none; position:relative;}
+.sq.light{background:var(--light-sq);}
+.sq.dark{background:var(--dark-sq);}
+.sq.selected{outline:3px solid var(--accent-bright); outline-offset:-3px;}
+.sq.legal::after{content:''; position:absolute; width:28%; height:28%; border-radius:50%; background:rgba(0,0,0,.28);}
+.sq.legal.capture::after{width:80%; height:80%; border-radius:50%; background:transparent; border:5px solid rgba(0,0,0,.28);}
+.side-panel{flex:1; min-width:240px;}
+.empty{color:var(--muted); font-style:italic; padding:14px 0; text-align:center;}
+.flex-between{display:flex; justify-content:space-between; align-items:center;}
+.small{font-size:12px; color:var(--muted);}
+.tag{background:var(--bg3); padding:2px 8px; border-radius:10px; font-size:11.5px; color:var(--text);}
+.toast{
+  position:fixed; bottom:18px; right:18px; background:var(--bg3); border:1px solid var(--accent);
+  color:var(--text-bright); padding:10px 16px; border-radius:5px; font-size:13.5px; z-index:50;
+  opacity:0; transform:translateY(10px); transition:.25s; pointer-events:none;
+}
+.toast.show{opacity:1; transform:translateY(0);}
+.bot-select-list{max-height:260px; overflow-y:auto; border:1px solid var(--line); border-radius:4px;}
+.bot-select-list .bsl-item{padding:9px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); cursor:pointer;}
+.bot-select-list .bsl-item:hover{background:var(--bg3);}
+.bot-select-list .bsl-item:last-child{border-bottom:none;}
+.result-w{color:var(--accent-bright);}
+.result-b{color:var(--text);}
+.result-d{color:var(--muted);}
+@media(max-width:680px){
+  .logo{font-size:17px;} nav button{padding:7px 9px; font-size:12.5px;}
+}
 </style>
 </head>
 <body>
-<div id="app">
 
-<div id="homeScreen" class="screen active">
-  <div class="logo">
-    <h1>🎈 BLOONS TD ARENA</h1>
-    <p>Tower Defense • Alle BTD5-Türme • Bot-KI mit eigenem Spielfeld</p>
-  </div>
-  <div class="tabs">
-    <button class="tab active" onclick="showTab('play')">Spielen</button>
-    <button class="tab" onclick="showTab('profile')">Profil</button>
-    <button class="tab" onclick="showTab('lb')">Rangliste</button>
-    <button class="tab" onclick="showTab('guide')">Guide</button>
-  </div>
-  <div id="panel-play" class="panel active">
-    <div class="card"><h3>Spieler</h3>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div id="av0" style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#b06000,#ffcc00);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px">P</div>
-        <div><div style="font-weight:bold;font-size:14px" id="hpn">Spieler</div>
-        <span class="elo-badge rank-bronze" id="hrb">Bronze</span>
-        <span style="font-size:11px;color:var(--muted);margin-left:4px" id="hel">1000 ELO</span></div>
-      </div>
-    </div>
-    <div class="card"><h3>Schwierigkeit</h3>
-      <select id="diffSel" style="width:100%">
-        <option value="easy">🟢 Leicht — 200 Leben, viel Geld</option>
-        <option value="medium" selected>🟡 Mittel — Standard</option>
-        <option value="hard">🔴 Schwer — weniger Geld, mehr Bloons</option>
-        <option value="extreme">💀 Extrem — Profi-Modus</option>
-      </select>
-    </div>
-    <div class="card"><h3>Bots <span id="botCntLabel" style="color:var(--gold)">3</span></h3>
-      <input type="range" min="1" max="7" value="3" step="1" oninput="document.getElementById('botCntLabel').textContent=this.value;cfg.botCount=+this.value">
-    </div>
-    <div class="card"><h3>Karte</h3><div id="mapList"></div></div>
-    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:15px;margin-top:4px" onclick="startGame()">🎮 ARENA STARTEN</button>
-  </div>
-  <div id="panel-profile" class="panel">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <div id="profAv" style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#b06000,#ffcc00);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:20px">P</div>
-      <div style="flex:1">
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
-          <span style="font-weight:bold;font-size:15px" id="profName">Spieler</span>
-          <input type="text" id="nameIn" placeholder="Name ändern..." style="width:110px">
-          <button class="btn btn-secondary" onclick="doRename()" style="padding:2px 8px;font-size:11px">OK</button>
-        </div>
-        <span class="elo-badge rank-bronze" id="profBadge">Bronze</span>
-        <span style="font-size:11px;color:var(--muted);margin-left:5px" id="profElo">1000 ELO</span>
-      </div>
-    </div>
-    <div class="g4"><div class="metric"><div class="val" id="sGames">0</div><div class="lbl">Spiele</div></div><div class="metric"><div class="val" id="sWins">0</div><div class="lbl">Siege</div></div><div class="metric"><div class="val" id="sWave">1</div><div class="lbl">Max Wave</div></div><div class="metric"><div class="val" id="sKills">0</div><div class="lbl">Kills</div></div></div>
-    <div class="g3"><div class="metric"><div class="val" id="sWR">0%</div><div class="lbl">Siegrate</div></div><div class="metric"><div class="val" id="sAvg">—</div><div class="lbl">Ø Platz</div></div><div class="metric"><div class="val" id="sPeak">1000</div><div class="lbl">Peak ELO</div></div></div>
-    <div class="card"><h3>Letzte Spiele</h3><div id="histList" style="font-size:11px;color:var(--muted)">Noch keine Spiele.</div></div>
-  </div>
-  <div id="panel-lb" class="panel">
-    <div style="font-size:15px;font-weight:bold;color:var(--gold);margin-bottom:10px">🏆 Rangliste</div>
-    <div id="lbList"></div>
-  </div>
-  <div id="panel-guide" class="panel">
-    <div class="card"><h3>Alle BTD5-Türme</h3>
-      <div style="font-size:10px;color:#ccc;line-height:1.9">
-        🐒 Dart Monkey | 💣 Bomb Shooter | ❄️ Ice Tower | 🌵 Tack Shooter | 🐺 Super Monkey<br>
-        🌿 Boomerang | 💥 Mortar | ⚡ Lightning | 🎯 Sniper | 🚁 Heli Pilot<br>
-        🐒🏹 Monkey Ace | 🌊 Buccaneer | 🧙 Wizard | ☀️ Druid | 🦝 Ninja<br>
-        🧪 Alchemist | 🌲 Spike Factory | 🥁 Village | 🎲 Engineer
-      </div>
-    </div>
-    <div class="card"><h3>Bloon-Typen</h3>
-      <div style="font-size:10px;color:#ccc;line-height:1.8">
-        🔴 Rot 1 HP | 🔵 Blau 2 | 🟢 Grün 3 | 🟡 Gelb 4 | 🩷 Pink 5<br>
-        ⚫ Schwarz 10 (bomb-immun) | ⬜ Weiß 10 (eis-immun) | 🟣 Lila 15 (energie-immun)<br>
-        🔶 Lead 20 (nur Bombe/Magie) | 🦓 Zebra 23 | 🌈 Rainbow 47 | 💎 Keramik 60<br>
-        🌑 MOAB 200 | 💣 BFB 700 | 🌀 ZOMG 4000 — Kinder spawnen beim Tod!
-      </div>
-    </div>
-    <div class="card"><h3>Bot-KI Tierlist</h3>
-      <div style="font-size:10px;color:#ccc;line-height:1.8">
-        <b style="color:#ff8888">Noob</b>: Random-Käufe, keine Upgrades<br>
-        <b style="color:#ffbb44">Anfänger</b>: Dart/Bomb fokus, selten Upgrades<br>
-        <b style="color:#ffff44">Normal</b>: Sinnvolle Türme, P1 bis Lvl 2<br>
-        <b style="color:#88ff88">Gut</b>: Synergien, Lead-Counter, High-Kill-Upgrades<br>
-        <b style="color:#44bbff">Experte</b>: Dual-Path, spart für starke Türme, MOAB-Counter<br>
-        <b style="color:#cc88ff">Meister</b>: Max-Upgrades, Village-Synergy, optimale Platzierung
-      </div>
-    </div>
-  </div>
-</div>
+<header>
+  <div class="logo">li<span>bot</span>chess<span style="color:var(--muted); font-weight:400; font-size:12px;">.local</span></div>
+  <nav id="nav">
+    <button data-view="lobby" class="active">Lobby</button>
+    <button data-view="bots">Bots</button>
+    <button data-view="tournaments">Turniere</button>
+    <button data-view="play">Spielen</button>
+  </nav>
+</header>
 
-<div id="gameScreen" class="screen">
-  <div id="topHud">
-    <span class="hk">❤️</span><span class="hv" id="hudLives">150</span>
-    <span style="color:#2a2000">│</span>
-    <span class="hk">💰</span><span class="hv" id="hudMoney">650</span>
-    <span style="color:#2a2000">│</span>
-    <span class="hk">🌊</span><span class="hv" id="hudWave">0</span><span class="hk" id="hudWaveOf">/80</span>
-    <span style="color:#2a2000">│</span>
-    <span class="hk">🎈</span><span class="hv" id="hudBloons">0</span>
-    <span style="color:#2a2000">│</span>
-    <span class="hk">⭐</span><span class="hv" id="hudElo">1000</span>
-    <span style="flex:1"></span>
-    <button class="btn btn-secondary" id="pauseBtn" onclick="togglePause()" style="padding:3px 10px;font-size:11px">⏸</button>
-    <button class="btn btn-secondary" id="speedBtn" onclick="toggleSpeed()" style="padding:3px 10px;font-size:11px">2x</button>
-    <button class="btn btn-secondary" onclick="goHome()" style="padding:3px 8px;font-size:11px">🏠</button>
-  </div>
-  <div id="mainArea">
-    <div id="leftPanel">
-      <div style="font-size:9px;color:var(--gold);font-weight:bold;margin-bottom:4px;letter-spacing:1px">TÜRME KAUFEN</div>
-      <div id="towerButtons"></div>
+<main>
+
+  <!-- LOBBY -->
+  <div class="view active" id="view-lobby">
+    <h1>Lobby</h1>
+    <div class="subtitle">Erstelle Bots mit eigener Stärke & Geschwindigkeit. Sie treten automatisch jedem stündlichen und jedem von dir erstellten Turnier bei.</div>
+    <div class="grid" style="margin-bottom:18px;">
+      <div class="card"><h2>Aktive Bots</h2><div style="font-size:30px; color:var(--accent-bright); font-weight:700;" id="stat-bots">0</div></div>
+      <div class="card"><h2>Laufende Turniere</h2><div style="font-size:30px; color:var(--accent-bright); font-weight:700;" id="stat-live-t">0</div></div>
+      <div class="card"><h2>Gespielte Partien</h2><div style="font-size:30px; color:var(--accent-bright); font-weight:700;" id="stat-games">0</div></div>
     </div>
-    <div id="centerCol">
-      <div id="canvasWrap"><canvas id="gameCanvas"></canvas></div>
-      <div id="bottomArea">
-        <div id="waveCtrl">
-          <span id="waveLabel">Bereit für Welle 1</span>
-          <button id="startWaveBtn" class="btn btn-primary" onclick="startNextWave()" style="padding:4px 12px;font-size:11px">Nächste Welle ▶</button>
-        </div>
-        <div id="waveBar"><div id="waveBarIn"></div></div>
-        <div id="waveLog"></div>
+    <div class="card">
+      <div class="flex-between"><h2>Turniere</h2><button class="btn secondary" onclick="switchView('tournaments')">Alle ansehen →</button></div>
+      <div class="t-list" id="lobby-t-list"></div>
+    </div>
+  </div>
+
+  <!-- BOTS -->
+  <div class="view" id="view-bots">
+    <h1>Bots verwalten</h1>
+    <div class="subtitle">Stärke 1 (sehr schwach) bis 8 (sehr stark) — angelehnt an Lichess-Stockfish-Level. Geschwindigkeit bestimmt, wie schnell der Bot live zieht.</div>
+    <div class="card">
+      <h2>Neuen Bot erstellen</h2>
+      <label>Name</label>
+      <input type="text" id="bot-name" placeholder="z.B. RookieRoman">
+      <label>Stärke: Level <span class="range-val" id="bot-level-val">3</span></label>
+      <input type="range" id="bot-level" min="1" max="8" value="3">
+      <label>Geschwindigkeit: <span class="range-val" id="bot-speed-val">1.0s</span> pro Zug</label>
+      <input type="range" id="bot-speed" min="2" max="50" value="10">
+      <div style="margin-top:14px;"><button class="btn" onclick="createBot()">Bot erstellen</button></div>
+    </div>
+    <div class="card">
+      <h2>Deine Bots</h2>
+      <div class="grid" id="bots-list"></div>
+    </div>
+  </div>
+
+  <!-- TOURNAMENTS -->
+  <div class="view" id="view-tournaments">
+    <h1>Turniere</h1>
+    <div class="subtitle">Stündliche System-Arenas laufen automatisch. Eigene Turniere kannst du jederzeit starten — alle Bots treten sofort bei.</div>
+    <div class="card">
+      <h2>Eigenes Turnier erstellen</h2>
+      <label>Name</label>
+      <input type="text" id="t-name" placeholder="z.B. Freitagabend-Blitz">
+      <label>Dauer (Minuten)</label>
+      <input type="text" id="t-duration" value="15">
+      <div style="margin-top:14px;"><button class="btn" onclick="createTournament()">Turnier starten</button></div>
+    </div>
+    <div class="card">
+      <h2>Alle Turniere</h2>
+      <div class="t-list" id="t-list-full"></div>
+    </div>
+  </div>
+
+  <!-- TOURNAMENT DETAIL -->
+  <div class="view" id="view-tdetail">
+    <button class="btn secondary" onclick="switchView('tournaments')" style="margin-bottom:14px;">← Zurück</button>
+    <h1 id="td-name">Turnier</h1>
+    <div class="subtitle" id="td-meta"></div>
+    <div class="board-wrap">
+      <div class="card" style="flex:2; min-width:300px;">
+        <h2>Rangliste</h2>
+        <table>
+          <thead><tr><th>#</th><th>Bot</th><th>Level</th><th>Punkte</th><th>Partien</th></tr></thead>
+          <tbody id="td-standings"></tbody>
+        </table>
+      </div>
+      <div class="card" style="flex:1; min-width:240px;">
+        <h2>Letzte Partien</h2>
+        <div id="td-games"></div>
       </div>
     </div>
-    <div id="rightPanel">
-      <div style="font-size:9px;color:var(--gold);font-weight:bold;margin-bottom:4px;letter-spacing:1px">DETAILS</div>
-      <div id="towerDetails" style="font-size:10px;color:var(--muted)">Turm auswählen oder platzieren</div>
-    </div>
   </div>
-  <div id="botArea"></div>
-</div>
 
-<div id="endOverlay">
-  <div id="endBox">
-    <h2 id="endTitle">Spiel beendet</h2>
-    <div class="stats" id="endStats"></div>
-    <div style="display:flex;gap:10px;justify-content:center">
-      <button class="btn btn-primary" onclick="goHome()">🏠 Menü</button>
-      <button class="btn btn-secondary" onclick="startGame()" style="padding:8px 16px">🔄 Nochmal</button>
+  <!-- PLAY -->
+  <div class="view" id="view-play">
+    <h1>Gegen einen Bot spielen</h1>
+    <div class="subtitle">Wähle einen Bot und spiele live gegen ihn (du = Weiß).</div>
+    <div class="card" id="play-pick">
+      <h2>Bot auswählen</h2>
+      <div class="bot-select-list" id="play-bot-list"></div>
+    </div>
+    <div class="board-wrap" id="play-area" style="display:none;">
+      <div>
+        <div id="board"></div>
+        <div style="margin-top:10px;" class="small" id="play-status"></div>
+        <button class="btn secondary" style="margin-top:10px;" onclick="resetPlayGame()">Neues Spiel</button>
+      </div>
+      <div class="side-panel card">
+        <h2>Gegner</h2>
+        <div id="play-opponent-info"></div>
+        <h2 style="margin-top:18px;">Zugverlauf</h2>
+        <div id="play-history" class="small" style="max-height:240px; overflow-y:auto;"></div>
+      </div>
     </div>
   </div>
-</div>
+
+</main>
+
+<div class="toast" id="toast"></div>
 
 <script>
-// ============================================================
-// TOWER DEFINITIONS — BTD5-accurate
-// ============================================================
-const TTYPES=[
-// Dart Monkey — fast, low pierce, scales well
-{id:'dart',name:'Dart Monkey',icon:'🐒',cost:170,dmg:1,range:115,rate:950,pierce:2,color:'#e09020',targetMode:'first',
- p1:[{n:'Bigger Darts',cost:100,e:'pierce+1'},{n:'Razor Darts',cost:150,e:'pierce+1+dmg+1'},{n:'Razor Wind',cost:300,e:'spread+3+pierce+2+dmg+1'},{n:'Ultra-Juggernaut',cost:2200,e:'pierce+20+dmg+10+aoe+20+jugger'}],
- p2:[{n:'Long Range Darts',cost:100,e:'range+20'},{n:'Enhanced Eyesight',cost:150,e:'range+20+camo'},{n:'Spike-o-pult',cost:250,e:'pierce+15+dmg+3+range+20'},{n:'Juggernaut',cost:3000,e:'pierce+30+dmg+20+aoe+30'}]},
+/* ===================== STATE ===================== */
+let state = { bots:{}, tournaments:{}, lastHourlyBucket:null, gamesPlayed:0 };
+let stateLoaded = false;
 
-// Bomb Shooter — AoE, lead-capable, MOAB mauler
-{id:'bomb',name:'Bomb Shooter',icon:'💣',cost:380,dmg:6,range:100,rate:1800,pierce:20,aoe:40,color:'#d06000',targetMode:'first',leaddmg:true,
- p1:[{n:'Bigger Bombs',cost:150,e:'aoe+15+pierce+10'},{n:'Extra Range',cost:250,e:'range+20+aoe+10'},{n:'MOAB Mauler',cost:1000,e:'dmg+22+moab'},{n:'MOAB Assassin',cost:5000,e:'dmg+60+moab+aoe+10'}],
- p2:[{n:'Frag Bombs',cost:200,e:'pierce+15+dot'},{n:'Cluster Bombs',cost:500,e:'cluster'},{n:'Recursive Cluster',cost:1500,e:'aoe+20+pierce+15'},{n:'Bomb Blitz',cost:8000,e:'dmg+10+aoe+25+pierce+20+rate-600'}]},
+async function loadState(){
+  try{
+    const r = await window.storage.get('app-state', false);
+    if(r && r.value) state = JSON.parse(r.value);
+  }catch(e){ /* no saved state yet */ }
+  stateLoaded = true;
+  ensureHourly();
+  renderAll();
+}
+let saveTimer=null;
+function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async ()=>{
+    try{ await window.storage.set('app-state', JSON.stringify(state), false); }
+    catch(e){ console.error('save failed', e); }
+  }, 250);
+}
 
-// Ice Tower — freeze, can hit whites at upgrade, can't hit leads/purples/MOABs
-{id:'ice',name:'Ice Tower',icon:'❄️',cost:280,dmg:0,range:90,rate:3500,freeze:true,freezeDur:1.5,color:'#60b0ff',targetMode:'first',
- p1:[{n:'Permafrost',cost:100,e:'slow+freezedur+0.5'},{n:'Cold Snap',cost:200,e:'whitehit+freezedur+0.5'},{n:'Arctic Wind',cost:500,e:'range+30+aoe+50+freezedur+1'},{n:'Absolute Zero',cost:4500,e:'range+50+aoe+150+freezedur+3+whitehit'}],
- p2:[{n:'Enhanced Freeze',cost:100,e:'freezedur+0.5'},{n:'Deep Freeze',cost:150,e:'freezedur+1+dmg+2'},{n:'Cryo Cannon',cost:600,e:'range+25+dmg+3+rate-800'},{n:'Super Freeze',cost:3500,e:'range+40+dmg+5+rate-1000+freezedur+2'}]},
+/* ===================== UTIL ===================== */
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-// Tack Shooter — 8-direction, close range beast
-{id:'tack',name:'Tack Shooter',icon:'🌵',cost:210,dmg:1,range:78,rate:1400,spread:8,pierce:2,color:'#20b040',targetMode:'close',
- p1:[{n:'Faster Shooting',cost:100,e:'rate-200'},{n:'Even Faster',cost:150,e:'rate-200'},{n:'Super Fast Tacks',cost:500,e:'rate-300'},{n:'Tack Sprayer',cost:3000,e:'spread+8+dmg+2+pierce+2+rate-300'}],
- p2:[{n:'Long Reach',cost:100,e:'range+15'},{n:'Extra Long Reach',cost:150,e:'range+15'},{n:'Blade Shooter',cost:300,e:'dmg+2+pierce+2'},{n:'Blade Maelstrom',cost:3500,e:'spread+8+dmg+4+pierce+4+rate-400'}]},
+/* ===================== NAV ===================== */
+function switchView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.view===name));
+  if(name==='lobby') renderLobby();
+  if(name==='bots') renderBots();
+  if(name==='tournaments') renderTournaments();
+  if(name==='play') renderPlayPicker();
+}
+document.getElementById('nav').addEventListener('click', e=>{
+  if(e.target.tagName==='BUTTON') switchView(e.target.dataset.view);
+});
 
-// Super Monkey — ultimate damage machine, fast rate
-{id:'super',name:'Super Monkey',icon:'🐺',cost:2500,dmg:1,range:105,rate:90,pierce:1,color:'#c000c0',targetMode:'first',
- p1:[{n:'Laser Blasts',cost:2000,e:'dmg+2+rate-10+leaddmg'},{n:'Plasma Blasts',cost:3000,e:'dmg+4+pierce+1'},{n:'Sun God',cost:8000,e:'dmg+10+rate-10+pierce+3+range+20'},{n:'True Sun God',cost:50000,e:'dmg+20+rate-10+pierce+6+range+30+aoe+30'}],
- p2:[{n:'Super Range',cost:1000,e:'range+35'},{n:'Epic Range',cost:1500,e:'range+45'},{n:'Robo-Monkey',cost:4000,e:'triple+range+20+dmg+3+pierce+2'},{n:'Tech Terror',cost:25000,e:'aoe+70+dmg+15+pierce+10+range+20'}]},
+/* ===================== BOT CREATION ===================== */
+document.getElementById('bot-level').addEventListener('input', e=>{
+  document.getElementById('bot-level-val').textContent = e.target.value;
+});
+document.getElementById('bot-speed').addEventListener('input', e=>{
+  document.getElementById('bot-speed-val').textContent = (e.target.value/10).toFixed(1)+'s';
+});
 
-// Boomerang — high pierce, returns
-{id:'boomr',name:'Boomerang',icon:'🌿',cost:310,dmg:2,range:125,rate:1500,pierce:6,color:'#30b070',targetMode:'first',
- p1:[{n:'Glaive Thrower',cost:200,e:'pierce+4+dmg+1'},{n:'Glaive Ricochet',cost:350,e:'pierce+6+dmg+2'},{n:'Glaive Lord',cost:2000,e:'pierce+20+dmg+6+rate-200'},{n:'MOAB Press',cost:7000,e:'pierce+40+dmg+20+moab'}],
- p2:[{n:'Bionic Boomerang',cost:300,e:'rate-400'},{n:'Turbo Charge',cost:900,e:'rate-400+dmg+1'},{n:'Perma-Charge',cost:3500,e:'rate-400+dmg+4+pierce+4'},{n:'MOAB Domination',cost:20000,e:'dmg+40+pierce+60+moab+rate-300'}]},
-
-// Mortar — targets anywhere on map
-{id:'mortar',name:'Mortar',icon:'💥',cost:680,dmg:8,range:99000,rate:3000,aoe:55,pierce:25,color:'#808080',targetMode:'sniper',leaddmg:true,
- p1:[{n:'Bigger Blast',cost:250,e:'aoe+15+dmg+4'},{n:'Bloon Buster',cost:500,e:'dmg+10+pierce+10'},{n:'The Big One',cost:2000,e:'dmg+20+aoe+20+pierce+10'},{n:'The Biggest One',cost:6500,e:'dmg+40+aoe+30+pierce+30'}],
- p2:[{n:'Faster Reload',cost:200,e:'rate-500'},{n:'Rapid Reload',cost:400,e:'rate-500'},{n:'Heavy Shells',cost:900,e:'dmg+15+aoe+10+pierce+10'},{n:'Pop and Awe',cost:5000,e:'aoe+70+dmg+20+pierce+50+freeze'}]},
-
-// Lightning — chain zapper, hits lead with upgrade
-{id:'lightning',name:'Lightning',icon:'⚡',cost:530,dmg:2,range:105,rate:1800,chain:4,color:'#e0d000',targetMode:'first',
- p1:[{n:'Faster Zapping',cost:200,e:'rate-300'},{n:'Voltage',cost:300,e:'dmg+2+chain+2'},{n:'Tesla',cost:1200,e:'dmg+5+chain+3+rate-200'},{n:'Technological Terror',cost:6500,e:'dmg+10+chain+8+aoe+50+rate-400'}],
- p2:[{n:'Extra Range',cost:150,e:'range+20'},{n:'Increased Power',cost:250,e:'range+20+dmg+2'},{n:'Storm Cannon',cost:1500,e:'chain+5+range+25+dmg+4'},{n:'Nuclear Strike',cost:12000,e:'chain+15+aoe+80+dmg+15+range+30'}]},
-
-// Sniper — infinite range, instant hit, cripple moab
-{id:'sniper',name:'Sniper',icon:'🎯',cost:350,dmg:8,range:99999,rate:3500,pierce:1,color:'#a090ff',targetMode:'sniper',sniperMode:true,
- p1:[{n:'Full Metal Jacket',cost:200,e:'leaddmg+dmg+4'},{n:'Point Five Oh',cost:350,e:'dmg+12'},{n:'Deadly Precision',cost:900,e:'dmg+20'},{n:'Cripple MOAB',cost:4500,e:'dmg+30+slow+moab'}],
- p2:[{n:'Night Vision',cost:150,e:'camo'},{n:'Shrapnel Shot',cost:350,e:'pierce+4+aoe+25'},{n:'Bouncing Bullet',cost:900,e:'chain+4+dmg+8'},{n:'Supply Drop',cost:4500,e:'supply+dmg+10+pierce+4'}]},
-
-// Heli Pilot — mobile, follows bloons
-{id:'heli',name:'Heli Pilot',icon:'🚁',cost:1350,dmg:2,range:160,rate:600,pierce:3,homing:true,color:'#40a0e0',targetMode:'first',
- p1:[{n:'Bigger Jets',cost:250,e:'range+30+rate-80'},{n:'IFR',cost:400,e:'camo+range+25'},{n:'Downdraft',cost:2500,e:'push+dmg+3+pierce+2+rate-80'},{n:'Apache Dartship',cost:10000,e:'dmg+8+rate-200+triple+pierce+4'}],
- p2:[{n:'Faster Darts',cost:250,e:'rate-100'},{n:'Faster Firing',cost:400,e:'rate-100+dmg+2'},{n:'Quad Darts',cost:2000,e:'spread+4+pierce+3+dmg+2'},{n:'Apache Prime',cost:18000,e:'dmg+15+rate-150+spread+4+pierce+6+aoe+30+leaddmg'}]},
-
-// Monkey Ace — flies path, drops darts all around
-{id:'ace',name:'Monkey Ace',icon:'🐒🏹',cost:1080,dmg:1,range:99999,rate:700,pierce:2,color:'#e0c050',targetMode:'sniper',
- p1:[{n:'Rapid Fire',cost:300,e:'rate-100+pierce+1'},{n:'Lots More Darts',cost:350,e:'pierce+4+dmg+1'},{n:'Fighter Plane',cost:2000,e:'dmg+4+rate-150+pierce+3'},{n:'Operation DNT',cost:12000,e:'dmg+15+aoe+50+pierce+20+rate-200'}],
- p2:[{n:'Centered Path',cost:200,e:'pierce+3'},{n:'Fighter Plane Gun',cost:400,e:'dmg+3+rate-100'},{n:'Spy Plane',cost:1200,e:'camo+pierce+4+dmg+2'},{n:'Bombardier',cost:5000,e:'aoe+40+dmg+10+pierce+10+leaddmg'}]},
-
-// Buccaneer — water or land, net + cannon
-{id:'buccaneer',name:'Buccaneer',icon:'🌊',cost:650,dmg:2,range:130,rate:1200,pierce:4,color:'#1060c0',targetMode:'first',
- p1:[{n:'Faster Shooting',cost:200,e:'rate-200+dmg+1'},{n:'Cannon Ship',cost:300,e:'aoe+25+dmg+4+leaddmg'},{n:'Destroyer',cost:1500,e:'rate-300+dmg+6+pierce+6'},{n:'Aircraft Carrier',cost:8000,e:'dmg+12+pierce+10+aoe+30+rate-300+triple'}],
- p2:[{n:'Long Reach',cost:150,e:'range+25'},{n:'Crow\'s Nest',cost:200,e:'camo+range+20'},{n:'Monkey Pirates',cost:1500,e:'dmg+8+pierce+8+chain+3'},{n:'Flagship',cost:11000,e:'dmg+20+pierce+20+aoe+50+range+30'}]},
-
-// Wizard — magic, hits lead naturally, fire + archmage
-{id:'wizard',name:'Wizard',icon:'🧙',cost:580,dmg:3,range:110,rate:1200,pierce:3,color:'#8030e0',targetMode:'first',leaddmg:true,
- p1:[{n:'Intense Magic',cost:250,e:'dmg+3+pierce+2'},{n:'Monkey Sense',cost:350,e:'camo+dmg+2'},{n:'Archmage',cost:2000,e:'dmg+8+pierce+4+range+20+rate-200'},{n:'Sorcerer',cost:18000,e:'dmg+20+aoe+60+pierce+15+rate-200'}],
- p2:[{n:'Fireball',cost:300,e:'aoe+25+dmg+4+leaddmg'},{n:'Wall of Fire',cost:500,e:'aoe+30+dot+dmg+3'},{n:'Dragon\'s Breath',cost:1500,e:'aoe+30+dot+dmg+5+rate-200'},{n:'Necromancer',cost:8000,e:'dmg+15+aoe+40+pierce+10+rate-300'}]},
-
-// Ninja — fast, shurikens, camo natural, seek
-{id:'ninja',name:'Ninja',icon:'🦝',cost:550,dmg:2,range:105,rate:800,pierce:3,color:'#404040',targetMode:'first',camo:true,
- p1:[{n:'Sharper Shurikens',cost:200,e:'pierce+2+dmg+1'},{n:'Seeking Shuriken',cost:350,e:'homing+dmg+1+pierce+1'},{n:'Bloonjitsu',cost:1500,e:'spread+5+rate-150+dmg+2'},{n:'Master of Night',cost:12000,e:'dmg+12+pierce+12+spread+5+rate-200+camo'}],
- p2:[{n:'Distraction',cost:200,e:'slow'},{n:'Flash Bomb',cost:400,e:'aoe+30+chain+3+rate+200'},{n:'Smokescreens',cost:1500,e:'slow+aoe+30+chain+4'},{n:'Grand Saboteur',cost:9000,e:'dmg+20+pierce+15+slow+aoe+50+rate-300'}]},
-
-// Alchemist — acid splash, buff nearby towers, perma-brew
-{id:'alch',name:'Alchemist',icon:'🧪',cost:720,dmg:1,range:90,rate:2200,pierce:5,aoe:35,color:'#20b090',targetMode:'first',
- p1:[{n:'Larger Potions',cost:200,e:'aoe+15+pierce+3'},{n:'Acidic Mixture',cost:350,e:'dot+dmg+2'},{n:'Berserker Brew',cost:2000,e:'berserker+dmg+4+rate-400'},{n:'Strongest Acid',cost:8500,e:'dmg+12+aoe+40+dot+pierce+10'}],
- p2:[{n:'Stronger Acid',cost:200,e:'dmg+2'},{n:'Stronger Stimulant',cost:350,e:'buffTower+buffDmg'},{n:'Permanent Brew',cost:2500,e:'buffDmg+buffSpeed+dmg+3'},{n:'Total Transformation',cost:35000,e:'dmg+30+aoe+80+pierce+30+rate-600+leaddmg'}]},
-
-// Druid — thorn volleys, lightning, storm
-{id:'druid',name:'Druid',icon:'☀️',cost:550,dmg:3,range:108,rate:1100,pierce:3,color:'#50b020',targetMode:'first',
- p1:[{n:'Hard Thorns',cost:200,e:'pierce+3+dmg+2'},{n:'Thorn Swarm',cost:350,e:'spread+3+pierce+2+rate-100'},{n:'Heart of Thunder',cost:2000,e:'chain+4+dmg+6+rate-100'},{n:'Superstorm',cost:25000,e:'dmg+20+chain+10+aoe+60+range+30+rate-300'}],
- p2:[{n:'Druid Lore',cost:200,e:'range+20+dmg+1'},{n:'Jungle Drums',cost:400,e:'buffSpeed+range+15'},{n:'Druid of the Jungle',cost:1800,e:'triple+dmg+4+pierce+3'},{n:'Spirit of the Forest',cost:12000,e:'dmg+18+aoe+60+pierce+20+range+30+rate-200'}]},
-
-// Spike Factory — passive spikes on path
-{id:'spike',name:'Spike Factory',icon:'🌲',cost:1080,dmg:1,range:75,rate:1800,pierce:8,color:'#806000',targetMode:'close',spikeMode:true,
- p1:[{n:'Faster Production',cost:300,e:'rate-400'},{n:'Even Faster',cost:450,e:'rate-400'},{n:'MOAB SHREDR',cost:2000,e:'dmg+10+pierce+10+moab'},{n:'Perma-Spike',cost:18000,e:'dmg+20+pierce+30+rate-600+moab'}],
- p2:[{n:'Longer Reach',cost:200,e:'range+15'},{n:'Spread Spikes',cost:350,e:'spread+3+pierce+4'},{n:'Long Life Spikes',cost:1200,e:'pierce+15+range+10'},{n:'Super Mines',cost:30000,e:'aoe+80+dmg+50+pierce+50+leaddmg'}]},
-
-// Monkey Village — support: speed/dmg buff, income, discount
-{id:'village',name:'Monkey Village',icon:'🥁',cost:1150,dmg:0,range:120,rate:99999,pierce:0,color:'#c07020',targetMode:'first',supportMode:true,
- p1:[{n:'Bigger Radius',cost:400,e:'range+25'},{n:'Jungle Drums',cost:600,e:'buffSpeed'},{n:'Primary Training',cost:2200,e:'buffDmg'},{n:'Primary Expertise',cost:20000,e:'buffDmg+buffSpeed+range+25'}],
- p2:[{n:'Monkey Business',cost:350,e:'discount'},{n:'Monkey Commerce',cost:600,e:'income'},{n:'Monkey Town',cost:3000,e:'goldBonus+income'},{n:'Banana Research HQ',cost:15000,e:'goldBonus+income+range+30'}]},
-
-// Engineer — sentry guns, foam, boosts
-{id:'engineer',name:'Engineer',icon:'🎲',cost:580,dmg:2,range:95,rate:2500,pierce:3,color:'#c08040',targetMode:'first',
- p1:[{n:'Sentry Guns',cost:300,e:'sentry+dmg+2'},{n:'Faster Engineering',cost:400,e:'rate-500+sentry'},{n:'Sprockets',cost:1800,e:'dmg+6+pierce+4+rate-400'},{n:'Ultraboost',cost:18000,e:'buffDmg+buffSpeed+dmg+8+pierce+8'}],
- p2:[{n:'Larger Service Area',cost:250,e:'range+20'},{n:'Deconstruction',cost:400,e:'leaddmg+dmg+2+pierce+2'},{n:'Cleansing Foam',cost:1500,e:'foam+dmg+4+range+15'},{n:'Elite Sniper',cost:9500,e:'dmg+15+pierce+10+range+25+camo+leaddmg'}]}
-];
-
-// ============================================================
-// BLOON TYPES — BTD5-accurate immunities & children
-// ============================================================
-const BTYPES=[
-  {id:'red',   icon:'🔴',hp:1,  speed:0.55,reward:1, immune:[],                              color:'#cc2020',children:[]},
-  {id:'blue',  icon:'🔵',hp:2,  speed:0.65,reward:1, immune:[],                              color:'#2060cc',children:['red']},
-  {id:'green', icon:'🟢',hp:3,  speed:0.80,reward:1, immune:[],                              color:'#20a020',children:['blue']},
-  {id:'yellow',icon:'🟡',hp:4,  speed:1.10,reward:1, immune:[],                              color:'#c8c000',children:['green']},
-  {id:'pink',  icon:'🩷',hp:5,  speed:1.40,reward:1, immune:[],                              color:'#e060a0',children:['yellow']},
-  {id:'black', icon:'⚫',hp:10, speed:0.85,reward:2, immune:['bomb'],                        color:'#333333',children:['pink','pink']},
-  {id:'white', icon:'⬜',hp:10, speed:0.85,reward:2, immune:['ice'],                         color:'#c8c8c8',children:['pink','pink']},
-  {id:'purple',icon:'🟣',hp:15, speed:0.75,reward:3, immune:['super','energy','dart','tack'],color:'#7020a0',children:['pink','pink']},
-  {id:'lead',  icon:'🔶',hp:20, speed:0.55,reward:4, immune:['sharp'],                       color:'#9090a0',children:['black','black']},
-  {id:'zebra', icon:'🦓',hp:23, speed:0.85,reward:5, immune:['ice','bomb'],                  color:'#505050',children:['black','white']},
-  {id:'rainbow',icon:'🌈',hp:47,speed:1.00,reward:8, immune:[],                              color:'#d050d0',children:['zebra','zebra']},
-  {id:'ceramic',icon:'💎',hp:60,speed:0.70,reward:15,immune:[],                              color:'#a05020',children:['rainbow','rainbow']},
-  {id:'moab',  icon:'🌑',hp:200,speed:0.30,reward:50,immune:['sharp','ice','freeze'],         color:'#1020a0',big:true,children:['ceramic','ceramic','ceramic','ceramic']},
-  {id:'bfb',   icon:'💣',hp:700,speed:0.20,reward:200,immune:['sharp','ice','freeze'],        color:'#100050',big:true,boss:true,children:['moab','moab','moab','moab']},
-  {id:'zomg',  icon:'🌀',hp:4000,speed:0.10,reward:800,immune:['sharp','ice','freeze'],       color:'#004000',big:true,boss:true,children:['bfb','bfb','bfb','bfb']}
-];
-const BT=Object.fromEntries(BTYPES.map(b=>[b.id,b]));
-// sharp = dart/tack/boomerang/ninja type — cannot pierce lead naturally
-// energy = super monkey energy/laser — hits lead only with plasma+
-// freeze = MOABs can't be frozen (only slowed with specific upgrades)
-
-// ============================================================
-// MAPS
-// ============================================================
-const MAPS={
-  grasslands:{name:'Grasslands',desc:'Sanfte Kurven — leicht',diff:'easy',bg:'#2a7018',
-    rawPath:[{x:0,y:200},{x:120,y:200},{x:120,y:80},{x:300,y:80},{x:300,y:340},{x:480,y:340},{x:480,y:140},{x:660,y:140},{x:660,y:320},{x:840,y:320},{x:840,y:100},{x:1020,y:100},{x:1020,y:260},{x:1150,y:260}]},
-  monkey_lane:{name:'Monkey Lane',desc:'Tiefer Zickzack — mittel',diff:'medium',bg:'#185010',
-    rawPath:[{x:0,y:100},{x:160,y:100},{x:160,y:360},{x:340,y:360},{x:340,y:80},{x:540,y:80},{x:540,y:310},{x:700,y:310},{x:700,y:130},{x:880,y:130},{x:880,y:380},{x:1060,y:380},{x:1060,y:180},{x:1150,y:180}]},
-  frozen_over:{name:'Frozen Over',desc:'Enge Kurven — schwer',diff:'hard',bg:'#0c2030',
-    rawPath:[{x:0,y:240},{x:90,y:240},{x:90,y:60},{x:260,y:60},{x:260,y:210},{x:420,y:210},{x:420,y:60},{x:600,y:60},{x:600,y:310},{x:760,y:310},{x:760,y:150},{x:920,y:150},{x:920,y:380},{x:1060,y:380},{x:1060,y:200},{x:1150,y:200}]},
-  park_path:{name:'Park Path',desc:'Lange Geraden — mittel',diff:'medium',bg:'#206030',
-    rawPath:[{x:0,y:180},{x:220,y:180},{x:220,y:50},{x:520,y:50},{x:520,y:300},{x:720,y:300},{x:720,y:160},{x:850,y:160},{x:850,y:370},{x:1150,y:370}]},
-  spiral:{name:'Spiralpfad',desc:'Extrem langer Spiral — schwer',diff:'hard',bg:'#1a2800',
-    rawPath:[{x:0,y:210},{x:130,y:210},{x:130,y:50},{x:1000,y:50},{x:1000,y:380},{x:210,y:380},{x:210,y:130},{x:880,y:130},{x:880,y:300},{x:340,y:300},{x:340,y:200},{x:760,y:200},{x:760,y:170},{x:1150,y:170}]},
-  spice_islands:{name:'Spice Islands',desc:'Viele Wendungen — extrem',diff:'extreme',bg:'#102030',
-    rawPath:[{x:0,y:290},{x:110,y:290},{x:110,y:100},{x:220,y:100},{x:220,y:350},{x:370,y:350},{x:370,y:80},{x:510,y:80},{x:510,y:290},{x:630,y:290},{x:630,y:110},{x:770,y:110},{x:770,y:350},{x:920,y:350},{x:920,y:160},{x:1150,y:160}]}
-};
-const MAPKEYS=Object.keys(MAPS);
-
-// ============================================================
-// WAVE GENERATION — 80 waves
-// ============================================================
-function buildWaves(){
-  const waves=[];
-  const tier=['red','blue','green','yellow','pink','black','white','purple','lead','zebra','rainbow','ceramic','moab','bfb','zomg'];
-  let s=42;const rng=()=>{s=(s*9301+49297)%233280;return s/233280;};
-  for(let w=1;w<=80;w++){
-    const bloons=[];
-    if(w%20===0){
-      const bossTier=w>=60?'zomg':w>=40?'bfb':'moab';
-      const cnt=w>=60?3:w>=40?2:1;
-      for(let i=0;i<cnt;i++)bloons.push(bossTier);
-      for(let i=0;i<10;i++)bloons.push('ceramic');
-      for(let i=0;i<8;i++)bloons.push('rainbow');
-    } else {
-      const maxTier=Math.min(tier.length-1,Math.floor((w-1)/5.5));
-      let budget=Math.floor(20+w*5+w*w*0.12);
-      let sc=0;
-      while(budget>0&&bloons.length<130&&sc<500){
-        sc++;
-        const ti=Math.min(maxTier,Math.max(0,Math.floor(rng()*1.4*(maxTier+1)-maxTier*0.2)));
-        const t=tier[Math.max(0,Math.min(tier.length-1,ti))];
-        const bt=BT[t];if(!bt)break;
-        const cost=Math.ceil(bt.hp/4)||1;
-        if(cost>budget&&bloons.length>2)break;
-        bloons.push(t);budget-=cost;
-      }
+function createBot(){
+  const nameInput = document.getElementById('bot-name');
+  let name = nameInput.value.trim();
+  if(!name) name = 'Bot-'+uid().slice(0,4);
+  const level = parseInt(document.getElementById('bot-level').value,10);
+  const speed = parseInt(document.getElementById('bot-speed').value,10)/10; // seconds per move
+  const id = uid();
+  state.bots[id] = { id, name, level, speed, created: Date.now(), wins:0, draws:0, losses:0 };
+  // auto-join every open (live) tournament
+  Object.values(state.tournaments).forEach(t=>{
+    if(getTStatus(t)!=='finished' && !t.participants.includes(id)){
+      t.participants.push(id);
+      t.standings[id] = { score:0, games:0 };
     }
-    waves.push(bloons);
-  }
-  return waves;
-}
-const WAVES=buildWaves();
-
-// ============================================================
-// DIFFICULTY
-// ============================================================
-const DIFF={
-  easy:   {lives:200,money:800,mult:1.3,hpMult:0.85},
-  medium: {lives:150,money:650,mult:1.0,hpMult:1.0},
-  hard:   {lives:100,money:500,mult:0.85,hpMult:1.15},
-  extreme:{lives:60, money:400,mult:0.70,hpMult:1.35}
-};
-
-// Bot skill tiers
-const BSKILLS=[
-  {tier:'noob',    minElo:400, maxElo:750},
-  {tier:'beginner',minElo:750, maxElo:1050},
-  {tier:'normal',  minElo:1050,maxElo:1350},
-  {tier:'good',    minElo:1350,maxElo:1650},
-  {tier:'expert',  minElo:1650,maxElo:2000},
-  {tier:'master',  minElo:2000,maxElo:3000}
-];
-const BCOLORS=['#3498db','#2ecc71','#e74c3c','#f39c12','#9b59b6','#1abc9c','#e67e22'];
-const BOT_CW=240,BOT_CH=150;// Larger bot canvas for more placement room
-
-// ============================================================
-// PLAYER DATA
-// ============================================================
-let P=JSON.parse(localStorage.getItem('btdA6')||'null')||
-  {name:'Spieler',elo:1000,games:0,wins:0,maxWave:1,totalKills:0,peakElo:1000,sumPlace:0,hist:[]};
-
-// Real bot roster — persisted, starts at 1000 ELO each
-const BOT_NAMES=['Axel','Brix','Cyan','Dyna','Echo','Fuzz','Grix','Haze','Iris','Jolt','Kira','Luna','Mars','Nox','Pyro'];
-let BOT_ROSTER=JSON.parse(localStorage.getItem('btdBots6')||'null');
-if(!BOT_ROSTER){
-  BOT_ROSTER=BOT_NAMES.map(n=>({name:n,elo:1000,games:0,wins:0}));
-  localStorage.setItem('btdBots6',JSON.stringify(BOT_ROSTER));
-}
-function saveData(){
-  localStorage.setItem('btdA6',JSON.stringify(P));
-  localStorage.setItem('btdBots6',JSON.stringify(BOT_ROSTER));
-}
-function getRank(e){
-  if(e>=2500)return{l:'Master',c:'rank-master'};
-  if(e>=2100)return{l:'Diamond',c:'rank-diamond'};
-  if(e>=1800)return{l:'Platin',c:'rank-plat'};
-  if(e>=1500)return{l:'Gold',c:'rank-gold'};
-  if(e>=1200)return{l:'Silber',c:'rank-silver'};
-  return{l:'Bronze',c:'rank-bronze'};
+  });
+  nameInput.value='';
+  saveState();
+  renderAll();
+  toast(`Bot "${name}" erstellt und allen offenen Turnieren beigetreten.`);
 }
 
-// ============================================================
-// STATE
-// ============================================================
-let cfg={botCount:3,diff:'medium',map:'grasslands'};
-let GS=null,RAF=null,paused=false,gameOver=false,gameSpeed=1;
-let selTowerType=null,selPlaced=null;
-let CMAP=null,CW=0,CH=0;
+function deleteBot(id){
+  delete state.bots[id];
+  Object.values(state.tournaments).forEach(t=>{
+    t.participants = t.participants.filter(p=>p!==id);
+    delete t.standings[id];
+  });
+  saveState();
+  renderAll();
+}
 
-// ============================================================
-// HOME UI
-// ============================================================
-function showTab(t){
-  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['play','profile','lb','guide'][i]===t));
-  ['play','profile','lb','guide'].forEach(x=>document.getElementById('panel-'+x).classList.toggle('active',x===t));
-  if(t==='profile')renderProfile();
-  if(t==='lb')renderLB();
-}
-function refreshTopUI(){
-  const r=getRank(P.elo);
-  ['hpn','profName'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=P.name;});
-  ['av0','profAv'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=P.name[0].toUpperCase();});
-  const rb=document.getElementById('hrb');if(rb){rb.textContent=r.l;rb.className='elo-badge '+r.c;}
-  const pb=document.getElementById('profBadge');if(pb){pb.textContent=r.l;pb.className='elo-badge '+r.c;}
-  const hel=document.getElementById('hel');if(hel)hel.textContent=P.elo+' ELO';
-  const pe=document.getElementById('profElo');if(pe)pe.textContent=P.elo+' ELO';
-  const he=document.getElementById('hudElo');if(he)he.textContent=P.elo;
-}
-refreshTopUI();
-
-function renderMapList(){
-  const el=document.getElementById('mapList');if(!el)return;
-  el.innerHTML=MAPKEYS.map(k=>{
-    const m=MAPS[k];
-    const dc={easy:'#44ee70',medium:'#ffcc00',hard:'#ff8040',extreme:'#ff3030'}[m.diff];
-    const dl={easy:'🟢 Leicht',medium:'🟡 Mittel',hard:'🔴 Schwer',extreme:'💀 Extrem'}[m.diff];
-    return`<div class="map-row ${cfg.map===k?'msel':''}" onclick="selectMap('${k}')">
-      <canvas class="map-thumb" id="mthumb-${k}" width="100" height="60"></canvas>
-      <div class="map-info"><b>${m.name}</b><br>${m.desc}<br><span style="color:${dc}">${dl}</span></div>
-    </div>`;
-  }).join('');
-  MAPKEYS.forEach(k=>drawMapThumb(k));
-}
-function selectMap(k){cfg.map=k;renderMapList();}
-function drawMapThumb(k){
-  const c=document.getElementById('mthumb-'+k);if(!c)return;
-  const ctx=c.getContext('2d'),m=MAPS[k];
-  ctx.fillStyle=m.bg;ctx.fillRect(0,0,100,60);
-  const sx=100/1150,sy=60/440;
-  ctx.strokeStyle='#c8a44a';ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';
-  ctx.beginPath();ctx.moveTo(m.rawPath[0].x*sx,m.rawPath[0].y*sy);
-  m.rawPath.slice(1).forEach(p=>ctx.lineTo(p.x*sx,p.y*sy));ctx.stroke();
-  ctx.strokeStyle='#e0bc6a';ctx.lineWidth=3;
-  ctx.beginPath();ctx.moveTo(m.rawPath[0].x*sx,m.rawPath[0].y*sy);
-  m.rawPath.slice(1).forEach(p=>ctx.lineTo(p.x*sx,p.y*sy));ctx.stroke();
-}
-renderMapList();
-
-function renderProfile(){
-  document.getElementById('sGames').textContent=P.games;
-  document.getElementById('sWins').textContent=P.wins;
-  document.getElementById('sWave').textContent=P.maxWave;
-  document.getElementById('sKills').textContent=P.totalKills;
-  document.getElementById('sWR').textContent=P.games>0?Math.round(P.wins/P.games*100)+'%':'0%';
-  document.getElementById('sAvg').textContent=P.games>0?(P.sumPlace/P.games).toFixed(1):'—';
-  document.getElementById('sPeak').textContent=P.peakElo;
-  const hl=document.getElementById('histList');
-  if(!P.hist||!P.hist.length){hl.textContent='Noch keine Spiele.';return;}
-  hl.innerHTML=P.hist.slice(-8).reverse().map(h=>
-    `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1e1600">
-      <span>${h.place===1?'🏆':'💀'} #${h.place}/${h.tot}</span>
-      <span>W${h.wave} | ${h.kills} Kills</span>
-      <span style="color:${h.de>=0?'#44ee70':'#ff4040'}">${h.de>=0?'+':''}${h.de}</span>
+function renderBots(){
+  document.getElementById('stat-bots').textContent = Object.keys(state.bots).length;
+  const wrap = document.getElementById('bots-list');
+  const bots = Object.values(state.bots).sort((a,b)=>b.created-a.created);
+  if(bots.length===0){ wrap.innerHTML = '<div class="empty">Noch keine Bots erstellt.</div>'; return; }
+  wrap.innerHTML = bots.map(b=>`
+    <div class="bot-card">
+      <h3><span class="bot-avatar">${escapeHtml(b.name.slice(0,1).toUpperCase())}</span>${escapeHtml(b.name)}</h3>
+      <div class="stat-row"><span>Level</span><b>${b.level} / 8</b></div>
+      <div class="stat-row"><span>Tempo</span><b>${b.speed.toFixed(1)}s/Zug</b></div>
+      <div class="stat-row"><span>Bilanz</span><b>${b.wins}S / ${b.draws}U / ${b.losses}N</b></div>
+      <div style="margin-top:10px; display:flex; gap:8px;">
+        <button class="btn secondary" style="flex:1;" onclick="pickBotForPlay('${b.id}')">Spielen</button>
+        <button class="btn danger" onclick="deleteBot('${b.id}')">✕</button>
+      </div>
     </div>`).join('');
 }
 
-// Leaderboard — shows REAL bot roster + player
-function renderLB(){
-  const all=[...BOT_ROSTER.map(b=>({...b,isMe:false})),{name:P.name,elo:P.elo,games:P.games,isMe:true}]
-    .sort((a,b)=>b.elo-a.elo).slice(0,16);
-  document.getElementById('lbList').innerHTML=all.map((e,i)=>{
-    const r=getRank(e.elo);
-    return`<div style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;margin-bottom:3px;background:${e.isMe?'rgba(255,200,0,.08)':'#100c00'};border:1px solid ${e.isMe?'var(--gold)':'#201800'}">
-      <span style="min-width:22px;font-weight:bold;font-size:12px">#${i+1}</span>
-      <span style="flex:1;font-size:12px">${e.isMe?'👤 ':''}<b>${e.name}</b></span>
-      <span class="elo-badge ${r.c}">${r.l}</span>
-      <span style="font-size:11px;min-width:55px;text-align:right">${e.elo} ELO</span>
-    </div>`;
-  }).join('');
-}
-function doRename(){
-  const v=document.getElementById('nameIn').value.trim();
-  if(v.length>0&&v.length<=16){P.name=v;saveData();refreshTopUI();}
-  document.getElementById('nameIn').value='';
-}
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+/* ===================== TOURNAMENTS ===================== */
+function getTStatus(t){
+  const now = Date.now();
+  if(now < t.startTime) return 'upcoming';
+  if(now < t.startTime + t.durationMin*60000) return 'live';
+  return 'finished';
 }
 
-// ============================================================
-// PATH BUILDING
-// ============================================================
-function buildDensePath(rawPath,w,h){
-  const maxX=Math.max(...rawPath.map(p=>p.x));
-  const maxY=Math.max(...rawPath.map(p=>p.y));
-  const sc=Math.min((w-40)/maxX,(h-40)/maxY);
-  const ox=(w-maxX*sc)/2,oy=(h-maxY*sc)/2;
-  const pts=rawPath.map(p=>({x:p.x*sc+ox,y:p.y*sc+oy}));
-  const dense=[];
-  for(let i=0;i<pts.length-1;i++){
-    const a=pts[i],b=pts[i+1];
-    const dx=b.x-a.x,dy=b.y-a.y,dist=Math.sqrt(dx*dx+dy*dy);
-    const steps=Math.ceil(dist/2);
-    for(let s=0;s<steps;s++)dense.push({x:a.x+dx*s/steps,y:a.y+dy*s/steps});
+function createTournament(name, durationMin, system){
+  if(!system){
+    name = document.getElementById('t-name').value.trim() || 'Eigenes Turnier';
+    durationMin = parseInt(document.getElementById('t-duration').value,10) || 15;
   }
-  dense.push(pts[pts.length-1]);
-  return{dense,scaledPts:pts};
-}
-
-// ============================================================
-// GAME START
-// ============================================================
-function startGame(){
-  cfg.diff=document.getElementById('diffSel').value;
-  cfg.botCount=parseInt(document.getElementById('botCntLabel').textContent);
-  showScreen('gameScreen');
-  gameOver=false;paused=false;gameSpeed=1;selTowerType=null;selPlaced=null;
-  document.getElementById('endOverlay').style.display='none';
-  document.getElementById('speedBtn').textContent='2x';
-  document.getElementById('pauseBtn').textContent='⏸';
-  CMAP=MAPS[cfg.map]||MAPS.grasslands;
-  const canvas=document.getElementById('gameCanvas');
-  const wrap=document.getElementById('canvasWrap');
-  setTimeout(()=>{
-    CW=wrap.clientWidth||900;CH=wrap.clientHeight||320;
-    canvas.width=CW;canvas.height=CH;
-    initGame();
-  },60);
-}
-
-function initGame(){
-  const diff=DIFF[cfg.diff];
-  const{dense,scaledPts}=buildDensePath(CMAP.rawPath,CW,CH);
-  GS={
-    lives:diff.lives,maxLives:diff.lives,money:diff.money,mult:diff.mult,hpMult:diff.hpMult,
-    wave:0,waveActive:false,waveQueue:[],spawnTimer:0,
-    bloons:[],towers:[],projs:[],bots:[],kills:0,
-    path:dense,scaledPts,lastTime:performance.now(),
-    hoverX:-999,hoverY:-999
+  const id = uid();
+  const t = {
+    id, name, system: !!system,
+    startTime: Date.now(),
+    durationMin,
+    participants: Object.keys(state.bots),
+    standings: {},
+    gamesLog: []
   };
-
-  // Pick bots from roster — spread ELO range
-  const shuffled=[...BOT_ROSTER].sort(()=>Math.random()-.5).slice(0,cfg.botCount);
-  const{dense:bd,scaledPts:bp}=buildDensePath(CMAP.rawPath,BOT_CW,BOT_CH);
-  shuffled.forEach((botData,i)=>{
-    // Assign tier based on ELO
-    const tier=BSKILLS.reduce((best,sk)=>botData.elo>=sk.minElo?sk:best,BSKILLS[0]).tier;
-    GS.bots.push({
-      id:i,name:botData.name,rosterIdx:BOT_ROSTER.indexOf(botData),
-      color:BCOLORS[i%BCOLORS.length],elo:botData.elo,tier,
-      lives:diff.lives,maxLives:diff.lives,money:diff.money,mult:diff.mult,hpMult:diff.hpMult,
-      towers:[],kills:0,wave:0,alive:true,
-      buyTimer:0,savingFor:null,savingTurns:0,
-      path:bd,scaledPts:bp,bloons:[],projs:[],
-      spawnTimer:0,waveActive:false,waveQueue:[],
-      income:0,lastUpgradeWave:0
-    });
-  });
-
-  buildTowerButtons();
-  buildBotScreens();
-  const canvas=document.getElementById('gameCanvas');
-  canvas.onclick=onCanvasClick;
-  canvas.onmousemove=e=>{const r=e.target.getBoundingClientRect();if(GS){GS.hoverX=e.clientX-r.left;GS.hoverY=e.clientY-r.top;}};
-  canvas.onmouseleave=()=>{if(GS){GS.hoverX=-999;GS.hoverY=-999;}};
-  cancelAnimationFrame(RAF);
-  RAF=requestAnimationFrame(gameLoop);
-  document.getElementById('startWaveBtn').disabled=false;
-  document.getElementById('waveLabel').textContent='Bereit für Welle 1';
-  document.getElementById('hudWaveOf').textContent='/'+WAVES.length;
-  updateHUD();
+  Object.keys(state.bots).forEach(bid=> t.standings[bid] = { score:0, games:0 });
+  state.tournaments[id] = t;
+  saveState();
+  if(!system){
+    document.getElementById('t-name').value='';
+    renderAll();
+    toast(`Turnier "${name}" gestartet — alle Bots sind beigetreten.`);
+  }
+  return t;
 }
 
-// ============================================================
-// CANVAS INTERACTION
-// ============================================================
-function onCanvasClick(e){
-  if(!GS||gameOver)return;
-  const r=e.target.getBoundingClientRect();
-  const cx=e.clientX-r.left,cy=e.clientY-r.top;
-  // Click existing tower?
-  const hit=GS.towers.find(t=>Math.hypot(t.x-cx,t.y-cy)<20);
-  if(hit){selPlaced=hit;selTowerType=null;document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));showTowerDetails(hit);return;}
-  if(!selTowerType){selPlaced=null;document.getElementById('towerDetails').textContent='Turm auswählen oder platzieren';return;}
-  const tt=TTYPES.find(t=>t.id===selTowerType);if(!tt)return;
-  if(GS.money<tt.cost){logWave('Zu wenig Geld! 💰','b');return;}
-  if(!GS.path.every(p=>Math.hypot(p.x-cx,p.y-cy)>26)){logWave('Nicht auf dem Pfad!','b');return;}
-  if(!GS.towers.every(t=>Math.hypot(t.x-cx,t.y-cy)>34)){logWave('Zu nah an anderem Turm!','b');return;}
-  if(cx<15||cy<15||cx>CW-15||cy>CH-15){logWave('Außerhalb der Karte!','b');return;}
-  GS.money-=tt.cost;
-  const placed=placeTower(GS,tt,cx,cy,true);
-  selPlaced=placed;
-  showTowerDetails(placed);
-  updateHUD();
-}
-
-// ============================================================
-// TOWER BUTTONS
-// ============================================================
-function buildTowerButtons(){
-  const c=document.getElementById('towerButtons');c.innerHTML='';
-  TTYPES.forEach(t=>{
-    const btn=document.createElement('button');
-    btn.className='tbtn';btn.id='tbtn-'+t.id;
-    btn.innerHTML=`<span class="tbtn-icon">${t.icon}</span><div><div class="tbtn-name">${t.name}</div><div class="tbtn-cost">💰${t.cost}</div></div>`;
-    btn.onclick=()=>selectTowerType(t.id);
-    c.appendChild(btn);
-  });
-}
-function selectTowerType(id){
-  selTowerType=id;selPlaced=null;
-  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
-  const btn=document.getElementById('tbtn-'+id);if(btn)btn.classList.add('sel');
-  const tt=TTYPES.find(t=>t.id===id);
-  if(tt){
-    document.getElementById('towerDetails').innerHTML=
-      `<div style="color:var(--gold);font-weight:bold;margin-bottom:4px">${tt.icon} ${tt.name}</div>
-       <div style="color:var(--muted);font-size:9px">💰${tt.cost} | DMG ${tt.dmg} | RNG ${tt.range>9000?'∞':Math.round(tt.range)} | ${(1000/tt.rate).toFixed(1)}/s</div>
-       <div style="font-size:9px;color:#444;margin-top:5px">Klick auf die Karte zum Platzieren</div>`;
+function ensureHourly(){
+  const bucket = Math.floor(Date.now()/3600000);
+  if(state.lastHourlyBucket !== bucket){
+    state.lastHourlyBucket = bucket;
+    const d = new Date();
+    const label = `Stündliche Arena · ${String(d.getHours()).padStart(2,'0')}:00`;
+    createTournament(label, 60, true);
   }
 }
 
-// ============================================================
-// TOWER PLACEMENT
-// ============================================================
-function placeTower(gs,tt,x,y,isPlayer){
-  const t={
-    id:Math.random().toString(36).slice(2),
-    type:tt.id,x,y,
-    dmg:tt.dmg,range:tt.range,rate:tt.rate,
-    pierce:tt.pierce||1,aoe:tt.aoe||0,
-    freeze:tt.freeze||false,freezeDur:tt.freezeDur||1.5,
-    freezeWhite:false,
-    dot:false,dotDmg:1,dotDur:2,
-    chain:tt.chain||0,homing:tt.homing||false,
-    spread:tt.spread||0,triple:false,
-    push:false,camo:tt.camo||false,leaddmg:tt.leaddmg||false,
-    sniperMode:tt.sniperMode||false,
-    supportMode:tt.supportMode||false,
-    spikeMode:tt.spikeMode||false,
-    slowFactor:0,buffSpeed:false,buffDmg:false,
-    discount:false,income:false,goldBonus:false,
-    sentry:false,foam:false,supply:false,moabDmg:false,berserker:false,
-    icon:tt.icon,color:tt.color,
-    targetMode:tt.targetMode||'first',
-    timer:0,p1lvl:0,p2lvl:0,
-    p1:JSON.parse(JSON.stringify(tt.p1||[])),
-    p2:JSON.parse(JSON.stringify(tt.p2||[])),
-    isPlayer,kills:0,spikes:[]
-  };
-  gs.towers.push(t);return t;
+function renderTRow(t){
+  const status = getTStatus(t);
+  const badge = status==='live' ? '<span class="badge live">LIVE</span>' : status==='finished' ? '<span class="badge finished">Beendet</span>' : '<span class="badge system">Geplant</span>';
+  const sys = t.system ? '<span class="badge system" style="margin-left:6px;">Stündlich</span>' : '';
+  const remaining = status==='live' ? Math.max(0, Math.round((t.startTime + t.durationMin*60000 - Date.now())/60000)) : null;
+  return `<div class="t-row" onclick="openTournament('${t.id}')">
+    <div>
+      <div class="t-name">${escapeHtml(t.name)} ${badge}${sys}</div>
+      <div class="t-meta">${t.participants.length} Bots · ${t.durationMin} Min ${status==='live' ? `· noch ~${remaining} Min` : ''}</div>
+    </div>
+    <div class="small">→</div>
+  </div>`;
 }
 
-// ============================================================
-// TOWER DETAILS PANEL
-// ============================================================
-function showTowerDetails(t){
-  selPlaced=t;if(!GS)return;
-  const tt=TTYPES.find(x=>x.id===t.type);if(!tt)return;
-  const td=document.getElementById('towerDetails');
-  let html=`<div style="color:var(--gold);font-weight:bold;margin-bottom:3px;font-size:11px">${tt.icon} ${tt.name}</div>`;
-  html+=`<div style="font-size:9px;color:var(--muted);margin-bottom:6px">Kills:${t.kills} DMG:${t.dmg} RNG:${t.range>9000?'∞':Math.round(t.range)}</div>`;
-  const addPath=(p1,upgs,lvl,otherLvl)=>{
-    html+=`<div class="upg-hdr">▲ Pfad ${p1?1:2}</div>`;
-    for(let i=0;i<4;i++){
-      const u=upgs[i];if(!u)break;
-      if(i<lvl){html+=`<div class="upg-row done">✅ ${u.n}</div>`;continue;}
-      if(i===lvl){
-        // BTD5 restriction: can't max both paths (max 4+2 or 2+4)
-        const blocked=(p1?otherLvl:t.p1lvl)>=4&&lvl>=2;
-        const canAff=GS.money>=u.cost&&!blocked;
-        const which=p1?1:2;
-        html+=`<button class="upg-row" ${canAff?'':'disabled'} onclick="upgradeTower('${t.id}',${which},${i})">${i+1}. ${u.n} 💰${u.cost}</button>`;
-      } else {
-        html+=`<div class="upg-row" style="opacity:.2;cursor:default">${i+1}. ${u.n} 💰${u.cost}</div>`;
-      }
+function renderLobby(){
+  const ts = Object.values(state.tournaments).sort((a,b)=>b.startTime-a.startTime).slice(0,8);
+  document.getElementById('lobby-t-list').innerHTML = ts.length ? ts.map(renderTRow).join('') : '<div class="empty">Noch keine Turniere.</div>';
+  document.getElementById('stat-live-t').textContent = Object.values(state.tournaments).filter(t=>getTStatus(t)==='live').length;
+  document.getElementById('stat-games').textContent = state.gamesPlayed;
+}
+
+function renderTournaments(){
+  const ts = Object.values(state.tournaments).sort((a,b)=>b.startTime-a.startTime);
+  document.getElementById('t-list-full').innerHTML = ts.length ? ts.map(renderTRow).join('') : '<div class="empty">Noch keine Turniere.</div>';
+}
+
+let currentTId = null;
+function openTournament(id){
+  currentTId = id;
+  switchView('tdetail');
+  renderTDetail();
+}
+
+function renderTDetail(){
+  const t = state.tournaments[currentTId];
+  if(!t){ switchView('tournaments'); return; }
+  const status = getTStatus(t);
+  document.getElementById('td-name').textContent = t.name;
+  document.getElementById('td-meta').textContent =
+    `${status==='live'?'Live':status==='finished'?'Beendet':'Geplant'} · ${t.participants.length} Teilnehmer · Dauer ${t.durationMin} Min`;
+
+  const rows = Object.entries(t.standings)
+    .map(([bid,s])=>({bot:state.bots[bid], ...s}))
+    .filter(r=>r.bot)
+    .sort((a,b)=>b.score-a.score);
+  document.getElementById('td-standings').innerHTML = rows.length ? rows.map((r,i)=>`
+    <tr>
+      <td class="${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':''}">${i+1}</td>
+      <td>${escapeHtml(r.bot.name)}</td>
+      <td>${r.bot.level}</td>
+      <td><b>${r.score}</b></td>
+      <td>${r.games}</td>
+    </tr>`).join('') : '<tr><td colspan="5" class="empty">Keine Teilnehmer</td></tr>';
+
+  const log = [...t.gamesLog].reverse().slice(0,25);
+  document.getElementById('td-games').innerHTML = log.length ? log.map(g=>{
+    const w = g.result==='1-0' ? g.white : g.result==='0-1' ? g.black : null;
+    const txt = g.result==='1/2-1/2'
+      ? `<span class="result-d">${escapeHtml(g.white)} ½–½ ${escapeHtml(g.black)}</span>`
+      : `<span class="result-w">${escapeHtml(w)}</span> besiegt <span class="result-b">${escapeHtml(w===g.white?g.black:g.white)}</span>`;
+    return `<div class="log-line">${txt} <span class="tag">${g.plies} Züge</span></div>`;
+  }).join('') : '<div class="empty">Noch keine Partien gespielt.</div>';
+}
+
+/* ===================== CHESS ENGINE (for bots) ===================== */
+function evalBoard(game){
+  const values={p:1,n:3,b:3.1,r:5,q:9,k:0};
+  let score=0;
+  game.board().forEach(row=>row.forEach(sq=>{
+    if(sq) score += values[sq.type] * (sq.color==='w'?1:-1);
+  }));
+  return score;
+}
+function minimax(game, depth, alpha, beta, maximizing){
+  if(depth===0 || game.isGameOver()) return evalBoard(game);
+  const moves = game.moves();
+  if(maximizing){
+    let best=-Infinity;
+    for(const m of moves){
+      game.move(m);
+      best = Math.max(best, minimax(game, depth-1, alpha, beta, false));
+      game.undo();
+      alpha = Math.max(alpha, best);
+      if(beta<=alpha) break;
     }
-  };
-  addPath(true,t.p1,t.p1lvl,t.p2lvl);
-  addPath(false,t.p2,t.p2lvl,t.p1lvl);
-  let sellVal=Math.floor(tt.cost*0.7);
-  for(let i=0;i<t.p1lvl;i++)if(t.p1[i])sellVal+=Math.floor(t.p1[i].cost*0.7);
-  for(let i=0;i<t.p2lvl;i++)if(t.p2[i])sellVal+=Math.floor(t.p2[i].cost*0.7);
-  html+=`<button class="sell-btn" onclick="sellTower('${t.id}')">💸 Verkaufen +💰${sellVal}</button>`;
-  td.innerHTML=html;
+    return best;
+  } else {
+    let best=Infinity;
+    for(const m of moves){
+      game.move(m);
+      best = Math.min(best, minimax(game, depth-1, alpha, beta, true));
+      game.undo();
+      beta = Math.min(beta, best);
+      if(beta<=alpha) break;
+    }
+    return best;
+  }
+}
+function botMove(game, bot){
+  const moves = game.moves();
+  if(moves.length===0) return null;
+  const blunderChance = (9-bot.level) * 0.045; // weaker bots blunder more
+  if(Math.random() < blunderChance){
+    return moves[Math.floor(Math.random()*moves.length)];
+  }
+  const depth = Math.min(1 + Math.floor(bot.level/3), 3);
+  const whiteToMove = game.turn()==='w';
+  let bestMove = moves[0];
+  let bestVal = whiteToMove ? -Infinity : Infinity;
+  for(const m of moves){
+    game.move(m);
+    const val = minimax(game, depth-1, -Infinity, Infinity, game.turn()==='w');
+    game.undo();
+    if(whiteToMove ? val>bestVal : val<bestVal){ bestVal=val; bestMove=m; }
+  }
+  return bestMove;
+}
+function playFullGame(botWhite, botBlack){
+  const game = new Chess();
+  let plies=0;
+  while(!game.isGameOver() && plies<160){
+    const bot = game.turn()==='w' ? botWhite : botBlack;
+    const m = botMove(game, bot);
+    if(!m) break;
+    game.move(m);
+    plies++;
+  }
+  let result;
+  if(game.isCheckmate()) result = game.turn()==='w' ? '0-1' : '1-0';
+  else if(game.isDraw() || game.isStalemate() || game.isThreefoldRepetition() || plies>=160) result='1/2-1/2';
+  else result='1/2-1/2';
+  return { result, plies };
 }
 
-// ============================================================
-// UPGRADE SYSTEM
-// ============================================================
-function upgradeTower(id,path,level){
-  if(!GS)return;
-  const t=GS.towers.find(x=>x.id===id);if(!t)return;
-  const upgs=path===1?t.p1:t.p2;
-  const curLvl=path===1?t.p1lvl:t.p2lvl;
-  if(level!==curLvl)return;
-  const u=upgs[level];if(!u||GS.money<u.cost)return;
-  GS.money-=u.cost;
-  applyEffect(t,u.e);
-  if(path===1)t.p1lvl++;else t.p2lvl++;
-  showTowerDetails(t);updateHUD();
-}
-
-function applyEffect(t,effectStr){
-  effectStr.split('+').forEach(e=>{
-    if(e.startsWith('pierce+'))t.pierce+=parseInt(e.slice(7));
-    else if(e.startsWith('range+'))t.range+=parseInt(e.slice(6));
-    else if(e.startsWith('dmg+'))t.dmg+=parseInt(e.slice(4));
-    else if(e.startsWith('rate-'))t.rate=Math.max(60,t.rate-parseInt(e.slice(5)));
-    else if(e.startsWith('rate+'))t.rate=Math.min(6000,t.rate+parseInt(e.slice(5)));
-    else if(e.startsWith('aoe+'))t.aoe+=parseInt(e.slice(4));
-    else if(e.startsWith('chain+'))t.chain+=parseInt(e.slice(6));
-    else if(e.startsWith('freezedur+'))t.freezeDur+=parseFloat(e.slice(10));
-    else if(e.startsWith('spread+'))t.spread+=parseInt(e.slice(7));
-    else if(e==='triple')t.triple=true;
-    else if(e==='homing')t.homing=true;
-    else if(e==='camo')t.camo=true;
-    else if(e==='leaddmg')t.leaddmg=true;
-    else if(e==='slow')t.slowFactor=Math.max(t.slowFactor,0.45);
-    else if(e==='push')t.push=true;
-    else if(e==='whitehit')t.freezeWhite=true;
-    else if(e==='dot'){t.dot=true;}
-    else if(e==='cluster'){t.aoe+=25;t.pierce+=10;}
-    else if(e==='freeze')t.freeze=true;
-    else if(e==='moab')t.moabDmg=true;
-    else if(e==='sentry')t.sentry=true;
-    else if(e==='foam')t.foam=true;
-    else if(e==='supply')t.supply=true;
-    else if(e==='berserker')t.berserker=true;
-    else if(e==='buffDmg')t.buffDmg=true;
-    else if(e==='buffSpeed')t.buffSpeed=true;
-    else if(e==='buffTower'){t.buffDmg=true;}
-    else if(e==='discount')t.discount=true;
-    else if(e==='income')t.income=true;
-    else if(e==='goldBonus')t.goldBonus=true;
-    else if(e==='jugger'){t.aoe+=30;t.pierce=99;}
+/* ===================== TOURNAMENT SIMULATION LOOP ===================== */
+function simulateRound(){
+  let changed=false;
+  Object.values(state.tournaments).forEach(t=>{
+    if(getTStatus(t)!=='live') return;
+    const ids = t.participants.filter(id=>state.bots[id]);
+    if(ids.length<2) return;
+    const shuffled = [...ids].sort(()=>Math.random()-0.5);
+    for(let i=0;i+1<shuffled.length;i+=2){
+      const idA=shuffled[i], idB=shuffled[i+1];
+      const botA=state.bots[idA], botB=state.bots[idB];
+      const whiteFirst = Math.random()<0.5;
+      const botWhite = whiteFirst?botA:botB, botBlack = whiteFirst?botB:botA;
+      const idWhite = whiteFirst?idA:idB, idBlack = whiteFirst?idB:idA;
+      const { result, plies } = playFullGame(botWhite, botBlack);
+      t.standings[idWhite].games++; t.standings[idBlack].games++;
+      if(result==='1-0'){ t.standings[idWhite].score+=2; botWhite.wins++; botBlack.losses++; }
+      else if(result==='0-1'){ t.standings[idBlack].score+=2; botBlack.wins++; botWhite.losses++; }
+      else { t.standings[idWhite].score+=1; t.standings[idBlack].score+=1; botWhite.draws++; botBlack.draws++; }
+      t.gamesLog.push({ white:botWhite.name, black:botBlack.name, result, plies, ts:Date.now() });
+      if(t.gamesLog.length>60) t.gamesLog.shift();
+      state.gamesPlayed++;
+      changed=true;
+    }
   });
+  if(changed){
+    saveState();
+    if(document.getElementById('view-tdetail').classList.contains('active')) renderTDetail();
+    if(document.getElementById('view-lobby').classList.contains('active')) renderLobby();
+    if(document.getElementById('view-tournaments').classList.contains('active')) renderTournaments();
+  }
 }
 
-function sellTower(id){
-  if(!GS)return;
-  const idx=GS.towers.findIndex(x=>x.id===id);if(idx<0)return;
-  const t=GS.towers[idx];
-  const tt=TTYPES.find(x=>x.id===t.type);if(!tt)return;
-  let sv=Math.floor(tt.cost*0.7);
-  for(let i=0;i<t.p1lvl;i++)if(t.p1[i])sv+=Math.floor(t.p1[i].cost*0.7);
-  for(let i=0;i<t.p2lvl;i++)if(t.p2[i])sv+=Math.floor(t.p2[i].cost*0.7);
-  GS.money+=sv;
-  GS.towers.splice(idx,1);
-  selPlaced=null;
-  document.getElementById('towerDetails').textContent='Turm auswählen oder platzieren';
-  updateHUD();
+/* ===================== PLAY VS BOT ===================== */
+let playGame=null, playBot=null, selectedSq=null;
+
+function renderPlayPicker(){
+  const wrap = document.getElementById('play-bot-list');
+  const bots = Object.values(state.bots);
+  wrap.innerHTML = bots.length ? bots.map(b=>`
+    <div class="bsl-item" onclick="pickBotForPlay('${b.id}')">
+      <span><span class="bot-avatar" style="margin-right:8px;">${escapeHtml(b.name.slice(0,1).toUpperCase())}</span>${escapeHtml(b.name)}</span>
+      <span class="tag">Level ${b.level}</span>
+    </div>`).join('') : '<div class="empty">Erstelle zuerst einen Bot.</div>';
 }
 
-// ============================================================
-// WAVES
-// ============================================================
-function startNextWave(){
-  if(!GS||GS.waveActive||gameOver)return;
-  if(GS.wave>=WAVES.length){logWave('Alle Wellen geschafft! 🏆','g');return;}
-  GS.wave++;GS.waveActive=true;
-  GS.waveQueue=[...WAVES[GS.wave-1]];
-  GS.spawnTimer=0;
-  document.getElementById('startWaveBtn').disabled=true;
-  document.getElementById('waveLabel').textContent=`Welle ${GS.wave}/${WAVES.length}`;
-  logWave(`⚔️ Welle ${GS.wave} — ${GS.waveQueue.length} Bloons`,'g');
-  GS.bots.forEach(b=>{
-    if(!b.alive)return;
-    b.wave=GS.wave;b.waveActive=true;
-    b.waveQueue=[...WAVES[GS.wave-1]];b.spawnTimer=0;
-  });
-}
-function logWave(msg,cls){
-  const log=document.getElementById('waveLog');if(!log)return;
-  const d=document.createElement('div');d.textContent=msg;if(cls)d.className=cls;
-  log.appendChild(d);log.scrollTop=log.scrollHeight;
-  if(log.children.length>20)log.removeChild(log.firstChild);
+function pickBotForPlay(id){
+  playBot = state.bots[id];
+  if(!playBot) return;
+  switchView('play');
+  document.getElementById('play-pick').style.display='none';
+  document.getElementById('play-area').style.display='flex';
+  resetPlayGame();
 }
 
-// ============================================================
-// GAME LOOP
-// ============================================================
-function gameLoop(ts){
-  RAF=requestAnimationFrame(gameLoop);
-  if(paused||gameOver||!GS)return;
-  const dt=Math.min((ts-GS.lastTime)*gameSpeed,100);
-  GS.lastTime=ts;
-  if(dt<=0)return;
-  updateGame(dt);
-  renderGame();
-  renderBotScreens();
-  updateHUD();
+function resetPlayGame(){
+  playGame = new Chess();
+  selectedSq = null;
+  document.getElementById('play-opponent-info').innerHTML = `
+    <div class="stat-row"><span>Name</span><b>${escapeHtml(playBot.name)}</b></div>
+    <div class="stat-row"><span>Level</span><b>${playBot.level}/8</b></div>
+    <div class="stat-row"><span>Tempo</span><b>${playBot.speed.toFixed(1)}s/Zug</b></div>`;
+  document.getElementById('play-history').innerHTML='';
+  renderBoard();
+  updatePlayStatus();
 }
 
-// ============================================================
-// CORE UPDATE
-// ============================================================
-function updateGame(dt){
-  const gs=GS;
-  // Spawn bloons
-  if(gs.waveActive&&gs.waveQueue.length>0){
-    gs.spawnTimer+=dt;
-    const interval=Math.max(400,800-gs.wave*3);
-    while(gs.spawnTimer>=interval&&gs.waveQueue.length>0){
-      gs.spawnTimer-=interval;
-      spawnBloon(gs,gs.path,gs.waveQueue.shift());
+function renderBoard(){
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML='';
+  const board = playGame.board();
+  const legalTargets = selectedSq ? playGame.moves({square:selectedSq, verbose:true}).map(m=>m.to) : [];
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const file = 'abcdefgh'[c];
+      const rank = 8-r;
+      const sqName = file+rank;
+      const piece = board[r][c];
+      const div = document.createElement('div');
+      div.className = 'sq ' + (((r+c)%2===0)?'light':'dark');
+      if(selectedSq===sqName) div.classList.add('selected');
+      if(legalTargets.includes(sqName)){
+        div.classList.add('legal');
+        if(piece) div.classList.add('capture');
+      }
+      if(piece){
+        const symbols = {p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
+        const sym = symbols[piece.type];
+        div.textContent = sym;
+        div.style.color = piece.color==='w' ? '#fdfdfd' : '#222';
+        div.style.textShadow = piece.color==='w' ? '0 0 2px #000' : '0 0 2px #fff8';
+      }
+      div.onclick = ()=>onSquareClick(sqName);
+      boardEl.appendChild(div);
     }
   }
-  updateBloons(gs,gs.path,dt,true);
-  applyVillageBuffs(gs);
-  updateTowers(gs,gs.bloons,dt,true);
-  updateProjs(gs.projs,gs.bloons,gs,dt);
-
-  // Village income
-  gs.towers.forEach(vt=>{
-    if(!vt.supportMode)return;
-    if(vt.income&&Math.random()<0.0004*dt)gs.money+=5;
-    if(vt.goldBonus&&Math.random()<0.0006*dt)gs.money+=8;
-  });
-  // Supply drop passive income
-  gs.towers.forEach(t=>{if(t.supply&&Math.random()<0.00008*dt)gs.money+=150;});
-
-  // Wave end check
-  if(gs.waveActive&&gs.waveQueue.length===0&&gs.bloons.length===0){
-    gs.waveActive=false;
-    const rew=Math.floor((80+gs.wave*22)*gs.mult);
-    gs.money+=rew;
-    document.getElementById('startWaveBtn').disabled=false;
-    document.getElementById('waveLabel').textContent=`Welle ${gs.wave} fertig! +💰${rew}`;
-    logWave(`✅ Welle ${gs.wave} abgeschlossen! +💰${rew}`,'g');
-    if(gs.wave>=WAVES.length)endGame(true);
-  }
-
-  // Wave progress bar
-  const wq=WAVES[gs.wave-1]||[];
-  if(wq.length>0)document.getElementById('waveBarIn').style.width=Math.min(100,Math.max(0,(1-gs.waveQueue.length/wq.length)*100))+'%';
-
-  // Update bots
-  gs.bots.forEach(b=>{
-    if(!b.alive)return;
-    if(b.waveActive&&b.waveQueue&&b.waveQueue.length>0){
-      b.spawnTimer+=dt;
-      const interval=Math.max(450,850-gs.wave*3);
-      while(b.spawnTimer>=interval&&b.waveQueue.length>0){b.spawnTimer-=interval;spawnBloon(b,b.path,b.waveQueue.shift());}
-    }
-    updateBloons(b,b.path,dt,false);
-    applyVillageBuffs(b);
-    updateTowers(b,b.bloons,dt,false);
-    updateProjs(b.projs,b.bloons,b,dt);
-    if(b.waveActive&&(!b.waveQueue||b.waveQueue.length===0)&&b.bloons.length===0){
-      b.waveActive=false;
-      b.money+=Math.floor((80+gs.wave*22)*b.mult);
-    }
-    // Village income for bots
-    b.towers.forEach(vt=>{
-      if(!vt.supportMode)return;
-      if(vt.income&&Math.random()<0.0004*dt)b.money+=5;
-      if(vt.goldBonus&&Math.random()<0.0006*dt)b.money+=8;
-    });
-    updateBotAI(gs,b,dt);
-    if(b.lives<=0)b.alive=false;
-  });
 }
 
-// Village buff application — buffSpeed & buffDmg towers nearby
-function applyVillageBuffs(gs){
-  gs.towers.forEach(t=>{
-    t._buffed=false;t._speedBuff=false;t._dmgBuff=false;
-  });
-  gs.towers.forEach(v=>{
-    if(!v.supportMode)return;
-    if(!v.buffSpeed&&!v.buffDmg)return;
-    gs.towers.forEach(t=>{
-      if(t===v||t.supportMode)return;
-      if(Math.hypot(t.x-v.x,t.y-v.y)<=v.range){
-        if(v.buffSpeed)t._speedBuff=true;
-        if(v.buffDmg)t._dmgBuff=true;
-      }
-    });
-  });
-}
-
-// ============================================================
-// BLOON SPAWNING & UPDATE
-// ============================================================
-function spawnBloon(gs,path,typeId){
-  const bt=BT[typeId];if(!bt)return;
-  const hp=Math.ceil(bt.hp*(gs.hpMult||1));
-  gs.bloons.push({
-    id:Math.random().toString(36).slice(2),
-    type:typeId,hp,maxHp:hp,speed:bt.speed,
-    reward:bt.reward||1,immune:[...(bt.immune||[])],
-    color:bt.color,icon:bt.icon,
-    x:path[0].x,y:path[0].y,pi:0,dead:false,
-    frozen:0,slowed:0,dotTimer:0,dotDmg:0,
-    big:bt.big||false,boss:bt.boss||false
-  });
-}
-
-function updateBloons(gs,path,dt,isPlayer){
-  const toRm=[];
-  for(let i=gs.bloons.length-1;i>=0;i--){
-    const b=gs.bloons[i];
-    if(b.dead){toRm.push(i);continue;}
-    if(b.frozen>0){b.frozen-=dt/1000;if(b.frozen<0)b.frozen=0;continue;}
-    const slowMult=b.slowed>0?0.5:1.0;
-    b.pi+=b.speed*slowMult*180*dt/1000;
-    b.pi=Math.min(b.pi,path.length-1);
-    const pp=path[Math.floor(b.pi)];if(pp){b.x=pp.x;b.y=pp.y;}
-    if(b.slowed>0){b.slowed-=dt/1000;if(b.slowed<0)b.slowed=0;}
-    // DoT damage — ticks every second
-    if(b.dotTimer>0){
-      b.dotTimer-=dt/1000;
-      if(b.dotTimer<=0){
-        b.hp-=b.dotDmg;
-        if(b.hp<=0){killBloon(gs,b,null);toRm.push(i);continue;}
-        b.dotTimer=1.0;
-      }
-    }
-    if(b.pi>=path.length-3){
-      b.dead=true;
-      gs.lives=Math.max(0,gs.lives-Math.ceil(b.hp*0.5+0.5));
-      toRm.push(i);
-      if(isPlayer&&gs.lives<=0&&!gameOver)endGame(false);
-      continue;
-    }
-  }
-  for(let i=toRm.length-1;i>=0;i--)gs.bloons.splice(toRm[i],1);
-}
-
-// ============================================================
-// TOWER UPDATE — BTD5-accurate targeting & firing
-// ============================================================
-function updateTowers(gs,bloons,dt,isPlayer){
-  gs.towers.forEach(t=>{
-    if(t.supportMode)return;
-    // Effective rate (village speed buff)
-    const effRate=t._speedBuff?t.rate*0.75:t.rate;
-    t.timer+=dt;
-    if(t.timer<effRate)return;
-
-    // ---- ICE TOWER ----
-    if(t.type==='ice'){
-      const inRange=bloons.filter(b=>{
-        if(b.dead||b.big)return false;// MOABs can't be frozen
-        if(b.immune.includes('ice')&&!t.freezeWhite)return false;
-        return Math.hypot(b.x-t.x,b.y-t.y)<=t.range;
-      });
-      if(!inRange.length)return;
-      t.timer=0;
-      const aoeR=t.aoe||t.range;
-      bloons.forEach(b=>{
-        if(b.dead||b.big)return;
-        if(b.immune.includes('ice')&&!t.freezeWhite)return;
-        if(Math.hypot(b.x-t.x,b.y-t.y)<=aoeR){
-          b.frozen=Math.max(b.frozen,t.freezeDur);
-          if(t.dmg>0){b.hp-=t.dmg;if(b.hp<=0)killBloon(gs,b,{towerId:t.id});}
-          if(t.slowFactor>0&&!b.frozen)b.slowed=Math.max(b.slowed,3);
-        }
-      });
-      return;
-    }
-
-    // ---- SPIKE FACTORY ----
-    if(t.spikeMode){
-      // Place spikes at a point on the path within range
-      let bestPt=null,bestPi=-1;
-      for(let pi=gs.path.length-1;pi>=0;pi--){
-        const p=gs.path[pi];
-        if(Math.hypot(p.x-t.x,p.y-t.y)<=t.range){bestPt=p;bestPi=pi;break;}
-      }
-      if(!bestPt)return;
-      t.timer=0;
-      const spread=t.spread||1;
-      for(let s=0;s<spread;s++){
-        gs.projs.push({
-          x:bestPt.x+(Math.random()-0.5)*24,y:bestPt.y+(Math.random()-0.5)*24,
-          vx:0,vy:0,dmg:t._dmgBuff?t.dmg+1:t.dmg,aoe:t.aoe||0,
-          pierceLeft:t.pierce,chain:0,dot:false,slow:0,
-          hitSet:new Set(),life:12000,dead:false,color:'#c0c040',speed:0,
-          ttype:'sharp',leaddmg:t.leaddmg,towerId:t.id,isSpike:true,
-          moabDmg:t.moabDmg||false
-        });
+function onSquareClick(sqName){
+  if(playGame.isGameOver() || playGame.turn()!=='w') return;
+  const piece = playGame.get(sqName);
+  if(selectedSq){
+    const moves = playGame.moves({square:selectedSq, verbose:true});
+    const match = moves.find(m=>m.to===sqName);
+    if(match){
+      playGame.move({from:selectedSq, to:sqName, promotion:'q'});
+      selectedSq=null;
+      renderBoard();
+      logHistory();
+      updatePlayStatus();
+      if(!playGame.isGameOver()){
+        setTimeout(doBotMove, Math.max(300, playBot.speed*1000));
       }
       return;
     }
-
-    // ---- MORTAR ----
-    if(t.type==='mortar'){
-      const liveBloons=bloons.filter(b=>!b.dead);if(!liveBloons.length)return;
-      const tgt=liveBloons.reduce((m,b)=>b.pi>m.pi?b:m,liveBloons[0]);
-      t.timer=0;
-      gs.projs.push({
-        x:t.x,y:t.y,targetX:tgt.x,targetY:tgt.y,
-        dmg:t._dmgBuff?t.dmg+3:t.dmg,aoe:t.aoe,pierceLeft:t.pierce,
-        chain:0,dot:false,slow:0,hitSet:new Set(),
-        life:1500,dead:false,color:'#808080',speed:0,
-        ttype:'mortar',leaddmg:t.leaddmg,towerId:t.id,isMortar:true,
-        moabDmg:t.moabDmg||false
-      });
-      return;
-    }
-
-    // ---- SNIPER ----
-    if(t.sniperMode){
-      const liveBloons=bloons.filter(b=>!b.dead&&!b.frozen);if(!liveBloons.length)return;
-      const sorted=[...liveBloons].sort((a,b)=>b.pi-a.pi);
-      t.timer=0;
-      const dmg=t._dmgBuff?t.dmg+4:t.dmg;
-      let hitsLeft=t.pierce;
-      for(let i=0;i<sorted.length&&hitsLeft>0;i++){
-        const b=sorted[i];
-        if(b.dead)continue;
-        if(b.immune.includes('sharp')&&!t.leaddmg)continue;
-        const actualDmg=(t.moabDmg&&b.big)?dmg*5:dmg;
-        b.hp-=actualDmg;
-        if(t.slowFactor>0)b.slowed=Math.max(b.slowed,3);
-        if(t.chain>0){
-          const nearby=sorted.filter(b2=>!b2.dead&&b2!==b&&Math.hypot(b2.x-b.x,b2.y-b.y)<120);
-          nearby.slice(0,t.chain).forEach(b2=>{b2.hp-=actualDmg;if(b2.hp<=0)killBloon(gs,b2,{towerId:t.id});});
-        }
-        hitsLeft--;
-        if(b.hp<=0)killBloon(gs,b,{towerId:t.id});
-      }
-      // Visual trail
-      if(sorted[0]&&!sorted[0].dead){
-        gs.projs.push({x:t.x,y:t.y,vx:(sorted[0].x-t.x)/5,vy:(sorted[0].y-t.y)/5,
-          dmg:0,aoe:0,pierceLeft:0,chain:0,dot:false,slow:0,hitSet:new Set(),
-          life:100,dead:false,color:t.color,speed:20,ttype:'trail',leaddmg:false,towerId:t.id});
-      }
-      return;
-    }
-
-    // ---- NORMAL TOWERS ----
-    const targets=findTargets(t,bloons);if(!targets.length)return;
-    t.timer=0;
-    fireFromTower(gs,t,targets);
-  });
-}
-
-// ============================================================
-// TARGETING
-// ============================================================
-function canTowerHit(t,b){
-  // Check immunity — sharp types can't hit lead without leaddmg
-  const sharpTypes=['dart','tack','boomr','ninja','spike','ace'];
-  const energyTypes=['super'];
-  if(b.immune.includes('sharp')&&sharpTypes.includes(t.type)&&!t.leaddmg)return false;
-  if(b.immune.includes('energy')&&energyTypes.includes(t.type)&&!t.leaddmg)return false;
-  if(b.immune.includes('bomb')&&t.type==='bomb')return false;
-  if(b.immune.includes('ice')&&t.type==='ice'&&!t.freezeWhite)return false;
-  // Camo detection
-  // (simplified — we don't track camo bloons separately, but ninja/certain towers get camo vision)
-  return true;
-}
-
-function findTargets(t,bloons){
-  const inRange=bloons.filter(b=>{
-    if(b.dead||b.frozen>0)return false;
-    if(!canTowerHit(t,b))return false;
-    return Math.hypot(b.x-t.x,b.y-t.y)<=t.range;
-  });
-  if(!inRange.length)return[];
-  let sorted;
-  switch(t.targetMode){
-    case'last': sorted=inRange.sort((a,b)=>a.pi-b.pi);break;
-    case'strong': sorted=inRange.sort((a,b)=>b.hp-a.hp);break;
-    case'close': sorted=inRange.sort((a,b)=>Math.hypot(a.x-t.x,a.y-t.y)-Math.hypot(b.x-t.x,b.y-t.y));break;
-    default: sorted=inRange.sort((a,b)=>b.pi-a.pi);break;
+    selectedSq = (piece && piece.color==='w') ? sqName : null;
+  } else {
+    if(piece && piece.color==='w') selectedSq=sqName;
   }
-  if(t.homing)return[inRange.reduce((m,b)=>b.hp>m.hp?b:m,inRange[0])];
-  const cnt=t.spread>1?Math.min(t.spread,sorted.length):1;
-  return sorted.slice(0,cnt);
+  renderBoard();
 }
 
-function fireFromTower(gs,t,targets){
-  targets.forEach(tgt=>{
-    if(!tgt||tgt.dead)return;
-    const dx=tgt.x-t.x,dy=tgt.y-t.y,dist=Math.sqrt(dx*dx+dy*dy)||1;
-    const spd=14;
-    const angles=t.triple?[-0.22,0,0.22]:[0];
-    const effDmg=t._dmgBuff?t.dmg+1:t.dmg;
-    angles.forEach(a=>{
-      const vx=(dx/dist)*spd*Math.cos(a)-(dy/dist)*spd*Math.sin(a);
-      const vy=(dy/dist)*spd*Math.cos(a)+(dx/dist)*spd*Math.sin(a);
-      gs.projs.push({
-        x:t.x,y:t.y,vx,vy,
-        dmg:effDmg,aoe:t.aoe||0,
-        pierceLeft:t.pierce||1,
-        chain:t.chain||0,
-        dot:t.dot||false,dotDmg:t.dotDmg||1,dotDur:t.dotDur||2,
-        slow:t.slowFactor||0,
-        hitSet:new Set(),
-        life:2500,dead:false,
-        color:t.color,speed:spd,
-        ttype:t.type,leaddmg:t.leaddmg||false,
-        towerId:t.id,
-        homing:t.homing&&a===0,target:t.homing?tgt:null,
-        moabDmg:t.moabDmg||false,push:t.push||false
-      });
-    });
-  });
+function doBotMove(){
+  if(playGame.isGameOver()) { updatePlayStatus(); return; }
+  const m = botMove(playGame, playBot);
+  if(m) playGame.move(m);
+  renderBoard();
+  logHistory();
+  updatePlayStatus();
 }
 
-// ============================================================
-// PROJECTILE UPDATE
-// ============================================================
-function updateProjs(projs,bloons,gs,dt){
-  for(let i=projs.length-1;i>=0;i--){
-    const p=projs[i];
-    if(p.dead){projs.splice(i,1);continue;}
+function logHistory(){
+  const hist = playGame.history();
+  const wrap = document.getElementById('play-history');
+  let html='';
+  for(let i=0;i<hist.length;i+=2){
+    html += `<div>${(i/2+1)}. ${hist[i]||''} ${hist[i+1]||''}</div>`;
+  }
+  wrap.innerHTML = html;
+  wrap.scrollTop = wrap.scrollHeight;
+}
 
-    // SPIKE — stationary
-    if(p.isSpike){
-      p.life-=dt;
-      if(p.life<=0){p.dead=true;projs.splice(i,1);continue;}
-      for(let j=bloons.length-1;j>=0;j--){
-        const b=bloons[j];
-        if(b.dead||p.hitSet.has(b.id))continue;
-        if(Math.hypot(b.x-p.x,b.y-p.y)<(b.big?20:10)){
-          if(hitBloon(p,b,bloons,gs)){if(p.pierceLeft<=0){p.dead=true;break;}}
-        }
-      }
-      if(p.dead)projs.splice(i,1);
-      continue;
-    }
-
-    // MORTAR — arc to target
-    if(p.isMortar){
-      p.life-=dt;
-      const dx=p.targetX-p.x,dy=p.targetY-p.y,d=Math.sqrt(dx*dx+dy*dy);
-      if(d<10||p.life<=0){
-        bloons.forEach(b=>{
-          if(!b.dead&&Math.hypot(b.x-p.x,b.y-p.y)<p.aoe)hitBloon(p,b,bloons,gs);
-        });
-        p.dead=true;projs.splice(i,1);continue;
-      }
-      p.x+=dx/d*9*(dt/16);p.y+=dy/d*9*(dt/16);
-      continue;
-    }
-
-    // HOMING
-    if(p.homing&&p.target&&!p.target.dead){
-      const dx=p.target.x-p.x,dy=p.target.y-p.y,d=Math.sqrt(dx*dx+dy*dy);
-      if(d<10){
-        hitBloon(p,p.target,bloons,gs);
-        if(p.aoe>0)bloons.forEach(b2=>{if(!b2.dead&&b2!==p.target&&Math.hypot(b2.x-p.x,b2.y-p.y)<p.aoe)hitBloon(p,b2,bloons,gs);});
-        p.dead=true;projs.splice(i,1);continue;
-      }
-      p.vx=dx/d*p.speed;p.vy=dy/d*p.speed;
-    }
-
-    p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);
-    p.life-=dt;
-    if(p.life<=0){p.dead=true;projs.splice(i,1);continue;}
-
-    let exploded=false;
-    for(let j=bloons.length-1;j>=0;j--){
-      const b=bloons[j];
-      if(b.dead||p.hitSet.has(b.id))continue;
-      if(Math.hypot(b.x-p.x,b.y-p.y)<(b.big?22:10)){
-        hitBloon(p,b,bloons,gs);
-        if(p.aoe>0){
-          bloons.forEach(b2=>{if(!b2.dead&&b2!==b&&!p.hitSet.has(b2.id)&&Math.hypot(b2.x-p.x,b2.y-p.y)<p.aoe)hitBloon(p,b2,bloons,gs);});
-          p.dead=true;exploded=true;break;
-        }
-        if(p.pierceLeft<=0){p.dead=true;exploded=true;break;}
-      }
-    }
-    if(exploded)projs.splice(i,1);
+function updatePlayStatus(){
+  const el = document.getElementById('play-status');
+  if(playGame.isCheckmate()){
+    el.textContent = (playGame.turn()==='w' ? 'Bot gewinnt' : 'Du gewinnst') + ' durch Schachmatt!';
+  } else if(playGame.isDraw() || playGame.isStalemate()){
+    el.textContent = 'Remis.';
+  } else if(playGame.inCheck && playGame.inCheck()){
+    el.textContent = (playGame.turn()==='w'?'Du stehst':'Bot steht') + ' im Schach.';
+  } else {
+    el.textContent = playGame.turn()==='w' ? 'Du bist am Zug (Weiß).' : 'Bot denkt nach...';
   }
 }
 
-function hitBloon(p,b,bloons,gs){
-  if(p.hitSet.has(b.id))return false;
-  // Immunity check
-  if(b.immune.includes(p.ttype)&&!p.leaddmg)return false;
-  if(b.immune.includes('sharp')&&['dart','tack','boomr','ninja','spike','ace'].includes(p.ttype)&&!p.leaddmg)return false;
-  p.hitSet.add(b.id);
-  p.pierceLeft--;
-  const actualDmg=(p.moabDmg&&b.big)?p.dmg*5:p.dmg;
-  b.hp-=actualDmg;
-  if(p.slow>0)b.slowed=Math.max(b.slowed,2.5);
-  if(p.dot&&p.dotDmg>0&&b.dotTimer<=0){b.dotTimer=p.dotDur;b.dotDmg=p.dotDmg;}
-  if(p.push&&!b.big&&b.pi>5)b.pi=Math.max(0,b.pi-20);
-  // Chain lightning
-  if(p.chain>0){
-    const nearby=bloons.filter(b2=>!b2.dead&&b2!==b&&!p.hitSet.has(b2.id)&&Math.hypot(b2.x-b.x,b2.y-b.y)<130);
-    nearby.slice(0,p.chain).forEach(b2=>{
-      p.hitSet.add(b2.id);
-      b2.hp-=Math.ceil(actualDmg*0.7);
-      if(b2.hp<=0)killBloon(gs,b2,{towerId:p.towerId});
-    });
-  }
-  if(b.hp<=0)killBloon(gs,b,{towerId:p.towerId});
-  return true;
+/* ===================== INIT ===================== */
+function renderAll(){
+  renderLobby();
+  renderBots();
+  renderTournaments();
 }
 
-function killBloon(gs,b,source){
-  if(b.dead)return;
-  b.dead=true;gs.kills++;
-  gs.money=Math.floor(gs.money+(b.reward||1)*(gs.mult||1));
-  if(source&&source.towerId){const t=gs.towers.find(x=>x.id===source.towerId);if(t)t.kills++;}
-  // Spawn children
-  const bt=BT[b.type];
-  if(bt&&bt.children&&bt.children.length&&gs.path&&gs.path.length){
-    bt.children.forEach(cid=>{
-      const cb=BT[cid];if(!cb)return;
-      const childHp=Math.ceil(cb.hp*(gs.hpMult||1));
-      gs.bloons.push({
-        id:Math.random().toString(36).slice(2),
-        type:cid,hp:childHp,maxHp:childHp,speed:cb.speed,
-        reward:cb.reward||1,immune:[...(cb.immune||[])],
-        color:cb.color,icon:cb.icon,
-        x:b.x,y:b.y,pi:b.pi,dead:false,frozen:0,slowed:0,dotTimer:0,dotDmg:0,
-        big:cb.big||false,boss:cb.boss||false
-      });
-    });
-  }
-}
-
-// ============================================================
-// BOT AI — tiered, wave-aware, smart placement
-// ============================================================
-function updateBotAI(gs,bot,dt){
-  bot.buyTimer=(bot.buyTimer||0)+dt;
-  const react={noob:3500,beginner:2800,normal:2000,good:1500,expert:1100,master:800}[bot.tier]||2000;
-  if(bot.buyTimer<react)return;
-  bot.buyTimer=0;
-
-  const wave=gs.wave;
-  const tc=bot.towers.length;
-  const money=bot.money;
-
-  // Helper: try upgrade a specific tower on best path
-  const tryUpgrade=(maxLvl,preferHighKill)=>{
-    const candidates=bot.towers.filter(t=>!t.supportMode&&(t.p1lvl<Math.min(4,maxLvl)||t.p2lvl<Math.min(4,maxLvl)));
-    if(!candidates.length)return false;
-    const pick=preferHighKill?candidates.sort((a,b)=>b.kills-a.kills)[0]:candidates[Math.floor(Math.random()*candidates.length)];
-    // Try path 1 first if lower
-    for(const path of pick.p1lvl<=pick.p2lvl?[1,2]:[2,1]){
-      const upgs=path===1?pick.p1:pick.p2;
-      const lvl=path===1?pick.p1lvl:pick.p2lvl;
-      if(lvl>=Math.min(4,maxLvl))continue;
-      const u=upgs[lvl];
-      if(u&&bot.money>=u.cost&&lvl<4){
-        bot.money-=u.cost;applyEffect(pick,u.e);
-        if(path===1)pick.p1lvl++;else pick.p2lvl++;
-        return true;
-      }
-    }
-    return false;
-  };
-
-  // Lead counter check — do we have any lead-capable tower?
-  const hasLeadCounter=bot.towers.some(t=>t.leaddmg||(t.type==='bomb')||(t.type==='mortar')||(t.type==='wizard'));
-  const leadWave=wave>=9;// leads start around wave 9
-
-  // ===================== NOOB =====================
-  if(bot.tier==='noob'){
-    if(tc>=7||money<170)return;
-    const aff=TTYPES.filter(t=>t.cost<=money&&t.cost<=500&&!t.supportMode);
-    if(!aff.length)return;
-    botBuyTower(gs,bot,aff[Math.floor(Math.random()*aff.length)]);return;
-  }
-
-  // ===================== BEGINNER =====================
-  if(bot.tier==='beginner'){
-    if(tc>2&&Math.random()<0.2)if(tryUpgrade(1,false))return;
-    if(leadWave&&!hasLeadCounter&&money>=380){const t=TTYPES.find(x=>x.id==='bomb');if(t&&bot.money>=t.cost){botBuyTower(gs,bot,t);return;}}
-    if(tc>=9||money<200)return;
-    const prio=['dart','bomb','tack','ice','boomr'];
-    const pick=prio.map(id=>TTYPES.find(t=>t.id===id&&t.cost<=money)).find(Boolean)||TTYPES.find(t=>t.cost<=money&&!t.supportMode);
-    if(pick)botBuyTower(gs,bot,pick);return;
-  }
-
-  // ===================== NORMAL =====================
-  if(bot.tier==='normal'){
-    if(tc>1&&Math.random()<0.4)if(tryUpgrade(2,true))return;
-    if(leadWave&&!hasLeadCounter&&money>=380){
-      const t=TTYPES.find(x=>x.id==='bomb')||TTYPES.find(x=>x.id==='wizard');
-      if(t&&bot.money>=t.cost){botBuyTower(gs,bot,t);return;}
-    }
-    if(tc>=11||money<250)return;
-    const prio=['bomb','dart','ice','tack','lightning','boomr','wizard'];
-    const pick=prio.map(id=>TTYPES.find(t=>t.id===id&&t.cost<=money)).find(Boolean)||TTYPES.find(t=>t.cost<=money&&!t.supportMode);
-    if(pick)botBuyTower(gs,bot,pick);return;
-  }
-
-  // ===================== GOOD =====================
-  if(bot.tier==='good'){
-    // Upgrade high-kill towers more aggressively
-    if(tc>2&&Math.random()<0.55)if(tryUpgrade(3,true))return;
-    // Lead counter early
-    if(wave>=8&&!hasLeadCounter){
-      const lt=['bomb','wizard','mortar'];
-      const t=lt.map(id=>TTYPES.find(x=>x.id===id&&x.cost<=money)).find(Boolean);
-      if(t){botBuyTower(gs,bot,t);return;}
-    }
-    // Save for sniper at wave 12+
-    if(wave>=12&&!bot.towers.find(t=>t.type==='sniper')&&!bot.savingFor)bot.savingFor='sniper';
-    if(bot.savingFor){
-      const tgt=TTYPES.find(t=>t.id===bot.savingFor);
-      if(tgt&&bot.money>=tgt.cost){bot.savingFor=null;botBuyTower(gs,bot,tgt);return;}
-      if(tgt&&bot.money<tgt.cost*0.5)return;
-    }
-    if(tc>=13||money<300)return;
-    const prio=wave>=15?['bomb','sniper','lightning','wizard','ice']:['bomb','ice','lightning','dart','boomr','wizard'];
-    const pick=prio.map(id=>TTYPES.find(t=>t.id===id&&t.cost<=money)).find(Boolean)||TTYPES.find(t=>t.cost<=money&&!t.supportMode&&t.cost>=250);
-    if(pick)botBuyTower(gs,bot,pick);return;
-  }
-
-  // ===================== EXPERT =====================
-  if(bot.tier==='expert'){
-    // Dual path upgrades
-    if(tc>1&&Math.random()<0.6)if(tryUpgrade(4,true))return;
-    // Lead counter
-    if(wave>=8&&!hasLeadCounter){
-      const t=['bomb','wizard','mortar'].map(id=>TTYPES.find(x=>x.id===id&&x.cost<=money)).find(Boolean);
-      if(t){botBuyTower(gs,bot,t);return;}
-    }
-    // Save for super at MOAB waves
-    if(wave>=17&&!bot.towers.find(t=>t.type==='super')&&!bot.savingFor)bot.savingFor='super';
-    if(wave>=5&&!bot.towers.find(t=>t.type==='village')&&!bot.savingFor)bot.savingFor='village';
-    if(bot.savingFor){
-      const tgt=TTYPES.find(t=>t.id===bot.savingFor);
-      if(tgt&&bot.money>=tgt.cost){bot.savingFor=null;botBuyTower(gs,bot,tgt);return;}
-      if(tgt&&bot.money<tgt.cost*0.45)return;
-    }
-    if(tc>=15||money<350)return;
-    const prio=wave>=20?['super','heli','sniper','wizard','bomb','lightning','village']:
-               wave>=12?['sniper','bomb','village','lightning','wizard','heli']:
-               ['bomb','sniper','lightning','ice','boomr','wizard'];
-    const pick=prio.map(id=>TTYPES.find(t=>t.id===id&&t.cost<=money)).find(Boolean)||TTYPES.find(t=>t.cost<=money&&!t.supportMode&&t.cost>=350);
-    if(pick)botBuyTower(gs,bot,pick);return;
-  }
-
-  // ===================== MASTER =====================
-  if(bot.tier==='master'){
-    if(tc>0&&Math.random()<0.7)if(tryUpgrade(4,true))return;
-    // Lead counter ASAP
-    if(wave>=7&&!hasLeadCounter){
-      const t=['bomb','wizard'].map(id=>TTYPES.find(x=>x.id===id&&x.cost<=money)).find(Boolean);
-      if(t){botBuyTower(gs,bot,t);return;}
-    }
-    // Priority saves
-    if(!bot.towers.find(t=>t.type==='village')&&wave>=4&&!bot.savingFor)bot.savingFor='village';
-    if(!bot.towers.find(t=>t.type==='super')&&wave>=14&&bot.savingFor!=='super')bot.savingFor='super';
-    if(!bot.towers.find(t=>t.type==='heli')&&wave>=22&&bot.savingFor==='village')bot.savingFor='heli';
-    if(bot.savingFor){
-      const tgt=TTYPES.find(t=>t.id===bot.savingFor);
-      if(tgt&&bot.money>=tgt.cost){bot.savingFor=null;botBuyTower(gs,bot,tgt);return;}
-      if(tgt&&bot.money<tgt.cost*0.35)return;
-    }
-    if(tc>=17||money<400)return;
-    const prio=wave>=35?['super','heli','sniper','village','druid','alch','wizard','bomb']:
-               wave>=20?['super','heli','sniper','village','bomb','wizard','lightning']:
-               wave>=12?['bomb','sniper','village','lightning','wizard','ninja']:
-               ['bomb','lightning','ice','dart','wizard','ninja','boomr'];
-    const pick=prio.map(id=>TTYPES.find(t=>t.id===id&&t.cost<=money)).find(Boolean)||TTYPES.find(t=>t.cost<=money&&!t.supportMode&&t.cost>=300);
-    if(pick)botBuyTower(gs,bot,pick);return;
-  }
-}
-
-function botBuyTower(gs,bot,tt){
-  if(!tt||bot.money<tt.cost)return;
-  // Try many positions — prefer spots far from path, clustered in groups
-  let bestX=-1,bestY=-1,bestScore=-1;
-  const W=BOT_CW,H=BOT_CH;
-  const margin=18;
-  for(let attempt=0;attempt<120;attempt++){
-    const x=margin+Math.random()*(W-margin*2);
-    const y=margin+Math.random()*(H-margin*2);
-    // Min path distance
-    let minPathDist=9999;
-    for(const p of bot.path)minPathDist=Math.min(minPathDist,Math.hypot(p.x-x,p.y-y));
-    if(minPathDist<18)continue;
-    // Check tower overlap
-    let minTowerDist=9999;
-    for(const t of bot.towers)minTowerDist=Math.min(minTowerDist,Math.hypot(t.x-x,t.y-y));
-    if(minTowerDist<22)continue;
-    // Score: prefer spots with path coverage (within range of the middle of path)
-    const midIdx=Math.floor(bot.path.length/2);
-    const midPt=bot.path[midIdx];
-    const midDist=Math.hypot(midPt.x-x,midPt.y-y);
-    const range=tt.range<9000?tt.range:150;
-    const coverage=Math.max(0,range-midDist)/range;
-    // Also score closeness to other towers (clustering = synergy)
-    const clusterBonus=bot.towers.length>0?Math.min(50,minTowerDist)/50:0;
-    const score=coverage+clusterBonus*0.3+Math.random()*0.1;
-    if(score>bestScore){bestScore=score;bestX=x;bestY=y;}
-  }
-  if(bestX<0)return;// no valid spot found
-  bot.money-=tt.cost;
-  placeTower(bot,tt,bestX,bestY,false);
-}
-
-// ============================================================
-// RENDER — MAIN CANVAS
-// ============================================================
-function renderGame(){
-  if(!GS)return;
-  const canvas=document.getElementById('gameCanvas');
-  const ctx=canvas.getContext('2d');
-  ctx.fillStyle=CMAP.bg||'#2a7018';ctx.fillRect(0,0,CW,CH);
-  drawCheckerboard(ctx,CW,CH,24);
-  drawPathFull(ctx,GS.scaledPts,false);
-
-  // Range preview
-  if(selTowerType&&GS.hoverX>0){
-    const tt=TTYPES.find(t=>t.id===selTowerType);
-    if(tt&&tt.range<9000){
-      ctx.globalAlpha=0.1;ctx.fillStyle='#fff';
-      ctx.beginPath();ctx.arc(GS.hoverX,GS.hoverY,tt.range,0,Math.PI*2);ctx.fill();
-      ctx.globalAlpha=0.3;ctx.strokeStyle='#fff';ctx.lineWidth=1;
-      ctx.beginPath();ctx.arc(GS.hoverX,GS.hoverY,tt.range,0,Math.PI*2);ctx.stroke();
-      ctx.globalAlpha=0.6;ctx.font='18px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(tt.icon,GS.hoverX,GS.hoverY);
-      ctx.globalAlpha=1;
-    }
-  }
-
-  GS.towers.forEach(t=>{
-    if(selPlaced&&selPlaced.id===t.id&&t.range<9000){
-      ctx.globalAlpha=0.1;ctx.fillStyle='#fff';
-      ctx.beginPath();ctx.arc(t.x,t.y,t.range,0,Math.PI*2);ctx.fill();
-      ctx.globalAlpha=0.25;ctx.strokeStyle='#fff';ctx.lineWidth=1;
-      ctx.beginPath();ctx.arc(t.x,t.y,t.range,0,Math.PI*2);ctx.stroke();
-      ctx.globalAlpha=1;
-    }
-    drawTower(ctx,t,14,false);
-  });
-
-  GS.projs.forEach(p=>{
-    if(p.dead)return;
-    ctx.fillStyle=p.color;
-    ctx.beginPath();ctx.arc(p.x,p.y,p.aoe>0?5:3,0,Math.PI*2);ctx.fill();
-  });
-  GS.bloons.forEach(b=>drawBloon(ctx,b,false));
-
-  if(selPlaced){
-    const still=GS.towers.find(t=>t.id===selPlaced.id);
-    if(still)showTowerDetails(still);
-    else{selPlaced=null;document.getElementById('towerDetails').textContent='Turm auswählen oder platzieren';}
-  }
-}
-
-function drawCheckerboard(ctx,w,h,sz){
-  ctx.globalAlpha=0.06;ctx.fillStyle='#000';
-  for(let i=0;i<w;i+=sz)for(let j=0;j<h;j+=sz)
-    if((Math.floor(i/sz)+Math.floor(j/sz))%2===0)ctx.fillRect(i,j,sz,sz);
-  ctx.globalAlpha=1;
-}
-
-function drawPathFull(ctx,pts,mini){
-  if(!pts||pts.length<2)return;
-  const w1=mini?5:26,w2=mini?3:20;
-  ctx.strokeStyle='#b89030';ctx.lineWidth=w1;ctx.lineCap='round';ctx.lineJoin='round';
-  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
-  pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();
-  ctx.strokeStyle='#d8b050';ctx.lineWidth=w2;
-  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
-  pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();
-  const sr=mini?3:7;
-  ctx.fillStyle='#44ee70';ctx.beginPath();ctx.arc(pts[0].x,pts[0].y,sr,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#ee4444';ctx.beginPath();ctx.arc(pts[pts.length-1].x,pts[pts.length-1].y,sr,0,Math.PI*2);ctx.fill();
-}
-
-function drawTower(ctx,t,sz,mini){
-  ctx.globalAlpha=0.25;ctx.fillStyle='#000';
-  ctx.beginPath();ctx.ellipse(t.x,t.y+sz*0.55,sz*0.65,sz*0.22,0,0,Math.PI*2);ctx.fill();
-  ctx.globalAlpha=1;
-  ctx.fillStyle=t.color||'#888';
-  ctx.beginPath();ctx.arc(t.x,t.y,sz,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.arc(t.x,t.y,sz,0,Math.PI*2);ctx.stroke();
-  ctx.font=`${sz}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(t.icon,t.x,t.y);
-  if(!mini){
-    const stars=(t.p1lvl||0)+(t.p2lvl||0);
-    if(stars>0){ctx.fillStyle='#ffcc00';ctx.font='7px Arial';ctx.fillText('★'.repeat(Math.min(stars,8)),t.x,t.y+sz+5);}
-  }
-  if(selPlaced&&selPlaced.id===t.id){
-    ctx.strokeStyle='#ffcc00';ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(t.x,t.y,sz+2,0,Math.PI*2);ctx.stroke();
-  }
-}
-
-function drawBloon(ctx,b,mini){
-  if(b.dead)return;
-  const r=b.boss?(mini?8:20):b.big?(mini?5:14):(mini?3:8);
-  if(b.boss&&!mini){
-    ctx.globalAlpha=0.2;ctx.fillStyle=b.color;
-    ctx.beginPath();ctx.arc(b.x,b.y,r+10,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
-  }
-  ctx.fillStyle=b.frozen>0?'#6eb0ff':b.color;
-  ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=mini?0.5:1.2;
-  ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.stroke();
-  if(!mini&&b.hp<b.maxHp){
-    const bw=r*2.2;
-    ctx.fillStyle='#222';ctx.fillRect(b.x-r,b.y-r-5,bw,3);
-    ctx.fillStyle=b.hp/b.maxHp>0.5?'#44ee70':'#ee3333';
-    ctx.fillRect(b.x-r,b.y-r-5,bw*(b.hp/b.maxHp),3);
-  }
-  if(!mini){
-    ctx.font=b.boss?'14px serif':b.big?'10px serif':'8px serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(b.icon,b.x,b.y);
-  }
-}
-
-// ============================================================
-// BOT SCREENS
-// ============================================================
-function renderBotScreens(){
-  if(!GS)return;
-  GS.bots.forEach(b=>{
-    const canvas=document.getElementById('bcanvas-'+b.id);if(!canvas)return;
-    const ctx=canvas.getContext('2d');
-    ctx.fillStyle=CMAP.bg||'#2a7018';ctx.fillRect(0,0,BOT_CW,BOT_CH);
-    drawCheckerboard(ctx,BOT_CW,BOT_CH,12);
-    drawPathFull(ctx,b.scaledPts,true);
-    b.towers.forEach(t=>{
-      ctx.font='9px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(t.icon,t.x,t.y);
-      // Mini star indicator
-      const stars=(t.p1lvl||0)+(t.p2lvl||0);
-      if(stars>0){ctx.fillStyle='#ffcc00';ctx.font='5px Arial';ctx.fillText('★'.repeat(Math.min(stars,4)),t.x,t.y+8);}
-    });
-    b.bloons.forEach(bl=>drawBloon(ctx,bl,true));
-    b.projs.forEach(p=>{
-      if(p.dead)return;
-      ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,1.5,0,Math.PI*2);ctx.fill();
-    });
-    const tierColor={noob:'#ff8888',beginner:'#ffbb44',normal:'#ffff44',good:'#88ff88',expert:'#44bbff',master:'#cc88ff'}[b.tier]||'#fff';
-    const ll=document.getElementById('blives-'+b.id);
-    if(ll)ll.innerHTML=b.alive?
-      `<span style="color:${tierColor}">${b.name}</span> ❤️${b.lives} 💰${b.money}`:
-      `<span style="color:#ff4040">💀 ${b.name}</span>`;
-    if(!b.alive){
-      ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,BOT_CW,BOT_CH);
-      ctx.fillStyle='#ff4040';ctx.font='bold 20px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText('💀',BOT_CW/2,BOT_CH/2);
-    }
-  });
-}
-
-function buildBotScreens(){
-  const area=document.getElementById('botArea');area.innerHTML='';
-  GS.bots.forEach(b=>{
-    const div=document.createElement('div');
-    div.className='bot-screen';div.id='bscreen-'+b.id;
-    div.style.borderColor=b.color;
-    div.innerHTML=`<div class="bot-label"><span id="blives-${b.id}" style="color:${b.color}">${b.name}</span><span style="color:var(--muted)">${b.elo}</span></div><canvas class="bot-canvas" id="bcanvas-${b.id}" width="${BOT_CW}" height="${BOT_CH}"></canvas>`;
-    area.appendChild(div);
-  });
-}
-
-// ============================================================
-// HUD & CONTROLS
-// ============================================================
-function updateHUD(){
-  if(!GS)return;
-  document.getElementById('hudLives').textContent=GS.lives;
-  document.getElementById('hudMoney').textContent=GS.money;
-  document.getElementById('hudWave').textContent=GS.wave;
-  document.getElementById('hudBloons').textContent=GS.bloons.length+(GS.waveQueue?GS.waveQueue.length:0);
-  if(GS.lives<=0&&!gameOver)endGame(false);
-}
-function togglePause(){paused=!paused;document.getElementById('pauseBtn').textContent=paused?'▶':'⏸';}
-function toggleSpeed(){
-  gameSpeed=gameSpeed===1?2:gameSpeed===2?3:1;
-  document.getElementById('speedBtn').textContent=gameSpeed===1?'2x':gameSpeed===2?'3x':'1x';
-}
-
-// ============================================================
-// END GAME — ELO & Roster Update
-// ============================================================
-function endGame(won){
-  if(gameOver)return;
-  gameOver=true;cancelAnimationFrame(RAF);
-  const gs=GS;const total=gs.bots.length+1;
-
-  // Rank by performance score
-  const playerScore=gs.towers.length*15+gs.kills+gs.lives*3;
-  let place=1;
-  gs.bots.forEach(b=>{
-    const bs=b.towers.length*15+b.kills+b.lives*3;
-    if(bs>playerScore)place++;
-  });
-  if(!won&&gs.lives<=0)place=total;
-
-  // ELO update — compare against each bot
-  const K=28;let eloChange=0;
-  gs.bots.forEach((b,i)=>{
-    const expected=1/(1+Math.pow(10,(b.elo-P.elo)/400));
-    const score=place<=(i+1)?1:place===(i+1)+1?0.5:0;
-    eloChange+=K*(score-expected);
-  });
-  if(gs.bots.length)eloChange/=gs.bots.length;
-  eloChange+=Math.floor(gs.kills/10);
-  if(won)eloChange+=50;
-  else if(gs.wave>40)eloChange+=15;
-  eloChange=Math.round(eloChange);
-
-  const oldElo=P.elo;
-  P.elo=Math.max(0,P.elo+eloChange);
-  P.games++;if(place===1)P.wins++;
-  P.maxWave=Math.max(P.maxWave,gs.wave);
-  P.totalKills+=gs.kills;P.sumPlace+=place;
-  P.peakElo=Math.max(P.peakElo,P.elo);
-  P.hist=P.hist||[];
-  P.hist.push({place,tot:total,wave:gs.wave,kills:gs.kills,de:eloChange});
-  if(P.hist.length>25)P.hist.shift();
-
-  // Update bot roster ELOs — they gain/lose based on placement vs player
-  gs.bots.forEach((b,i)=>{
-    const ri=b.rosterIdx;
-    if(ri<0||ri>=BOT_ROSTER.length)return;
-    const botScore=b.towers.length*15+b.kills+b.lives*3;
-    const botPlace=gs.bots.filter(ob=>ob.towers.length*15+ob.kills+ob.lives*3>botScore).length+
-                   (playerScore>botScore?1:0)+1;
-    const botExpected=1/(1+Math.pow(10,(P.elo-b.elo)/400));
-    const botScoreNorm=botPlace<=2?1:botPlace===3?0.5:0;
-    const botEloChange=Math.round(K*(botScoreNorm-botExpected));
-    BOT_ROSTER[ri].elo=Math.max(400,BOT_ROSTER[ri].elo+botEloChange);
-    BOT_ROSTER[ri].games=(BOT_ROSTER[ri].games||0)+1;
-    if(botPlace===1)BOT_ROSTER[ri].wins=(BOT_ROSTER[ri].wins||0)+1;
-  });
-  saveData();
-
-  document.getElementById('endTitle').textContent=won?'🏆 Gewonnen!':gs.lives<=0?'💀 Alle Leben verloren!':'Spiel beendet';
-  document.getElementById('endTitle').style.color=won?'#44ee70':'#ff4040';
-  document.getElementById('endStats').innerHTML=
-    `Platz <b style="color:var(--gold)">${place}</b> von <b style="color:var(--gold)">${total}</b><br>`+
-    `Welle: <b>${gs.wave}</b>/${WAVES.length}<br>`+
-    `Abschüsse: <b>${gs.kills}</b><br>`+
-    `Türme: <b>${gs.towers.length}</b><br>`+
-    `ELO: <b>${oldElo}</b> → <b>${P.elo}</b> <span style="color:${eloChange>=0?'#44ee70':'#ff4040'}">${eloChange>=0?'+':''}${eloChange}</span>`;
-  document.getElementById('endOverlay').style.display='flex';
-  refreshTopUI();
-}
-
-function goHome(){
-  cancelAnimationFrame(RAF);
-  document.getElementById('endOverlay').style.display='none';
-  showScreen('homeScreen');
-  renderMapList();refreshTopUI();
-}
+(async function init(){
+  await loadState();
+  setInterval(ensureHourly, 30000);
+  setInterval(simulateRound, 7000);
+})();
 </script>
 </body>
 </html>
