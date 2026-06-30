@@ -78,6 +78,7 @@ input[type=range]{width:100%; accent-color:var(--accent);}
 .checkbox-row input{width:16px; height:16px; accent-color:var(--accent);}
 .checkbox-row label{margin:0; color:var(--text);}
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;}
+.live-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px;}
 .bot-card{background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:14px;}
 .bot-card h3{margin:0 0 8px; font-size:15px; color:var(--text-bright); display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
 .bot-avatar{width:26px; height:26px; border-radius:50%; background:var(--accent-dark); display:inline-flex; align-items:center; justify-content:center; font-size:14px;}
@@ -114,18 +115,21 @@ tr:last-child td{border-bottom:none;}
 .log-line .view-link{background:none; border:1px solid var(--line); color:var(--accent-bright); font-size:11px; padding:2px 8px; border-radius:9px; cursor:pointer; white-space:nowrap;}
 .log-line .view-link:hover{background:var(--bg3);}
 .board-wrap{display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;}
+.board-col{flex:0 1 480px; min-width:280px;}
 #board{
-  width:480px; max-width:92vw; aspect-ratio:1; display:grid;
+  width:100%; aspect-ratio:1; display:grid;
   grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
   border:3px solid var(--bg3); border-radius:3px; overflow:hidden;
 }
-.sq{display:flex; align-items:center; justify-content:center; font-size:min(7vw,38px); cursor:pointer; user-select:none; position:relative;}
+.sq{display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none; position:relative;}
 .sq.light{background:var(--light-sq);}
 .sq.dark{background:var(--dark-sq);}
 .sq.selected{outline:3px solid var(--accent-bright); outline-offset:-3px;}
 .sq.lastmove{box-shadow:inset 0 0 0 999px rgba(255,213,0,.25);}
 .sq.legal::after{content:''; position:absolute; width:28%; height:28%; border-radius:50%; background:rgba(0,0,0,.28);}
 .sq.legal.capture::after{width:80%; height:80%; border-radius:50%; background:transparent; border:5px solid rgba(0,0,0,.28);}
+.piece-svg{width:78%; height:78%; display:block; pointer-events:none; overflow:visible;}
+.mini-board .piece-svg{width:82%; height:82%;}
 .side-panel{flex:1; min-width:240px;}
 .empty{color:var(--muted); font-style:italic; padding:14px 0; text-align:center;}
 .flex-between{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
@@ -147,9 +151,8 @@ tr:last-child td{border-bottom:none;}
 .warn{background:#3a2f12; border:1px solid #5a4a1a; color:#e0c27a; padding:10px 14px; border-radius:5px; font-size:13px; margin-bottom:14px;}
 .tc-pill-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
 .tc-pill{font-size:10.5px; padding:2px 7px; border-radius:9px; background:var(--bg3); color:var(--muted); border:1px solid var(--line);}
-.live-game-panel{display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;}
-.mini-board{width:220px; max-width:60vw; aspect-ratio:1; display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr); border:2px solid var(--bg3); border-radius:3px; overflow:hidden; flex-shrink:0;}
-.mini-board .sq{font-size:min(6vw,22px); cursor:default;}
+.mini-board{width:100%; aspect-ratio:1; display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr); border:2px solid var(--bg3); border-radius:3px; overflow:hidden; flex-shrink:0; margin-top:8px;}
+.mini-board .sq{cursor:default;}
 .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.65); display:flex; align-items:center; justify-content:center; z-index:200; padding:16px;}
 .modal-box{background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:18px; max-width:380px; width:100%; max-height:90vh; overflow-y:auto;}
 .replay-controls{display:flex; gap:8px; justify-content:center; margin-top:12px;}
@@ -190,6 +193,7 @@ tr:last-child td{border-bottom:none;}
     <div class="grid" style="margin-bottom:18px;">
       <div class="card"><h2>Aktive Bots</h2><div style="font-size:30px; color:var(--accent-bright); font-weight:700;" id="stat-bots">0</div></div>
       <div class="card"><h2>Laufende Turniere</h2><div style="font-size:30px; color:var(--accent-bright); font-weight:700;" id="stat-live-t">0</div></div>
+      <div class="card"><h2>Partien gerade live</h2><div style="font-size:30px; color:var(--accent-bright); font-weight:700;" id="stat-live-games">0</div></div>
       <div class="card"><h2>Gespielte Partien</h2><div style="font-size:30px; color:var(--accent-bright); font-weight:700;" id="stat-games">0</div></div>
     </div>
     <div class="card">
@@ -250,9 +254,9 @@ tr:last-child td{border-bottom:none;}
             <option value="rapid">Rapid (10+0)</option>
             <option value="classical">Classical (30+0)</option>
           </select>
-          <label>Spielstärke: Level <span class="range-val" id="bot-level-val">3</span> / 8 (steuert die Stockfish Skill Level)</label>
+          <label>Spielstärke: Level <span class="range-val" id="bot-level-val">3</span> / 8 (steuert Suchtiefe & Fehleranfälligkeit der Engine)</label>
           <input type="range" id="bot-level" min="1" max="8" value="3">
-          <label>Turnier-Bedenkzeit: <span class="range-val" id="bot-thinktime-val">300ms</span> pro Zug (Stockfish-Suchzeit in simulierten Partien)</label>
+          <label>Turnier-Bedenkzeit: <span class="range-val" id="bot-thinktime-val">300ms</span> pro Zug (so lange "denkt" der Bot in simulierten Partien — wird jetzt wirklich eingehalten)</label>
           <input type="range" id="bot-thinktime" min="80" max="1500" step="20" value="300">
           <label>Bedenkzeit: <span class="range-val" id="bot-speed-val">1.0s</span> pro Zug (im Live-Spiel gegen dich)</label>
           <input type="range" id="bot-speed" min="2" max="50" value="10">
@@ -269,7 +273,7 @@ tr:last-child td{border-bottom:none;}
   <!-- TOURNAMENTS -->
   <div class="view" id="view-tournaments">
     <h1>Turniere</h1>
-    <div class="subtitle">Stündliche System-Arenas laufen automatisch (wechselnd Ultrabullet/Bullet/Blitz/Rapid). Eigene Turniere kannst du jederzeit mit eigenen Regeln starten.</div>
+    <div class="subtitle">Stündliche System-Arenas laufen automatisch (wechselnd Ultrabullet/Bullet/Blitz/Rapid). Eigene Turniere kannst du jederzeit mit eigenen Regeln starten. Bis zu mehrere Partien laufen gleichzeitig nebeneinander.</div>
     <div class="card">
       <h2>Eigenes Turnier erstellen</h2>
       <div class="form-grid">
@@ -332,14 +336,8 @@ tr:last-child td{border-bottom:none;}
     </div>
     <div class="subtitle" id="td-meta"></div>
     <div class="card" id="td-live-card" style="display:none;">
-      <h2><span class="pulse"></span>Live-Partie</h2>
-      <div class="live-game-panel">
-        <div class="mini-board" id="td-live-board"></div>
-        <div>
-          <div class="small" id="td-live-label"></div>
-          <div class="small" id="td-live-moves" style="max-height:140px; overflow-y:auto; margin-top:6px; max-width:260px;"></div>
-        </div>
-      </div>
+      <h2><span class="pulse"></span>Live-Partien (<span id="td-live-count">0</span> gleichzeitig)</h2>
+      <div class="live-grid" id="td-live-grid"></div>
     </div>
     <div class="board-wrap">
       <div class="card" style="flex:2; min-width:300px;">
@@ -378,7 +376,7 @@ tr:last-child td{border-bottom:none;}
       <div class="bot-select-list" id="play-bot-list"></div>
     </div>
     <div class="board-wrap" id="play-area" style="display:none;">
-      <div>
+      <div class="board-col">
         <div id="board"></div>
         <div style="margin-top:10px;" class="small" id="play-status"></div>
         <button class="btn secondary" style="margin-top:10px;" onclick="resetPlayGame()">Neues Spiel</button>
@@ -424,19 +422,26 @@ const OPENING_FIRST_MOVE = { e4:'e4', d4:'d4', nf3:'Nf3', c4:'c4' };
 const START_ELO = 1500;
 const MAX_FINISHED_TOURNAMENTS = 15;
 const MAX_LOGS_PER_TOURNAMENT = 25;
-const MOVE_TICK_MS = 35;        // one ply per tick -> never blocks the main thread for long
+const PLY_YIELD_MS = 25;        // tiny breather between plies so the UI thread stays responsive
 const PAUSED_TICK_MS = 500;
 const ROUND_BUILD_INTERVAL_MS = 8000;
 const REFRESH_THROTTLE_MS = 900;
+const MAX_CONCURRENT_BOARDS = 6; // how many bot-vs-bot games may run at the same time, across all tournaments
 
 /* ===================== STATE ===================== */
-let state = { bots:{}, tournaments:{}, lastHourlyBucket:null, gamesPlayed:0 };
-let matchQueue = [];     // {tId, idWhite, idBlack}
-let activeJob = null;    // {tId, idWhite, idBlack, bw, bb, game, moves:[]}
-let liveGames = {};      // tId -> {white, black, moves:[]}  (transient, not saved)
-let queueRunning = false;
+let state = { bots:{}, tournaments:{}, lastHourlyBucket:null, gamesPlayed:0, lastActiveTs:null };
+
+// --- live scheduling state (transient, not persisted) ---
+let activeJobs = [];      // [{tId, idWhite, idBlack, bw, bb, game, moves:[]}, ...] - REAL concurrency, not a single slot
+let busyBots = new Set(); // bot ids currently in a running game (anywhere)
+let swissQueues = {};     // tId -> array of {idWhite, idBlack} pairs still to be played in the current round
 let simPaused = false;
 let lastRefresh = 0;
+// "catch-up" mode: this is a browser tab, so nothing runs while the page is actually closed.
+// Instead, when reopened after a gap we briefly play games with near-zero delay so tournaments
+// that were "live" while you were away feel caught-up rather than frozen in time.
+let turboMode = false;
+let turboUntil = 0;
 
 async function loadState(){
   try{
@@ -463,6 +468,7 @@ function saveState(immediate){
   clearTimeout(saveTimer);
   const run = async ()=>{
     try{
+      state.lastActiveTs = Date.now();
       const res = await window.storage.set('app-state-v4', JSON.stringify(state), false);
       if(res){ setSaveLed('ok'); saveFailToastShown=false; }
       else { setSaveLed('err'); }
@@ -477,7 +483,7 @@ function saveState(immediate){
 }
 // safety-net: save periodically regardless of what triggered changes
 setInterval(()=>saveState(false), 4000);
-window.addEventListener('beforeunload', ()=>{ try{ window.storage.set('app-state-v4', JSON.stringify(state), false); }catch(e){} });
+window.addEventListener('beforeunload', ()=>{ try{ state.lastActiveTs = Date.now(); window.storage.set('app-state-v4', JSON.stringify(state), false); }catch(e){} });
 
 function migrateState(){
   Object.values(state.bots).forEach(b=>{
@@ -498,6 +504,7 @@ function migrateState(){
     if(!TC_LIST.includes(t.tc)) t.tc='blitz';
     if(!t.gamesLog) t.gamesLog=[];
     if(t.roundInProgress===undefined) t.roundInProgress=false;
+    if(t.roundsDone===undefined) t.roundsDone=0;
     // backfill gid for any legacy entries without one
     t.gamesLog.forEach(g=>{ if(!g.gid) g.gid = uid(); if(!g.moves) g.moves=[]; });
   });
@@ -505,6 +512,7 @@ function migrateState(){
 
 /* ===================== UTIL ===================== */
 function uid(){ return Math.random().toString(36).slice(2,10); }
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
 function toast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
@@ -542,6 +550,7 @@ function toggleSimPause(){
   simPaused = !simPaused;
   document.getElementById('pause-btn').textContent = simPaused ? '▶ Fortsetzen' : '⏸ Pause';
   toast(simPaused ? 'Simulation pausiert.' : 'Simulation läuft weiter.');
+  if(!simPaused){ buildRounds(); } // immediately resume pairing/playing instead of waiting for the next timer tick
 }
 
 /* ===================== BOT CREATION ===================== */
@@ -585,6 +594,7 @@ function createBot(){
   nameInput.value='';
   saveState(true);
   renderAll();
+  buildRounds();
   toast(`Bot "${name}" erstellt (1500 Elo) und ${joined} offenen Turnieren beigetreten.`);
 }
 
@@ -600,10 +610,15 @@ function deleteBot(id){
     t.participants = t.participants.filter(p=>p!==id);
     delete t.standings[id];
   });
-  matchQueue = matchQueue.filter(m=>m.idWhite!==id && m.idBlack!==id);
-  if(activeJob && (activeJob.idWhite===id || activeJob.idBlack===id)) activeJob = null;
+  Object.keys(swissQueues).forEach(tId=>{
+    swissQueues[tId] = (swissQueues[tId]||[]).filter(p=>p.idWhite!==id && p.idBlack!==id);
+  });
+  activeJobs.filter(j=>j.idWhite===id || j.idBlack===id).forEach(j=>abortJob(j));
+  busyBots.delete(id);
+  if(playBot && playBot.id===id) backToPicker();
   saveState(true);
   renderAll();
+  buildRounds();
 }
 
 function renderBots(){
@@ -613,11 +628,12 @@ function renderBots(){
   if(bots.length===0){ wrap.innerHTML = '<div class="empty">Noch keine Bots erstellt.</div>'; return; }
   wrap.innerHTML = bots.map(b=>{
     const title = botTitle(b);
-    const skill = levelToSkill(b.level);
+    const depth = levelToDepth(b.level);
+    const blunderPct = Math.round(levelToBlunderChance(b.level)*100);
     return `
     <div class="bot-card" style="border-left:3px solid ${escapeHtml(b.color||'#a3d160')};">
       <h3><span class="bot-avatar">${b.flag||'🤖'}</span>${escapeHtml(b.name)} ${title?`<span class="bot-tag title">${title}</span>`:''}<span class="bot-tag" style="background:var(--accent-dark);">BOT</span></h3>
-      <div class="stat-row"><span>Level</span><b>${b.level} / 8 (Stockfish Skill ${skill})</b></div>
+      <div class="stat-row"><span>Level</span><b>${b.level} / 8 (Suchtiefe ${depth}, Fehlerquote ~${blunderPct}%)</b></div>
       <div class="stat-row"><span>Stil</span><b>${STYLE_LABEL[b.style]||'Solide'}</b></div>
       <div class="stat-row"><span>Eröffnung</span><b>${OPENING_LABEL[b.opening]||'Flexibel'}</b></div>
       <div class="stat-row"><span>Bevorzugte TC</span><b>${TC_SHORT[b.tc]||'Blitz'}</b></div>
@@ -684,6 +700,7 @@ function createTournament(opts){
   });
   state.tournaments[id] = t;
   saveState(true);
+  buildRounds(); // builds the first swiss round (if applicable) and/or starts arena pairings immediately
   if(!opts){
     document.getElementById('t-name').value='';
     renderAll();
@@ -697,9 +714,8 @@ function endTournamentEarly(){
   if(!t) return;
   t.finishedEarly = true;
   t.roundInProgress = false;
-  matchQueue = matchQueue.filter(m=>m.tId!==t.id);
-  if(activeJob && activeJob.tId===t.id) activeJob = null;
-  delete liveGames[t.id];
+  delete swissQueues[t.id];
+  activeJobs.filter(j=>j.tId===t.id).forEach(j=>abortJob(j));
   saveState(true);
   renderTDetail();
   toast(`Turnier "${t.name}" wurde beendet.`);
@@ -731,6 +747,7 @@ function renderTRow(t){
   const badge = status==='live' ? '<span class="badge live">LIVE</span>' : status==='finished' ? '<span class="badge finished">Beendet</span>' : '<span class="badge system">Geplant</span>';
   const sys = t.system ? '<span class="badge system" style="margin-left:6px;">Stündlich</span>' : '';
   const remaining = status==='live' ? Math.max(0, Math.round((t.startTime + t.durationMin*60000 - Date.now())/60000)) : null;
+  const liveCount = activeJobs.filter(j=>j.tId===t.id).length;
   return `<div class="t-row" onclick="openTournament('${t.id}')">
     <div>
       <div class="t-name">${escapeHtml(t.name)} ${badge}${sys}</div>
@@ -739,6 +756,7 @@ function renderTRow(t){
         <span class="badge tc">${TC_LABEL[t.tc]||''}</span>
         <span class="tag">${t.format==='swiss'?'Schweizer System':'Arena'}</span>
         ${t.rated?'<span class="badge rated">Gewertet</span>':''}
+        ${status==='live' && liveCount>0 ? `<span class="badge live">${liveCount} Partie(n) laufen</span>` : ''}
         ${status==='live' ? `<span class="small">noch ~${remaining} Min</span>` : ''}
       </div>
     </div>
@@ -750,6 +768,7 @@ function renderLobby(){
   const ts = Object.values(state.tournaments).sort((a,b)=>b.startTime-a.startTime).slice(0,8);
   document.getElementById('lobby-t-list').innerHTML = ts.length ? ts.map(renderTRow).join('') : '<div class="empty">Noch keine Turniere.</div>';
   document.getElementById('stat-live-t').textContent = Object.values(state.tournaments).filter(t=>getTStatus(t)==='live').length;
+  document.getElementById('stat-live-games').textContent = activeJobs.length;
   document.getElementById('stat-games').textContent = state.gamesPlayed;
   const botCount = Object.keys(state.bots).length;
   document.getElementById('lobby-warn').innerHTML = botCount<2
@@ -774,17 +793,21 @@ function renderTDetail(){
   const status = getTStatus(t);
   document.getElementById('td-name').textContent = t.name;
   document.getElementById('td-meta').textContent =
-    `${status==='live'?'Live':status==='finished'?'Beendet':'Geplant'} · ${TC_LABEL[t.tc]} · ${t.format==='swiss'?'Schweizer System ('+t.rounds+' Runden)':'Arena'} · ${t.rated?'Gewertet':'Ungewertet'} · ${t.participants.length} Teilnehmer (Level ${t.minLevel}-${t.maxLevel})`;
+    `${status==='live'?'Live':status==='finished'?'Beendet':'Geplant'} · ${TC_LABEL[t.tc]} · ${t.format==='swiss'?'Schweizer System ('+t.rounds+' Runden, Runde '+(t.roundsDone+1)+')':'Arena'} · ${t.rated?'Gewertet':'Ungewertet'} · ${t.participants.length} Teilnehmer (Level ${t.minLevel}-${t.maxLevel})`;
   document.getElementById('td-end-btn').style.display = status==='live' ? 'inline-block' : 'none';
 
-  const lg = liveGames[t.id];
+  const jobs = activeJobs.filter(j=>j.tId===t.id);
   const liveCard = document.getElementById('td-live-card');
-  if(status==='live' && lg && lg.moves.length>0){
+  if(status==='live' && jobs.length>0){
     liveCard.style.display='block';
-    renderMiniBoardFromMoves('td-live-board', lg.moves);
-    document.getElementById('td-live-label').innerHTML = `<b>${escapeHtml(lg.white)}</b> vs <b>${escapeHtml(lg.black)}</b> &middot; Zug ${lg.moves.length}`;
-    let mv=''; for(let i=0;i<lg.moves.length;i+=2){ mv += `${(i/2+1)}. ${lg.moves[i]||''} ${lg.moves[i+1]||''}<br>`; }
-    document.getElementById('td-live-moves').innerHTML = mv;
+    document.getElementById('td-live-count').textContent = jobs.length;
+    document.getElementById('td-live-grid').innerHTML = jobs.map((job,idx)=>`
+      <div class="bot-card">
+        <div class="small"><b>${escapeHtml(job.bw.name)}</b> vs <b>${escapeHtml(job.bb.name)}</b></div>
+        <div class="small" style="margin-top:2px;">Zug ${Math.ceil(job.moves.length/2)} (${job.moves.length} Halbzüge)</div>
+        <div class="mini-board" id="td-live-board-${idx}"></div>
+      </div>`).join('');
+    jobs.forEach((job,idx)=>renderMiniBoardFromMoves('td-live-board-'+idx, job.moves));
   } else {
     liveCard.style.display='none';
   }
@@ -835,14 +858,36 @@ function renderLeaderboard(){
     </tr>`).join('') : '<tr><td colspan="7" class="empty">Noch keine Bots.</td></tr>';
 }
 
-/* ===================== CHESS ENGINE (for bots) ===================== */
+/* ===================== CHESS ENGINE (built-in, no external network/Worker dependency) =====================
+   NOTE: a previous version of this file tried to load a real Stockfish engine in a Web Worker, but the
+   function that started it (initStockfish) was never actually called anywhere — so the app always silently
+   ran on the weak placeholder fallback engine, which is why moves looked nearly random and ignored the
+   level/think-time settings. Rather than depend on a fragile external Worker download (which is also often
+   blocked by sandboxed environments), this version ships a single self-contained engine that is used
+   consistently everywhere and genuinely respects level, style and timing settings. */
+
+const PIECE_VALUE = {p:100,n:320,b:330,r:500,q:900,k:0};
+const PST_PAWN=[0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10, 5,5,10,25,25,10,5,5, 0,0,0,20,20,0,0,0, 5,-5,-10,0,0,-10,-5,5, 5,10,10,-20,-20,10,10,5, 0,0,0,0,0,0,0,0];
+const PST_KNIGHT=[-50,-40,-30,-30,-30,-30,-40,-50, -40,-20,0,0,0,0,-20,-40, -30,0,10,15,15,10,0,-30, -30,5,15,20,20,15,5,-30, -30,0,15,20,20,15,0,-30, -30,5,10,15,15,10,5,-30, -40,-20,0,5,5,0,-20,-40, -50,-40,-30,-30,-30,-30,-40,-50];
+const PST_BISHOP=[-20,-10,-10,-10,-10,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,10,10,5,0,-10, -10,5,5,10,10,5,5,-10, -10,0,10,10,10,10,0,-10, -10,10,10,10,10,10,10,-10, -10,5,0,0,0,0,5,-10, -20,-10,-10,-10,-10,-10,-10,-20];
+const PST_ROOK=[0,0,0,0,0,0,0,0, 5,10,10,10,10,10,10,5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, 0,0,0,5,5,0,0,0];
+const PST_QUEEN=[-20,-10,-10,-5,-5,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,5,5,5,0,-10, -5,0,5,5,5,5,0,-5, 0,0,5,5,5,5,0,-5, -10,5,5,5,5,5,0,-10, -10,0,5,0,0,0,0,-10, -20,-10,-10,-5,-5,-10,-10,-20];
+const PST_KING=[-30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -20,-30,-30,-40,-40,-30,-30,-20, -10,-20,-20,-20,-20,-20,-20,-10, 20,20,0,0,0,0,20,20, 20,30,10,0,0,10,30,20];
+const PST = {p:PST_PAWN,n:PST_KNIGHT,b:PST_BISHOP,r:PST_ROOK,q:PST_QUEEN,k:PST_KING};
+
 function evalBoard(game){
-  const values={p:1,n:3,b:3.1,r:5,q:9,k:0};
+  const board = game.board();
   let score=0;
-  game.board().forEach(row=>row.forEach(sq=>{
-    if(sq) score += values[sq.type] * (sq.color==='w'?1:-1);
-  }));
-  return score;
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const sq = board[r][c];
+      if(!sq) continue;
+      const idx = sq.color==='w' ? r*8+c : (7-r)*8+c;
+      const val = PIECE_VALUE[sq.type] + PST[sq.type][idx];
+      score += sq.color==='w' ? val : -val;
+    }
+  }
+  return score/100; // pawn units, same scale the rest of the app expects
 }
 function minimax(game, depth, alpha, beta, maximizing){
   if(depth===0 || game.game_over()) return evalBoard(game);
@@ -880,15 +925,24 @@ function styleAdjust(san, color, style){
   }
   return color==='w'?bonus:-bonus;
 }
-function botMoveLocal(game, bot){
+// level 1-8 -> search depth 1-4 (kept shallow on purpose since several boards run at once)
+function levelToDepth(level){ return Math.max(1, Math.min(4, Math.ceil(level/2))); }
+// level 1-8 -> chance of playing a random legal move instead of the calculated one (weak bots are sloppy, not literally random)
+function levelToBlunderChance(level){ return Math.max(0, (8-level)/7) * 0.28; }
+
+function computeBotMove(game, bot){
   const moves = game.moves();
   if(moves.length===0) return null;
-  const chaosFactor = bot.style==='chaotic' ? 1.6 : 1;
-  const blunderChance = (9-bot.level) * 0.045 * chaosFactor;
+  if(game.history().length===0 && bot.opening && bot.opening!=='any'){
+    const wanted = OPENING_FIRST_MOVE[bot.opening];
+    if(wanted && moves.includes(wanted)) return wanted;
+  }
+  const chaosFactor = bot.style==='chaotic' ? 1.5 : 1;
+  const blunderChance = levelToBlunderChance(bot.level) * chaosFactor;
   if(Math.random() < blunderChance){
     return moves[Math.floor(Math.random()*moves.length)];
   }
-  const depth = Math.min(1 + Math.floor(bot.level/3), 3);
+  const depth = levelToDepth(bot.level);
   const whiteToMove = game.turn()==='w';
   let bestMove = moves[0];
   let bestVal = whiteToMove ? -Infinity : Infinity;
@@ -902,140 +956,18 @@ function botMoveLocal(game, bot){
   return bestMove;
 }
 
-/* ===================== STOCKFISH ENGINE (real engine moves, runs in a Worker) ===================== */
-const STOCKFISH_URL = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
-let sfWorker = null;
-let sfReady = false;
-let sfFailed = false;
-let sfQueue = Promise.resolve();
-let sfPendingResolve = null;
-let sfMultiPvLines = {};
-
-function setEngineStatus(text, isWarnToast){
-  const txt = document.getElementById('perf-led-text');
-  if(txt && !queueRunning) txt.textContent = text;
-  if(isWarnToast) toast(text);
-}
-
-function waitForMessage(worker, includes, timeoutMs){
-  return new Promise((resolve, reject)=>{
-    const timer = setTimeout(()=>{ worker.removeEventListener('message', onMsg); reject(new Error('Zeitüberschreitung beim Warten auf: '+includes)); }, timeoutMs);
-    function onMsg(e){
-      const line = typeof e.data === 'string' ? e.data : '';
-      if(line.indexOf(includes)>=0){
-        clearTimeout(timer);
-        worker.removeEventListener('message', onMsg);
-        resolve(line);
-      }
-    }
-    worker.addEventListener('message', onMsg);
+// Resolves with the bot's move after genuinely waiting ~minThinkMs (so the configured think-time/speed
+// setting is actually honored instead of resolving near-instantly). In turbo (catch-up) mode the wait
+// is collapsed to near-zero so offline tournaments can fast-forward instead of staying frozen.
+function getBotMoveAsync(game, bot, minThinkMs){
+  return new Promise(resolve=>{
+    setTimeout(()=>{
+      const mv = computeBotMove(game, bot);
+      const inTurbo = turboMode && Date.now() < turboUntil;
+      const wait = inTurbo ? 4 : Math.max(0, minThinkMs||0);
+      setTimeout(()=>resolve(mv), wait);
+    }, 0);
   });
-}
-
-async function initStockfish(){
-  try{
-    if(typeof Worker === 'undefined') throw new Error('Web Worker werden von diesem Browser nicht unterstützt');
-    setEngineStatus('Lade Stockfish…', false);
-    const resp = await fetch(STOCKFISH_URL);
-    if(!resp.ok) throw new Error('Stockfish-Download fehlgeschlagen: HTTP '+resp.status);
-    const code = await resp.text();
-    // load cross-origin worker script via blob (workers can't be created directly from a foreign URL)
-    const blobUrl = URL.createObjectURL(new Blob([code], {type:'application/javascript'}));
-    sfWorker = new Worker(blobUrl);
-    sfWorker.onerror = (e)=>{ console.error('Stockfish worker runtime error', e); };
-    const uciokP = waitForMessage(sfWorker, 'uciok', 10000);
-    sfWorker.postMessage('uci');
-    await uciokP;
-    const readyP = waitForMessage(sfWorker, 'readyok', 8000);
-    sfWorker.postMessage('isready');
-    await readyP;
-    sfWorker.postMessage('setoption name MultiPV value 3');
-    sfWorker.addEventListener('message', handleEngineLine);
-    sfReady = true;
-    setEngineStatus('Stockfish bereit', false);
-  }catch(e){
-    console.error('Stockfish-Initialisierung fehlgeschlagen, nutze Ersatz-Engine:', e);
-    sfFailed = true;
-    setEngineStatus('Stockfish nicht verfügbar — Ersatz-Engine aktiv', true);
-  }
-}
-
-function handleEngineLine(e){
-  const line = typeof e.data === 'string' ? e.data : '';
-  if(line.indexOf('info')===0 && line.indexOf('multipv')>=0 && line.indexOf(' pv ')>=0){
-    const mpvMatch = line.match(/multipv (\d+)/);
-    const pvMatch = line.match(/ pv (\S+)/);
-    if(mpvMatch && pvMatch) sfMultiPvLines[mpvMatch[1]] = pvMatch[1];
-  } else if(line.indexOf('bestmove')===0){
-    const parts = line.split(' ');
-    const mv = parts[1];
-    const candidates = Object.keys(sfMultiPvLines).sort((a,b)=>a-b).map(k=>sfMultiPvLines[k]);
-    sfMultiPvLines = {};
-    if(sfPendingResolve){
-      const r = sfPendingResolve; sfPendingResolve = null;
-      r({ best: (mv && mv!=='(none)') ? mv : null, candidates });
-    }
-  }
-}
-
-// bot level 1-8 -> Stockfish "Skill Level" 0-20 (0 = weakest/most blunder-prone, 20 = full strength)
-function levelToSkill(level){ return Math.max(0, Math.min(20, Math.round((level-1)/7*20))); }
-function levelToDepthCap(level){ return Math.max(2, Math.min(16, Math.round(2+level*1.7))); }
-
-// single shared engine -> requests are queued and processed strictly one at a time
-function requestEngineMove(fen, bot){
-  const job = ()=> new Promise((resolve)=>{
-    sfPendingResolve = resolve;
-    const skill = levelToSkill(bot.level);
-    const depthCap = levelToDepthCap(bot.level);
-    const movetime = bot.thinkTime || 300;
-    sfWorker.postMessage('setoption name Skill Level value '+skill);
-    sfWorker.postMessage('position fen '+fen);
-    sfWorker.postMessage('go depth '+depthCap+' movetime '+movetime);
-  });
-  sfQueue = sfQueue.then(job, job);
-  return sfQueue;
-}
-
-// pick among Stockfish's top candidate moves according to the bot's style
-function pickFromCandidates(game, bot, candidates, bestUci){
-  const pool = (candidates && candidates.length) ? candidates : (bestUci ? [bestUci] : []);
-  if(pool.length===0) return bestUci;
-  if(bot.style==='aggressive'){
-    for(const uci of pool){ if(game.get(uci.slice(2,4))) return uci; } // prefer a capture among the top lines
-    return pool[0];
-  }
-  if(bot.style==='chaotic'){
-    return pool[Math.floor(Math.random()*pool.length)];
-  }
-  return pool[0]; // solid: always the engine's actual best move
-}
-
-// returns a SAN move string (or null) — uses real Stockfish when available, otherwise the local fallback engine
-async function getBotMoveAsync(game, bot){
-  const moves = game.moves();
-  if(moves.length===0) return null;
-
-  if(game.history().length===0 && bot.opening && bot.opening!=='any'){
-    const wanted = OPENING_FIRST_MOVE[bot.opening];
-    if(wanted && moves.includes(wanted)) return wanted;
-  }
-
-  if(sfReady && !sfFailed){
-    try{
-      const fen = game.fen();
-      const { best, candidates } = await requestEngineMove(fen, bot);
-      const uci = pickFromCandidates(game, bot, candidates, best) || best;
-      if(uci && uci.length>=4){
-        const from = uci.slice(0,2), to = uci.slice(2,4), promo = uci.length>4 ? uci.slice(4,5) : undefined;
-        const verbose = game.moves({verbose:true}).find(v=>v.from===from && v.to===to && (!promo || v.promotion===promo));
-        if(verbose) return verbose.san;
-      }
-    }catch(e){
-      console.error('Stockfish-Zuganfrage fehlgeschlagen, nutze Ersatz-Engine für diesen Zug:', e);
-    }
-  }
-  return botMoveLocal(game, bot);
 }
 
 function updateElo(t, idWhite, idBlack, result){
@@ -1053,55 +985,124 @@ function updateElo(t, idWhite, idBlack, result){
   bb.ratings[tc] = rb + K*(scoreB-expB);
 }
 
-/* ============= TOURNAMENT SIMULATION (one ply per tick = never blocks) ============= */
+/* ============= TOURNAMENT SIMULATION =====================================================
+   Real concurrency: up to MAX_CONCURRENT_BOARDS games run side by side (activeJobs is an array,
+   not a single slot). Arena tournaments pair freed-up bots again the instant a board becomes
+   free (no waiting for a whole "round" to finish). Swiss tournaments build one round's pairings
+   at a time, but all pairings of that round are played concurrently instead of one after another. */
+
 function setPerfBusy(busy){
   const led = document.getElementById('perf-led');
   const txt = document.getElementById('perf-led-text');
-  led.classList.toggle('busy', busy);
-  txt.textContent = busy ? 'Simuliert Partien…' : 'Engine bereit';
+  led.classList.toggle('busy', busy || (turboMode && Date.now()<turboUntil));
+  if(turboMode && Date.now()<turboUntil){ txt.textContent = `Hole verpasste Partien nach… (${activeJobs.length} laufen)`; }
+  else { txt.textContent = busy ? `${activeJobs.length} Partie(n) laufen gleichzeitig` : 'Engine bereit'; }
 }
 
 function buildRounds(){
+  if(simPaused) return;
   Object.values(state.tournaments).forEach(t=>{
     if(getTStatus(t)!=='live') return;
-    if(t.roundInProgress) return;
-    const ids = t.participants.filter(id=>state.bots[id]);
-    if(ids.length<2) return;
-    if(t.format==='swiss' && t.roundsDone>=t.rounds){ t.finishedEarly=true; return; }
-    const shuffled = [...ids].sort(()=>Math.random()-0.5);
-    let queued=0;
-    for(let i=0;i+1<shuffled.length;i+=2){
-      const idA=shuffled[i], idB=shuffled[i+1];
-      const whiteFirst = Math.random()<0.5;
-      matchQueue.push({ tId: t.id, idWhite: whiteFirst?idA:idB, idBlack: whiteFirst?idB:idA });
-      queued++;
+    if(t.format!=='swiss') return; // arena pairs continuously inside fillSlots(), nothing to pre-build
+    const queue = swissQueues[t.id];
+    const hasActiveForT = activeJobs.some(j=>j.tId===t.id);
+    if((queue && queue.length>0) || hasActiveForT) return; // current round still running
+    if(t.roundInProgress){
+      t.roundInProgress = false;
+      t.roundsDone = (t.roundsDone||0)+1;
     }
-    if(queued>0) t.roundInProgress = true;
+    if(t.roundsDone >= t.rounds){ t.finishedEarly = true; delete swissQueues[t.id]; return; }
+    const ids = t.participants.filter(id=>state.bots[id] && !busyBots.has(id));
+    if(ids.length<2) return;
+    const shuffled = [...ids].sort(()=>Math.random()-0.5);
+    const pairs = [];
+    for(let i=0;i+1<shuffled.length;i+=2){
+      const a=shuffled[i], b=shuffled[i+1];
+      const whiteFirst = Math.random()<0.5;
+      pairs.push({ idWhite: whiteFirst?a:b, idBlack: whiteFirst?b:a });
+    }
+    if(pairs.length>0){ swissQueues[t.id] = pairs; t.roundInProgress = true; }
   });
-  if((matchQueue.length>0 || activeJob) && !queueRunning) runQueue();
+  fillSlots();
 }
 
-function runQueue(){
-  if(queueRunning) return;
-  queueRunning = true;
-  setPerfBusy(true);
-  tickSimulation();
-}
-
-function checkRoundDone(tId){
-  const t = state.tournaments[tId];
-  if(!t) return;
-  const stillQueued = matchQueue.some(m=>m.tId===tId) || (activeJob && activeJob.tId===tId);
-  if(!stillQueued){
-    t.roundInProgress = false;
-    if(t.format==='swiss') t.roundsDone++;
+// Tries to start as many new games as there are free boards (up to MAX_CONCURRENT_BOARDS).
+function fillSlots(){
+  if(simPaused){ setPerfBusy(activeJobs.length>0); return; }
+  let guard=0;
+  while(activeJobs.length < MAX_CONCURRENT_BOARDS && guard<100){
+    guard++;
+    let started=false;
+    for(const t of Object.values(state.tournaments)){
+      if(getTStatus(t)!=='live') continue;
+      if(activeJobs.length>=MAX_CONCURRENT_BOARDS) break;
+      if(t.format==='swiss'){
+        const q = swissQueues[t.id];
+        if(q && q.length){
+          const idx = q.findIndex(p=>state.bots[p.idWhite] && state.bots[p.idBlack] && !busyBots.has(p.idWhite) && !busyBots.has(p.idBlack));
+          if(idx>=0){
+            const pair = q.splice(idx,1)[0];
+            startJob(t, pair.idWhite, pair.idBlack);
+            started=true;
+          }
+        }
+      } else {
+        const free = t.participants.filter(id=>state.bots[id] && !busyBots.has(id));
+        if(free.length>=2){
+          const shuffled=[...free].sort(()=>Math.random()-0.5);
+          const whiteFirst = Math.random()<0.5;
+          startJob(t, whiteFirst?shuffled[0]:shuffled[1], whiteFirst?shuffled[1]:shuffled[0]);
+          started=true;
+        }
+      }
+    }
+    if(!started) break;
   }
+  setPerfBusy(activeJobs.length>0);
+}
+
+function startJob(t, idWhite, idBlack){
+  const bw = state.bots[idWhite], bb = state.bots[idBlack];
+  if(!bw || !bb) return;
+  busyBots.add(idWhite); busyBots.add(idBlack);
+  const job = { tId:t.id, idWhite, idBlack, bw, bb, game:new Chess(), moves:[] };
+  activeJobs.push(job);
+  runJobLoop(job); // fire-and-forget: this game now plays independently alongside any others
+}
+
+function abortJob(job){
+  busyBots.delete(job.idWhite); busyBots.delete(job.idBlack);
+  activeJobs = activeJobs.filter(j=>j!==job);
+}
+
+async function runJobLoop(job){
+  while(true){
+    if(simPaused){ await sleep(PAUSED_TICK_MS); continue; }
+    const t = state.tournaments[job.tId];
+    if(!t || getTStatus(t)!=='live' || !state.bots[job.idWhite] || !state.bots[job.idBlack]){
+      abortJob(job);
+      buildRounds();
+      return;
+    }
+    const game = job.game;
+    if(game.game_over() || job.moves.length>=160) break;
+    const bot = game.turn()==='w' ? job.bw : job.bb;
+    let mv = null;
+    try{ mv = await getBotMoveAsync(game, bot, bot.thinkTime||300); }
+    catch(e){ console.error('Zugberechnung fehlgeschlagen:', e); }
+    if(!activeJobs.includes(job)) return; // job was cancelled while we were "thinking"
+    if(mv){ game.move(mv); job.moves.push(mv); } else { break; }
+    refreshOpenViews(false);
+    await sleep((turboMode && Date.now()<turboUntil) ? 0 : PLY_YIELD_MS);
+  }
+  finalizeJob(job);
 }
 
 function finalizeJob(job){
+  busyBots.delete(job.idWhite); busyBots.delete(job.idBlack);
+  activeJobs = activeJobs.filter(j=>j!==job);
   const t = state.tournaments[job.tId];
-  delete liveGames[job.tId];
-  if(!t || getTStatus(t)!=='live'){ checkRoundDone(job.tId); return; }
+  if(!t || getTStatus(t)!=='live'){ fillSlots(); return; }
   const game = job.game;
   let result;
   if(game.in_checkmate()) result = game.turn()==='w' ? '0-1' : '1-0';
@@ -1117,54 +1118,9 @@ function finalizeJob(job){
   t.gamesLog.push({ gid: uid(), white: job.bw.name, black: job.bb.name, result, plies, moves: job.moves.slice(), ts: Date.now() });
   if(t.gamesLog.length > MAX_LOGS_PER_TOURNAMENT) t.gamesLog.shift();
   state.gamesPlayed++;
-  checkRoundDone(job.tId);
   saveState(false);
-}
-
-async function tickSimulation(){
-  if(simPaused){
-    setTimeout(tickSimulation, PAUSED_TICK_MS);
-    return;
-  }
-  if(!activeJob){
-    if(matchQueue.length===0){
-      queueRunning=false;
-      setPerfBusy(false);
-      saveState(false);
-      refreshOpenViews(true);
-      return;
-    }
-    const job = matchQueue.shift();
-    const t = state.tournaments[job.tId];
-    if(!t || getTStatus(t)!=='live'){ checkRoundDone(job.tId); setTimeout(tickSimulation, MOVE_TICK_MS); return; }
-    const bw = state.bots[job.idWhite], bb = state.bots[job.idBlack];
-    if(!bw || !bb){ checkRoundDone(job.tId); setTimeout(tickSimulation, MOVE_TICK_MS); return; }
-    activeJob = { tId: job.tId, idWhite: job.idWhite, idBlack: job.idBlack, bw, bb, game: new Chess(), moves: [] };
-    liveGames[job.tId] = { white: bw.name, black: bb.name, moves: activeJob.moves };
-  }
-
-  // play exactly one ply per tick -> the worker (Stockfish) or fallback search runs without blocking the UI thread
-  const job = activeJob;
-  const game = job.game;
-  if(!game.game_over() && job.moves.length < 160){
-    const bot = game.turn()==='w' ? job.bw : job.bb;
-    const m = await getBotMoveAsync(game, bot);
-    if(activeJob !== job){
-      // job was cancelled (bot deleted / tournament ended) while we were waiting on the engine -> drop this stale move
-      setTimeout(tickSimulation, MOVE_TICK_MS);
-      return;
-    }
-    if(m){ game.move(m); job.moves.push(m); }
-    else { job.moves.push(null); } // safety, shouldn't happen since game_over() would catch it
-  }
-
-  if(game.game_over() || job.moves.length >= 160){
-    finalizeJob(job);
-    if(activeJob === job) activeJob = null;
-  } else {
-    refreshOpenViews(false); // throttled, cheap
-  }
-  setTimeout(tickSimulation, MOVE_TICK_MS);
+  buildRounds(); // this board just freed up: re-pair immediately (arena), or advance the swiss round if it just finished
+  refreshOpenViews(true);
 }
 
 function refreshOpenViews(force){
@@ -1178,8 +1134,26 @@ function refreshOpenViews(force){
   if(document.getElementById('view-bots').classList.contains('active')) renderBots();
 }
 
+/* ===================== PIECES (clean SVG set, no emoji-font issues) =====================
+   Plain Unicode chess glyphs render inconsistently across browsers/OSes — some substitute their
+   own colored emoji-style glyphs and ignore the CSS color entirely, which is why pieces looked
+   "wrong". These are simple original vector shapes (viewBox 0 0 45 45) so colors and sizing are
+   always exactly what we say, on every device. */
+const PIECE_PATHS = {
+  p: '<circle cx="22.5" cy="14" r="6.5"/><path d="M16,33 C16,26 19,22.5 22.5,22.5 C26,22.5 29,26 29,33 Z"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>',
+  r: '<rect x="13" y="10" width="4" height="6"/><rect x="20.5" y="10" width="4" height="6"/><rect x="28" y="10" width="4" height="6"/><rect x="12" y="16" width="21" height="4"/><path d="M15,20 L30,20 L28,33 L17,33 Z"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>',
+  n: '<path d="M11,33 C11,33 12,24 17,20 C15.5,18 14.5,15 15.5,12.5 C16.3,10.5 18.5,10 19.2,11.7 C19.2,11.7 21.5,9.5 25,9.5 C30.5,9.5 34,14 34,20 L34,33 Z"/><circle cx="17.3" cy="13.6" r="1" fill="rgba(0,0,0,.55)" stroke="none"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>',
+  b: '<circle cx="22.5" cy="8.5" r="2.3"/><path d="M22.5,11.5 L27.5,19.5 C29.5,23.5 28.5,27.5 25,29.5 C29,30.6 31,32.5 31,32.5 L14,32.5 C14,32.5 16,30.6 20,29.5 C16.5,27.5 15.5,23.5 17.5,19.5 Z"/><line x1="18.5" y1="19" x2="26.5" y2="19" stroke-width="1.4"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>',
+  q: '<circle cx="12" cy="11" r="2.2"/><circle cx="22.5" cy="8" r="2.4"/><circle cx="33" cy="11" r="2.2"/><circle cx="17.2" cy="11.5" r="1.8"/><circle cx="27.8" cy="11.5" r="1.8"/><path d="M12,13.5 L33,13.5 L30.5,29.5 L14.5,29.5 Z"/><rect x="11" y="30.5" width="23" height="3.3" rx="1"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>',
+  k: '<rect x="21" y="5" width="3" height="8"/><rect x="18" y="8" width="9" height="3"/><path d="M14,16 L31,16 L29,32 L16,32 Z"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>'
+};
+function pieceMarkup(type, color){
+  const fill = color==='w' ? '#f7f5ef' : '#2b2926';
+  const stroke = color==='w' ? '#3a3733' : '#0a0a09';
+  return `<svg class="piece-svg" viewBox="0 0 45 45"><g fill="${fill}" stroke="${stroke}" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">${PIECE_PATHS[type]||''}</g></svg>`;
+}
+
 /* ===================== MINI BOARD (live + replay) ===================== */
-const PIECE_SYMBOLS = {p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
 function renderMiniBoardFromMoves(elId, moves, uptoIdx){
   const game = new Chess();
   const n = (uptoIdx===undefined) ? moves.length : uptoIdx;
@@ -1193,11 +1167,7 @@ function renderMiniBoardFromMoves(elId, moves, uptoIdx){
       const piece = board[r][c];
       const div = document.createElement('div');
       div.className = 'sq ' + (((r+c)%2===0)?'light':'dark');
-      if(piece){
-        div.textContent = PIECE_SYMBOLS[piece.type];
-        div.style.color = piece.color==='w' ? '#fdfdfd' : '#222';
-        div.style.textShadow = piece.color==='w' ? '0 0 2px #000' : '0 0 2px #fff8';
-      }
+      if(piece) div.innerHTML = pieceMarkup(piece.type, piece.color);
       el.appendChild(div);
     }
   }
@@ -1294,11 +1264,7 @@ function renderBoard(){
         div.classList.add('legal');
         if(piece) div.classList.add('capture');
       }
-      if(piece){
-        div.textContent = PIECE_SYMBOLS[piece.type];
-        div.style.color = piece.color==='w' ? '#fdfdfd' : '#222';
-        div.style.textShadow = piece.color==='w' ? '0 0 2px #000' : '0 0 2px #fff8';
-      }
+      if(piece) div.innerHTML = pieceMarkup(piece.type, piece.color);
       div.onclick = ()=>onSquareClick(sqName);
       boardEl.appendChild(div);
     }
@@ -1319,7 +1285,7 @@ function onSquareClick(sqName){
       logHistory();
       updatePlayStatus();
       if(!playGame.game_over()){
-        setTimeout(doBotMove, Math.max(300, playBot.speed*1000));
+        doBotMove(); // think-time delay is now handled inside getBotMoveAsync itself
       }
       return;
     }
@@ -1331,10 +1297,10 @@ function onSquareClick(sqName){
 }
 
 async function doBotMove(){
-  if(playGame.game_over()) { updatePlayStatus(); return; }
-  const liveBot = Object.assign({}, playBot, { thinkTime: Math.max(80, Math.round(playBot.speed*1000)) });
-  const m = await getBotMoveAsync(playGame, liveBot);
-  if(playGame !== playGame) return; // safety no-op (kept for symmetry with tournament guard pattern)
+  if(playGame.game_over()){ updatePlayStatus(); return; }
+  const gameRef = playGame, bot = playBot;
+  const m = await getBotMoveAsync(gameRef, bot, Math.max(300, bot.speed*1000));
+  if(playGame !== gameRef) return; // user reset/changed the game while the bot was "thinking"
   if(m){
     const verbose = playGame.moves({verbose:true}).find(v=>v.san===m);
     playGame.move(m);
@@ -1377,6 +1343,25 @@ function renderAll(){
   renderLeaderboard();
 }
 
+// A browser tab can't run while it's closed — there's no server keeping this alive in the background.
+// What we *can* do: remember when we were last active, and if there's a meaningful gap on reload,
+// briefly fast-forward (near-zero move delay) so live tournaments don't just sit frozen — they catch
+// up to roughly where they'd be, then settle back into normal real-time pace automatically.
+function maybeStartCatchUp(){
+  const last = state.lastActiveTs;
+  if(!last) return;
+  const gapMs = Date.now() - last;
+  if(gapMs < 90000) return; // less than 1.5 min away - nothing meaningful to catch up
+  const hasLiveWork = Object.values(state.tournaments).some(t=>getTStatus(t)==='live');
+  if(!hasLiveWork) return;
+  turboMode = true;
+  // proportional to how long we were away, capped so the tab doesn't hang
+  turboUntil = Date.now() + Math.min(20000, Math.max(3000, gapMs/300));
+  const mins = Math.round(gapMs/60000);
+  toast(mins>=1 ? `Willkommen zurück! Hole Partien nach (warst ${mins} Min. weg)…` : 'Hole verpasste Partien nach…');
+  setTimeout(()=>{ turboMode=false; setPerfBusy(activeJobs.length>0); }, turboUntil-Date.now()+50);
+}
+
 (async function init(){
   if(typeof Chess === 'undefined'){
     document.body.insertAdjacentHTML('afterbegin', '<div class="warn" style="margin:14px;">Schach-Engine konnte nicht geladen werden (Netzwerk blockiert cdnjs.cloudflare.com). Bitte Seite neu laden.</div>');
@@ -1384,6 +1369,8 @@ function renderAll(){
   }
   populateLevelSelects();
   await loadState();
+  maybeStartCatchUp();
+  buildRounds(); // start pairing/playing immediately instead of waiting up to 8s for the first timer tick
   setInterval(ensureHourly, 30000);
   setInterval(buildRounds, ROUND_BUILD_INTERVAL_MS);
 })();
