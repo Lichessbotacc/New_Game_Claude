@@ -1210,27 +1210,71 @@ function evalBoard(game){
   }
   return score/100; // pawn units, same scale the rest of the app expects
 }
-function minimax(game, depth, alpha, beta, maximizing){
-  if(depth===0 || game.game_over()) return evalBoard(game);
-  const moves = game.moves();
+// MVV-LVA-ish ordering: captures of valuable pieces by cheap pieces first, then promotions/checks,
+// then everything else. Good move ordering is what makes alpha-beta pruning actually effective -
+// without it the engine explores far fewer plies for the same time budget and blunders more.
+function moveOrderScore(m){
+  let s=0;
+  if(m.captured) s += (PIECE_VALUE[m.captured]||0)*10 - (PIECE_VALUE[m.piece]||0);
+  if(m.promotion) s += 900;
+  if(m.san && m.san.indexOf('+')>=0) s += 60;
+  return s;
+}
+function orderedVerboseMoves(game){
+  return game.moves({verbose:true}).sort((a,b)=>moveOrderScore(b)-moveOrderScore(a));
+}
+// Quiescence search: at the end of the main search, keep resolving captures/promotions until the
+// position is "quiet" before evaluating. Without this, a plain depth-limited search regularly
+// stops mid-exchange (e.g. right after losing a queen for nothing, one ply before recapturing) -
+// that horizon effect is the single biggest cause of engines blundering material.
+function quiescence(game, alpha, beta, maximizing, deadline){
+  const standPat = evalBoard(game);
+  if(maximizing){
+    if(standPat>=beta) return beta;
+    if(alpha<standPat) alpha=standPat;
+  } else {
+    if(standPat<=alpha) return alpha;
+    if(beta>standPat) beta=standPat;
+  }
+  if(Date.now()>deadline || game.game_over()) return maximizing?alpha:beta;
+  const tactical = orderedVerboseMoves(game).filter(m=>m.captured||m.promotion);
+  for(const m of tactical){
+    game.move(m.san);
+    const score = quiescence(game, alpha, beta, !maximizing, deadline);
+    game.undo();
+    if(maximizing){
+      if(score>alpha) alpha=score;
+      if(alpha>=beta) return beta;
+    } else {
+      if(score<beta) beta=score;
+      if(beta<=alpha) return alpha;
+    }
+    if(Date.now()>deadline) break;
+  }
+  return maximizing?alpha:beta;
+}
+function minimax(game, depth, alpha, beta, maximizing, deadline){
+  if(Date.now()>deadline) return evalBoard(game);
+  if(depth===0 || game.game_over()) return quiescence(game, alpha, beta, maximizing, deadline);
+  const moves = orderedVerboseMoves(game).map(m=>m.san);
   if(maximizing){
     let best=-Infinity;
     for(const m of moves){
       game.move(m);
-      best = Math.max(best, minimax(game, depth-1, alpha, beta, false));
+      best = Math.max(best, minimax(game, depth-1, alpha, beta, false, deadline));
       game.undo();
       alpha = Math.max(alpha, best);
-      if(beta<=alpha) break;
+      if(beta<=alpha || Date.now()>deadline) break;
     }
     return best;
   } else {
     let best=Infinity;
     for(const m of moves){
       game.move(m);
-      best = Math.min(best, minimax(game, depth-1, alpha, beta, true));
+      best = Math.min(best, minimax(game, depth-1, alpha, beta, true, deadline));
       game.undo();
       beta = Math.min(beta, best);
-      if(beta<=alpha) break;
+      if(beta<=alpha || Date.now()>deadline) break;
     }
     return best;
   }
@@ -1246,12 +1290,46 @@ function styleAdjust(san, color, style){
   }
   return color==='w'?bonus:-bonus;
 }
-// level 1-8 -> search depth 1-4 (kept shallow on purpose since several boards run at once)
-function levelToDepth(level){ return Math.max(1, Math.min(4, Math.ceil(level/2))); }
-// level 1-8 -> chance of playing a random legal move instead of the calculated one (weak bots are sloppy, not literally random)
-function levelToBlunderChance(level){ return Math.max(0, (8-level)/7) * 0.28; }
+// level 1-8 -> search depth. Deeper than before across the board: each running game now gets its
+// own Web Worker thread (see below), so raising the ceiling doesn't block the UI - it just makes
+// bots genuinely stronger, especially combined with quiescence search and move ordering.
+const DEPTH_BY_LEVEL = [1,2,3,3,4,5,6,7];
+function levelToDepth(level){ return DEPTH_BY_LEVEL[Math.max(1,Math.min(8,level))-1]; }
+// level 1-8 -> chance of playing a random legal move instead of the calculated one. Kept small even
+// at level 1 (weak bots should still mostly play their engine move, just a shallower/blunder-prone
+// one thanks to low depth) - a high flat random-move chance is what made bots look like they "can't
+// play chess" at all rather than just being weaker opponents.
+function levelToBlunderChance(level){ return Math.max(0, (8-level)/7) * 0.12; }
 
-function computeBotMove(game, bot, plyOverride){
+// Iterative deepening: search depth 1, then 2, then 3... up to the level's max depth, stopping the
+// moment the time budget runs out. This means a bot ALWAYS returns the best move found by a
+// completed shallow search rather than a half-finished deep one, and naturally plays its strongest
+// available move within whatever time it has - exactly what real chess engines do.
+function searchBestMove(game, bot, budgetMs){
+  const moves = game.moves();
+  if(moves.length===0) return null;
+  const maxDepth = levelToDepth(bot.level);
+  const whiteToMove = game.turn()==='w';
+  const deadline = Date.now() + Math.max(15, budgetMs||300);
+  let bestMove = moves[Math.floor(Math.random()*moves.length)];
+  for(let depth=1; depth<=maxDepth; depth++){
+    let bestVal = whiteToMove ? -Infinity : Infinity;
+    let curBest = null;
+    const ordered = orderedVerboseMoves(game).map(m=>m.san);
+    for(const m of ordered){
+      game.move(m);
+      const val = minimax(game, depth-1, -Infinity, Infinity, game.turn()==='w', deadline) + styleAdjust(m, whiteToMove?'w':'b', bot.style);
+      game.undo();
+      if(whiteToMove ? val>bestVal : val<bestVal){ bestVal=val; curBest=m; }
+      if(Date.now()>deadline) break;
+    }
+    if(curBest) bestMove = curBest;
+    if(Date.now()>deadline) break;
+  }
+  return bestMove;
+}
+
+function computeBotMove(game, bot, plyOverride, budgetMs){
   const moves = game.moves();
   if(moves.length===0) return null;
   const ply = (plyOverride!==undefined && plyOverride!==null) ? plyOverride : game.history().length;
@@ -1264,18 +1342,7 @@ function computeBotMove(game, bot, plyOverride){
   if(Math.random() < blunderChance){
     return moves[Math.floor(Math.random()*moves.length)];
   }
-  const depth = levelToDepth(bot.level);
-  const whiteToMove = game.turn()==='w';
-  let bestMove = moves[0];
-  let bestVal = whiteToMove ? -Infinity : Infinity;
-  for(const m of moves){
-    game.move(m);
-    let val = minimax(game, depth-1, -Infinity, Infinity, game.turn()==='w');
-    val += styleAdjust(m, whiteToMove?'w':'b', bot.style);
-    game.undo();
-    if(whiteToMove ? val>bestVal : val<bestVal){ bestVal=val; bestMove=m; }
-  }
-  return bestMove;
+  return searchBestMove(game, bot, budgetMs);
 }
 
 /* ===================== ENGINE WORKER (keeps the UI thread free) =====================
@@ -1313,10 +1380,34 @@ function buildWorkerSource(){
     "  }}",
     "  return score/100;",
     "}",
-    "function orderMoves(moves){ return moves.slice().sort((a,b)=>(b.indexOf('x')>=0?1:0)-(a.indexOf('x')>=0?1:0)); }",
+    "function moveOrderScore(m){",
+    "  let s=0;",
+    "  if(m.captured) s += (PIECE_VALUE[m.captured]||0)*10 - (PIECE_VALUE[m.piece]||0);",
+    "  if(m.promotion) s += 900;",
+    "  if(m.san && m.san.indexOf('+')>=0) s += 60;",
+    "  return s;",
+    "}",
+    "function orderedVerboseMoves(game){ return game.moves({verbose:true}).sort((a,b)=>moveOrderScore(b)-moveOrderScore(a)); }",
+    "function quiescence(game, alpha, beta, maximizing, deadline){",
+    "  const standPat = evalBoard(game);",
+    "  if(maximizing){ if(standPat>=beta) return beta; if(alpha<standPat) alpha=standPat; }",
+    "  else { if(standPat<=alpha) return alpha; if(beta>standPat) beta=standPat; }",
+    "  if(Date.now()>deadline || game.game_over()) return maximizing?alpha:beta;",
+    "  const tactical = orderedVerboseMoves(game).filter(m=>m.captured||m.promotion);",
+    "  for(const m of tactical){",
+    "    game.move(m.san);",
+    "    const score = quiescence(game, alpha, beta, !maximizing, deadline);",
+    "    game.undo();",
+    "    if(maximizing){ if(score>alpha) alpha=score; if(alpha>=beta) return beta; }",
+    "    else { if(score<beta) beta=score; if(beta<=alpha) return alpha; }",
+    "    if(Date.now()>deadline) break;",
+    "  }",
+    "  return maximizing?alpha:beta;",
+    "}",
     "function minimax(game, depth, alpha, beta, maximizing, deadline){",
-    "  if(depth===0 || game.game_over() || Date.now()>deadline) return evalBoard(game);",
-    "  const moves = orderMoves(game.moves());",
+    "  if(Date.now()>deadline) return evalBoard(game);",
+    "  if(depth===0 || game.game_over()) return quiescence(game, alpha, beta, maximizing, deadline);",
+    "  const moves = orderedVerboseMoves(game).map(m=>m.san);",
     "  if(maximizing){",
     "    let best=-Infinity;",
     "    for(const m of moves){",
@@ -1339,8 +1430,9 @@ function buildWorkerSource(){
     "  if(style==='chaotic'){ bonus += (Math.random()-0.5)*1.4; }",
     "  return color==='w'?bonus:-bonus;",
     "}",
-    "function levelToDepth(level){ return Math.max(1, Math.min(4, Math.ceil(level/2))); }",
-    "function levelToBlunderChance(level){ return Math.max(0, (8-level)/7) * 0.28; }",
+    "const DEPTH_BY_LEVEL = [1,2,3,3,4,5,6,7];",
+    "function levelToDepth(level){ return DEPTH_BY_LEVEL[Math.max(1,Math.min(8,level))-1]; }",
+    "function levelToBlunderChance(level){ return Math.max(0, (8-level)/7) * 0.12; }",
     "function computeMove(fen, ply, bot, budgetMs){",
     "  const game = new Chess(fen);",
     "  const moves = game.moves();",
@@ -1354,12 +1446,12 @@ function buildWorkerSource(){
     "  if(Math.random() < blunderChance){ return moves[Math.floor(Math.random()*moves.length)]; }",
     "  const maxDepth = levelToDepth(bot.level);",
     "  const whiteToMove = game.turn()==='w';",
-    "  const deadline = Date.now() + Math.max(8, budgetMs||300);",
-    "  let bestMove = moves[0];",
+    "  const deadline = Date.now() + Math.max(15, budgetMs||300);",
+    "  let bestMove = moves[Math.floor(Math.random()*moves.length)];",
     "  for(let depth=1; depth<=maxDepth; depth++){",
     "    let bestVal = whiteToMove ? -Infinity : Infinity;",
-    "    let curBest = bestMove;",
-    "    const ordered = orderMoves(moves);",
+    "    let curBest = null;",
+    "    const ordered = orderedVerboseMoves(game).map(m=>m.san);",
     "    for(const m of ordered){",
     "      game.move(m);",
     "      const val = minimax(game, depth-1, -Infinity, Infinity, game.turn()==='w', deadline) + styleAdjust(m, whiteToMove?'w':'b', bot.style);",
@@ -1367,7 +1459,7 @@ function buildWorkerSource(){
     "      if(whiteToMove ? val>bestVal : val<bestVal){ bestVal=val; curBest=m; }",
     "      if(Date.now()>deadline) break;",
     "    }",
-    "    bestMove = curBest;",
+    "    if(curBest) bestMove = curBest;",
     "    if(Date.now()>deadline) break;",
     "  }",
     "  return bestMove;",
@@ -1410,7 +1502,7 @@ function requestMove(worker, fen, ply, bot, budgetMs){
     if(!worker){
       // main-thread fallback: still yield first so we never block a click/render in progress
       setTimeout(()=>{
-        try{ resolve(computeBotMove(new Chess(fen), bot, ply)); }
+        try{ resolve(computeBotMove(new Chess(fen), bot, ply, budgetMs)); }
         catch(e){ console.error('Hauptthread-Engine Fehler:', e); resolve(null); }
       }, 0);
       return;
@@ -1424,7 +1516,7 @@ function requestMove(worker, fen, ply, bot, budgetMs){
       worker.postMessage({id:1, fen, ply, bot:{level:bot.level, style:bot.style, opening:bot.opening}, budgetMs});
     }catch(err){
       worker.removeEventListener('message', handler);
-      resolve(computeBotMove(new Chess(fen), bot, ply));
+      resolve(computeBotMove(new Chess(fen), bot, ply, budgetMs));
     }
   });
 }
@@ -1480,6 +1572,21 @@ function setPerfBusy(busy){
   else { txt.textContent = busy ? `${activeJobs.length} Partie(n) laufen gleichzeitig` : 'Engine bereit'; }
 }
 
+// Normalized key for an unordered bot pair, used to detect "same pairing as before" regardless
+// of who had white/black.
+function pairKey(a,b){ return [a,b].sort().join('|'); }
+
+function buildSwissPairs(ids){
+  const shuffled = [...ids].sort(()=>Math.random()-0.5);
+  const pairs = [];
+  for(let i=0;i+1<shuffled.length;i+=2){
+    const a=shuffled[i], b=shuffled[i+1];
+    const whiteFirst = Math.random()<0.5;
+    pairs.push({ idWhite: whiteFirst?a:b, idBlack: whiteFirst?b:a });
+  }
+  return pairs;
+}
+
 function buildRounds(){
   if(simPaused) return;
   Object.values(state.tournaments).forEach(t=>{
@@ -1495,14 +1602,21 @@ function buildRounds(){
     if(t.roundsDone >= t.rounds){ t.finishedEarly = true; delete swissQueues[t.id]; return; }
     const ids = t.participants.filter(id=>state.bots[id] && !busyBots.has(id));
     if(ids.length<2) return;
-    const shuffled = [...ids].sort(()=>Math.random()-0.5);
-    const pairs = [];
-    for(let i=0;i+1<shuffled.length;i+=2){
-      const a=shuffled[i], b=shuffled[i+1];
-      const whiteFirst = Math.random()<0.5;
-      pairs.push({ idWhite: whiteFirst?a:b, idBlack: whiteFirst?b:a });
+    // Try a handful of random pairings and keep whichever repeats the fewest pairs from the
+    // previous round - with 4+ bots there's almost always a shuffle with zero repeats.
+    const lastKeys = new Set(t.lastSwissPairKeys||[]);
+    let bestPairs = null, bestRepeats = Infinity;
+    for(let attempt=0; attempt<25; attempt++){
+      const candidate = buildSwissPairs(ids);
+      const repeats = candidate.filter(p=>lastKeys.has(pairKey(p.idWhite,p.idBlack))).length;
+      if(repeats < bestRepeats){ bestRepeats = repeats; bestPairs = candidate; }
+      if(bestRepeats===0) break;
     }
-    if(pairs.length>0){ swissQueues[t.id] = pairs; t.roundInProgress = true; }
+    if(bestPairs && bestPairs.length>0){
+      swissQueues[t.id] = bestPairs;
+      t.roundInProgress = true;
+      t.lastSwissPairKeys = bestPairs.map(p=>pairKey(p.idWhite,p.idBlack));
+    }
   });
   fillSlots();
 }
@@ -1530,9 +1644,17 @@ function fillSlots(){
       } else {
         const free = t.participants.filter(id=>state.bots[id] && !busyBots.has(id));
         if(free.length>=2){
-          const shuffled=[...free].sort(()=>Math.random()-0.5);
+          // Pick a pair that isn't the exact same pairing that just finished on this board, if
+          // there's any alternative available among the currently free bots.
+          let chosen = null;
+          for(let attempt=0; attempt<10; attempt++){
+            const shuffled=[...free].sort(()=>Math.random()-0.5);
+            const candidate = [shuffled[0], shuffled[1]];
+            if(pairKey(candidate[0],candidate[1]) !== t.lastArenaPair){ chosen = candidate; break; }
+            if(!chosen) chosen = candidate; // fallback if every attempt collides (e.g. only 2 bots free)
+          }
           const whiteFirst = Math.random()<0.5;
-          startJob(t, whiteFirst?shuffled[0]:shuffled[1], whiteFirst?shuffled[1]:shuffled[0]);
+          startJob(t, whiteFirst?chosen[0]:chosen[1], whiteFirst?chosen[1]:chosen[0]);
           started=true;
         }
       }
@@ -1546,6 +1668,7 @@ function startJob(t, idWhite, idBlack){
   const bw = state.bots[idWhite], bb = state.bots[idBlack];
   if(!bw || !bb) return;
   busyBots.add(idWhite); busyBots.add(idBlack);
+  if(t.format==='arena') t.lastArenaPair = pairKey(idWhite, idBlack);
   const baseClock = TC_CLOCK[t.tc] || TC_CLOCK.blitz;
   const job = {
     tId:t.id, idWhite, idBlack, bw, bb, game:new Chess(), moves:[],
