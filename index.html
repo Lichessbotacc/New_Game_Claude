@@ -1363,6 +1363,31 @@ function searchBestMove(game, bot, budgetMs){
   return bestMove;
 }
 
+// A "blunder" (weak-level mistake / chaotic randomness) should still never hand over a piece for
+// free with no recapture - that's not how weak humans actually play, and it's the #1 thing that
+// makes bots look brain-dead. This does a cheap 1-ply check: after the candidate move, does the
+// opponent have an immediate capture that wins material AND can't itself be recaptured? If so,
+// the move is excluded from the blunder pool. Deliberately shallow (no deep search) - a real
+// blunder is still allowed to be positionally weak, just not "hang the queen for nothing".
+function moveHangsPiece(game, moveSan){
+  const g = new Chess(game.fen());
+  const mv = g.move(moveSan);
+  if(!mv) return false;
+  const oppMoves = g.moves({verbose:true}).filter(m=>m.captured);
+  for(const om of oppMoves){
+    const gain = (PIECE_VALUE[om.captured]||0) - (PIECE_VALUE[om.piece]||0);
+    if(gain < 150) continue; // not a clear material win for the opponent, ignore
+    const g2 = new Chess(g.fen());
+    g2.move(om.san);
+    const recaptures = g2.moves({verbose:true}).filter(rm=>rm.to===om.to && rm.captured);
+    if(recaptures.length===0) return true; // opponent wins material with no reply - genuinely hanging
+  }
+  return false;
+}
+function safeMovePool(game, moves){
+  const safe = moves.filter(m=>!moveHangsPiece(game, m));
+  return safe.length ? safe : moves; // if literally every legal move hangs something, don't get stuck
+}
 function computeBotMove(game, bot, plyOverride, budgetMs){
   const moves = game.moves();
   if(moves.length===0) return null;
@@ -1382,7 +1407,8 @@ function computeBotMove(game, bot, plyOverride, budgetMs){
   const chaosFactor = bot.style==='chaotic' ? 1.5 : 1;
   const blunderChance = levelToBlunderChance(bot.level) * chaosFactor;
   if(Math.random() < blunderChance){
-    return moves[Math.floor(Math.random()*moves.length)];
+    const pool = safeMovePool(game, moves);
+    return pool[Math.floor(Math.random()*pool.length)];
   }
   return bestMove;
 }
@@ -1513,6 +1539,25 @@ function buildWorkerSource(){
     "  }",
     "  return bestMove;",
     "}",
+    "function moveHangsPiece(game, moveSan){",
+    "  const g = new Chess(game.fen());",
+    "  const mv = g.move(moveSan);",
+    "  if(!mv) return false;",
+    "  const oppMoves = g.moves({verbose:true}).filter(m=>m.captured);",
+    "  for(const om of oppMoves){",
+    "    const gain = (PIECE_VALUE[om.captured]||0) - (PIECE_VALUE[om.piece]||0);",
+    "    if(gain < 150) continue;",
+    "    const g2 = new Chess(g.fen());",
+    "    g2.move(om.san);",
+    "    const recaptures = g2.moves({verbose:true}).filter(rm=>rm.to===om.to && rm.captured);",
+    "    if(recaptures.length===0) return true;",
+    "  }",
+    "  return false;",
+    "}",
+    "function safeMovePool(game, moves){",
+    "  const safe = moves.filter(m=>!moveHangsPiece(game, m));",
+    "  return safe.length ? safe : moves;",
+    "}",
     "function computeMove(fen, ply, bot, budgetMs){",
     "  const game = new Chess(fen);",
     "  const moves = game.moves();",
@@ -1526,7 +1571,7 @@ function buildWorkerSource(){
     "  if(afterMove.in_checkmate()) return bestMove;",
     "  const chaosFactor = bot.style==='chaotic' ? 1.5 : 1;",
     "  const blunderChance = levelToBlunderChance(bot.level) * chaosFactor;",
-    "  if(Math.random() < blunderChance){ return moves[Math.floor(Math.random()*moves.length)]; }",
+    "  if(Math.random() < blunderChance){ const pool = safeMovePool(game, moves); return pool[Math.floor(Math.random()*pool.length)]; }",
     "  return bestMove;",
     "}",
     "self.onmessage = function(e){",
