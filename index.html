@@ -159,6 +159,16 @@ tr:last-child td{border-bottom:none;}
 .replay-controls button{flex:1;}
 .pulse{display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--danger); margin-right:5px; animation:pulse 1.2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.clock-row{display:flex; gap:6px; margin:8px 0;}
+.clock{flex:1; background:var(--bg3); border:1px solid var(--line); border-radius:4px; padding:6px 8px; text-align:center;}
+.clock .clock-label{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px;}
+.clock .clock-time{font-size:16px; font-weight:700; color:var(--text-bright); font-variant-numeric:tabular-nums; font-family:"Consolas","Menlo",monospace;}
+.clock.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset;}
+.clock.active .clock-time{color:var(--accent-bright);}
+.clock.low .clock-time{color:var(--danger);}
+.clock.flagged .clock-time{color:var(--danger); animation:pulse .8s infinite;}
+.board-clock-row{display:flex; justify-content:space-between; gap:10px; margin-top:8px;}
+.board-clock-row .clock{flex:0 0 auto; min-width:90px;}
 @media(max-width:680px){
   .logo{font-size:17px;} nav button{padding:7px 9px; font-size:12.5px;}
   .form-grid, .form-grid.three{grid-template-columns:1fr;}
@@ -377,6 +387,10 @@ tr:last-child td{border-bottom:none;}
     </div>
     <div class="board-wrap" id="play-area" style="display:none;">
       <div class="board-col">
+        <div class="board-clock-row">
+          <div class="clock" id="play-clock-b"><div class="clock-label" id="play-clock-b-name">Bot</div><div class="clock-time" id="play-clock-b-time">5:00</div></div>
+          <div class="clock" id="play-clock-w"><div class="clock-label">Du (Weiß)</div><div class="clock-time" id="play-clock-w-time">5:00</div></div>
+        </div>
         <div id="board"></div>
         <div style="margin-top:10px;" class="small" id="play-status"></div>
         <button class="btn secondary" style="margin-top:10px;" onclick="resetPlayGame()">Neues Spiel</button>
@@ -416,6 +430,9 @@ const TC_LIST = ['ultrabullet','bullet','blitz','rapid','classical'];
 const TC_LABEL = { ultrabullet:'UltraBullet ½+0', bullet:'Bullet 1+0', blitz:'Blitz 5+0', rapid:'Rapid 10+0', classical:'Classical 30+0' };
 const TC_SHORT = { ultrabullet:'UltraBullet', bullet:'Bullet', blitz:'Blitz', rapid:'Rapid', classical:'Classical' };
 const TC_DURATION = { ultrabullet:10, bullet:15, blitz:20, rapid:40, classical:90 };
+// Base clock time per side, in ms - matches each time control's "main time" (lichess-style, 0 increment).
+const TC_CLOCK = { ultrabullet:30000, bullet:60000, blitz:300000, rapid:600000, classical:1800000 };
+const CLOCK_LOW_THRESHOLD = 20000; // below this remaining time, a clock is shown as "low" (red)
 const STYLE_LABEL = { solid:'Solide', aggressive:'Aggressiv', chaotic:'Chaotisch' };
 const OPENING_LABEL = { any:'Flexibel', e4:'1.e4', d4:'1.d4', nf3:'1.Nf3', c4:'1.c4' };
 const OPENING_FIRST_MOVE = { e4:'e4', d4:'d4', nf3:'Nf3', c4:'c4' };
@@ -529,6 +546,33 @@ function botTitle(bot){
   if(r>=1650) return 'FM';
   if(r>=1500+1) return 'CM';
   return '';
+}
+
+// Formats milliseconds as a clock string. Shows tenths of a second once a side is genuinely low on
+// time (like Lichess's clock does), so the "running out of time" feeling is visible, not just implied.
+function fmtClock(ms){
+  ms = Math.max(0, ms||0);
+  if(ms < 10000){
+    return (ms/1000).toFixed(1)+'s';
+  }
+  const totalSec = Math.floor(ms/1000);
+  const m = Math.floor(totalSec/60), s = totalSec%60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// The actual "play fast/slow depending on the clock" rule: a bot's per-move thinking time is capped
+// by both its own configured think-time/speed setting AND a safe fraction of whatever time it has
+// left. As a clock gets low, this safe fraction shrinks, so bots genuinely speed up under time
+// pressure instead of ever flagging on a single slow move - just like a human managing a clock.
+function computeThinkBudget(configuredMs, remainingMs, movesAssumedLeft){
+  const base = Math.max(15, configuredMs||300);
+  if(remainingMs===undefined || remainingMs===null) return base;
+  const assumed = movesAssumedLeft || 30;
+  // never plan to spend more than ~1/assumed of what's left, with a hard low-time floor
+  let safeCap = remainingMs / assumed;
+  if(remainingMs < 3000) safeCap = remainingMs * 0.15;       // real time scramble
+  else if(remainingMs < 10000) safeCap = remainingMs * 0.08; // getting low
+  return Math.max(10, Math.min(base, safeCap));
 }
 
 /* ===================== NAV ===================== */
@@ -801,12 +845,20 @@ function renderTDetail(){
   if(status==='live' && jobs.length>0){
     liveCard.style.display='block';
     document.getElementById('td-live-count').textContent = jobs.length;
-    document.getElementById('td-live-grid').innerHTML = jobs.map((job,idx)=>`
+    document.getElementById('td-live-grid').innerHTML = jobs.map((job,idx)=>{
+      const turn = job.game.turn();
+      const wv = jobClockValue(job,'w'), bv = jobClockValue(job,'b');
+      return `
       <div class="bot-card">
         <div class="small"><b>${escapeHtml(job.bw.name)}</b> vs <b>${escapeHtml(job.bb.name)}</b></div>
         <div class="small" style="margin-top:2px;">Zug ${Math.ceil(job.moves.length/2)} (${job.moves.length} Halbzüge)</div>
+        <div class="board-clock-row">
+          <div class="clock ${turn==='b'?'active':''} ${bv<CLOCK_LOW_THRESHOLD?'low':''}"><div class="clock-label">${escapeHtml(job.bb.name)}</div><div class="clock-time" id="td-clock-b-${idx}">${fmtClock(bv)}</div></div>
+          <div class="clock ${turn==='w'?'active':''} ${wv<CLOCK_LOW_THRESHOLD?'low':''}"><div class="clock-label">${escapeHtml(job.bw.name)}</div><div class="clock-time" id="td-clock-w-${idx}">${fmtClock(wv)}</div></div>
+        </div>
         <div class="mini-board" id="td-live-board-${idx}"></div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     jobs.forEach((job,idx)=>renderMiniBoardFromMoves('td-live-board-'+idx, job.moves));
   } else {
     liveCard.style.display='none';
@@ -831,12 +883,31 @@ function renderTDetail(){
     const w = g.result==='1-0' ? g.white : g.result==='0-1' ? g.black : null;
     const txt = g.result==='1/2-1/2'
       ? `<span class="result-d">${escapeHtml(g.white)} ½–½ ${escapeHtml(g.black)}</span>`
-      : `<span class="result-w">${escapeHtml(w)}</span> besiegt <span class="result-b">${escapeHtml(w===g.white?g.black:g.white)}</span>`;
+      : `<span class="result-w">${escapeHtml(w)}</span> besiegt <span class="result-b">${escapeHtml(w===g.white?g.black:g.white)}</span>${g.byTimeout?' <span class="small">(Zeit)</span>':''}`;
     return `<div class="log-line"><span>${txt} <span class="tag">${g.plies} Züge</span></span>${g.moves&&g.moves.length?`<button class="view-link" onclick="openReplay('${t.id}','${g.gid}')">Ansehen</button>`:''}</div>`;
   }).join('') : '<div class="empty">Noch keine Partien gespielt.</div>';
 }
 
 let lbTc = 'blitz';
+
+// Cheap, frequent tick: only touches clock text nodes that are already on screen, so it never
+// triggers the heavier list/table re-renders and can't itself become a source of lag.
+function tickLiveClocks(){
+  if(document.getElementById('view-tdetail').classList.contains('active') && currentTId){
+    const jobs = activeJobs.filter(j=>j.tId===currentTId);
+    jobs.forEach((job, idx)=>{
+      const wEl = document.getElementById('td-clock-w-'+idx);
+      const bEl = document.getElementById('td-clock-b-'+idx);
+      if(wEl) wEl.textContent = fmtClock(jobClockValue(job,'w'));
+      if(bEl) bEl.textContent = fmtClock(jobClockValue(job,'b'));
+    });
+  }
+  if(document.getElementById('view-play').classList.contains('active')){
+    updatePlayClockDisplay();
+  }
+}
+setInterval(tickLiveClocks, 250);
+
 function renderLeaderboardTabs(){
   const wrap = document.getElementById('lb-tabs');
   wrap.innerHTML = TC_LIST.map(tc=>`<button class="${tc===lbTc?'active':''}" onclick="setLbTc('${tc}')">${TC_SHORT[tc]}</button>`).join('');
@@ -930,10 +1001,11 @@ function levelToDepth(level){ return Math.max(1, Math.min(4, Math.ceil(level/2))
 // level 1-8 -> chance of playing a random legal move instead of the calculated one (weak bots are sloppy, not literally random)
 function levelToBlunderChance(level){ return Math.max(0, (8-level)/7) * 0.28; }
 
-function computeBotMove(game, bot){
+function computeBotMove(game, bot, plyOverride){
   const moves = game.moves();
   if(moves.length===0) return null;
-  if(game.history().length===0 && bot.opening && bot.opening!=='any'){
+  const ply = (plyOverride!==undefined && plyOverride!==null) ? plyOverride : game.history().length;
+  if(ply===0 && bot.opening && bot.opening!=='any'){
     const wanted = OPENING_FIRST_MOVE[bot.opening];
     if(wanted && moves.includes(wanted)) return wanted;
   }
@@ -956,18 +1028,169 @@ function computeBotMove(game, bot){
   return bestMove;
 }
 
-// Resolves with the bot's move after genuinely waiting ~minThinkMs (so the configured think-time/speed
-// setting is actually honored instead of resolving near-instantly). In turbo (catch-up) mode the wait
-// is collapsed to near-zero so offline tournaments can fast-forward instead of staying frozen.
-function getBotMoveAsync(game, bot, minThinkMs){
+/* ===================== ENGINE WORKER (keeps the UI thread free) =====================
+   The previous version ran minimax() synchronously on the main thread. With up to 6 boards
+   playing at once - and turbo/catch-up mode hammering through a backlog with near-zero delay
+   after a reload - that blocked the UI thread constantly, which is the actual cause of the
+   heavy lag. Each running game now gets its own dedicated Web Worker, so the search happens on
+   a separate thread and the page stays smooth no matter how many boards are active. If workers
+   are unavailable or fail to start (e.g. blocked import), everything transparently falls back
+   to the original synchronous main-thread engine so the app still works, just less smoothly. */
+let workersSupported = (typeof Worker !== 'undefined');
+let workerFailed = false;
+let engineWorkerURL = null;
+
+function buildWorkerSource(){
+  return [
+    "importScripts('https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js');",
+    "const PIECE_VALUE = {p:100,n:320,b:330,r:500,q:900,k:0};",
+    "const PST_PAWN=[0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10, 5,5,10,25,25,10,5,5, 0,0,0,20,20,0,0,0, 5,-5,-10,0,0,-10,-5,5, 5,10,10,-20,-20,10,10,5, 0,0,0,0,0,0,0,0];",
+    "const PST_KNIGHT=[-50,-40,-30,-30,-30,-30,-40,-50, -40,-20,0,0,0,0,-20,-40, -30,0,10,15,15,10,0,-30, -30,5,15,20,20,15,5,-30, -30,0,15,20,20,15,0,-30, -30,5,10,15,15,10,5,-30, -40,-20,0,5,5,0,-20,-40, -50,-40,-30,-30,-30,-30,-40,-50];",
+    "const PST_BISHOP=[-20,-10,-10,-10,-10,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,10,10,5,0,-10, -10,5,5,10,10,5,5,-10, -10,0,10,10,10,10,0,-10, -10,10,10,10,10,10,10,-10, -10,5,0,0,0,0,5,-10, -20,-10,-10,-10,-10,-10,-10,-20];",
+    "const PST_ROOK=[0,0,0,0,0,0,0,0, 5,10,10,10,10,10,10,5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, 0,0,0,5,5,0,0,0];",
+    "const PST_QUEEN=[-20,-10,-10,-5,-5,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,5,5,5,0,-10, -5,0,5,5,5,5,0,-5, 0,0,5,5,5,5,0,-5, -10,5,5,5,5,5,0,-10, -10,0,5,0,0,0,0,-10, -20,-10,-10,-5,-5,-10,-10,-20];",
+    "const PST_KING=[-30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -20,-30,-30,-40,-40,-30,-30,-20, -10,-20,-20,-20,-20,-20,-20,-10, 20,20,0,0,0,0,20,20, 20,30,10,0,0,10,30,20];",
+    "const PST = {p:PST_PAWN,n:PST_KNIGHT,b:PST_BISHOP,r:PST_ROOK,q:PST_QUEEN,k:PST_KING};",
+    "const OPENING_FIRST_MOVE = {e4:'e4', d4:'d4', nf3:'Nf3', c4:'c4'};",
+    "function evalBoard(game){",
+    "  const board = game.board();",
+    "  let score=0;",
+    "  for(let r=0;r<8;r++){ for(let c=0;c<8;c++){",
+    "    const sq = board[r][c]; if(!sq) continue;",
+    "    const idx = sq.color==='w' ? r*8+c : (7-r)*8+c;",
+    "    const val = PIECE_VALUE[sq.type] + PST[sq.type][idx];",
+    "    score += sq.color==='w' ? val : -val;",
+    "  }}",
+    "  return score/100;",
+    "}",
+    "function orderMoves(moves){ return moves.slice().sort((a,b)=>(b.indexOf('x')>=0?1:0)-(a.indexOf('x')>=0?1:0)); }",
+    "function minimax(game, depth, alpha, beta, maximizing, deadline){",
+    "  if(depth===0 || game.game_over() || Date.now()>deadline) return evalBoard(game);",
+    "  const moves = orderMoves(game.moves());",
+    "  if(maximizing){",
+    "    let best=-Infinity;",
+    "    for(const m of moves){",
+    "      game.move(m); best = Math.max(best, minimax(game, depth-1, alpha, beta, false, deadline)); game.undo();",
+    "      alpha = Math.max(alpha, best); if(beta<=alpha || Date.now()>deadline) break;",
+    "    }",
+    "    return best;",
+    "  } else {",
+    "    let best=Infinity;",
+    "    for(const m of moves){",
+    "      game.move(m); best = Math.min(best, minimax(game, depth-1, alpha, beta, true, deadline)); game.undo();",
+    "      beta = Math.min(beta, best); if(beta<=alpha || Date.now()>deadline) break;",
+    "    }",
+    "    return best;",
+    "  }",
+    "}",
+    "function styleAdjust(san, color, style){",
+    "  let bonus=0;",
+    "  if(style==='aggressive'){ if(san.indexOf('x')>=0) bonus+=0.35; if(san.indexOf('+')>=0) bonus+=0.25; }",
+    "  if(style==='chaotic'){ bonus += (Math.random()-0.5)*1.4; }",
+    "  return color==='w'?bonus:-bonus;",
+    "}",
+    "function levelToDepth(level){ return Math.max(1, Math.min(4, Math.ceil(level/2))); }",
+    "function levelToBlunderChance(level){ return Math.max(0, (8-level)/7) * 0.28; }",
+    "function computeMove(fen, ply, bot, budgetMs){",
+    "  const game = new Chess(fen);",
+    "  const moves = game.moves();",
+    "  if(moves.length===0) return null;",
+    "  if(ply===0 && bot.opening && bot.opening!=='any'){",
+    "    const wanted = OPENING_FIRST_MOVE[bot.opening];",
+    "    if(wanted && moves.includes(wanted)) return wanted;",
+    "  }",
+    "  const chaosFactor = bot.style==='chaotic' ? 1.5 : 1;",
+    "  const blunderChance = levelToBlunderChance(bot.level) * chaosFactor;",
+    "  if(Math.random() < blunderChance){ return moves[Math.floor(Math.random()*moves.length)]; }",
+    "  const maxDepth = levelToDepth(bot.level);",
+    "  const whiteToMove = game.turn()==='w';",
+    "  const deadline = Date.now() + Math.max(8, budgetMs||300);",
+    "  let bestMove = moves[0];",
+    "  for(let depth=1; depth<=maxDepth; depth++){",
+    "    let bestVal = whiteToMove ? -Infinity : Infinity;",
+    "    let curBest = bestMove;",
+    "    const ordered = orderMoves(moves);",
+    "    for(const m of ordered){",
+    "      game.move(m);",
+    "      const val = minimax(game, depth-1, -Infinity, Infinity, game.turn()==='w', deadline) + styleAdjust(m, whiteToMove?'w':'b', bot.style);",
+    "      game.undo();",
+    "      if(whiteToMove ? val>bestVal : val<bestVal){ bestVal=val; curBest=m; }",
+    "      if(Date.now()>deadline) break;",
+    "    }",
+    "    bestMove = curBest;",
+    "    if(Date.now()>deadline) break;",
+    "  }",
+    "  return bestMove;",
+    "}",
+    "self.onmessage = function(e){",
+    "  const d = e.data;",
+    "  try{ self.postMessage({id:d.id, move:computeMove(d.fen, d.ply, d.bot, d.budgetMs)}); }",
+    "  catch(err){ self.postMessage({id:d.id, move:null, error:String(err)}); }",
+    "};"
+  ].join("\n");
+}
+
+function getEngineWorkerURL(){
+  if(engineWorkerURL) return engineWorkerURL;
+  const blob = new Blob([buildWorkerSource()], {type:'application/javascript'});
+  engineWorkerURL = URL.createObjectURL(blob);
+  return engineWorkerURL;
+}
+
+function createEngineWorker(){
+  if(!workersSupported || workerFailed) return null;
+  try{
+    const w = new Worker(getEngineWorkerURL());
+    w.onerror = function(ev){
+      console.error('Engine-Worker Fehler, wechsle dauerhaft auf Hauptthread-Fallback:', ev.message);
+      workerFailed = true;
+    };
+    return w;
+  }catch(e){
+    console.error('Worker konnte nicht erstellt werden, nutze Hauptthread-Fallback:', e);
+    workerFailed = true;
+    return null;
+  }
+}
+
+// One in-flight request per worker at a time (we always await before sending the next), so a
+// plain one-shot message listener per call is enough - no id bookkeeping needed.
+function requestMove(worker, fen, ply, bot, budgetMs){
   return new Promise(resolve=>{
-    setTimeout(()=>{
-      const mv = computeBotMove(game, bot);
-      const inTurbo = turboMode && Date.now() < turboUntil;
-      const wait = inTurbo ? 4 : Math.max(0, minThinkMs||0);
-      setTimeout(()=>resolve(mv), wait);
-    }, 0);
+    if(!worker){
+      // main-thread fallback: still yield first so we never block a click/render in progress
+      setTimeout(()=>{
+        try{ resolve(computeBotMove(new Chess(fen), bot, ply)); }
+        catch(e){ console.error('Hauptthread-Engine Fehler:', e); resolve(null); }
+      }, 0);
+      return;
+    }
+    const handler = (e)=>{
+      worker.removeEventListener('message', handler);
+      resolve(e.data ? e.data.move : null);
+    };
+    worker.addEventListener('message', handler);
+    try{
+      worker.postMessage({id:1, fen, ply, bot:{level:bot.level, style:bot.style, opening:bot.opening}, budgetMs});
+    }catch(err){
+      worker.removeEventListener('message', handler);
+      resolve(computeBotMove(new Chess(fen), bot, ply));
+    }
   });
+}
+
+// Resolves with the bot's move once BOTH the search (worker or fallback, bounded by budgetMs) AND
+// the minimum "thinking" pacing have completed - so the configured think-time/speed is genuinely
+// honored (no near-instant resolves) while search itself never blocks the UI thread.
+function getBotMoveAsync(game, bot, budgetMs, worker){
+  const ply = game.history().length;
+  const fen = game.fen();
+  const inTurbo = turboMode && Date.now() < turboUntil;
+  const pace = inTurbo ? 4 : Math.max(0, budgetMs||0);
+  return Promise.all([
+    requestMove(worker, fen, ply, bot, inTurbo ? 20 : budgetMs),
+    sleep(pace)
+  ]).then(r=>r[0]);
 }
 
 function updateElo(t, idWhite, idBlack, result){
@@ -1065,14 +1288,31 @@ function startJob(t, idWhite, idBlack){
   const bw = state.bots[idWhite], bb = state.bots[idBlack];
   if(!bw || !bb) return;
   busyBots.add(idWhite); busyBots.add(idBlack);
-  const job = { tId:t.id, idWhite, idBlack, bw, bb, game:new Chess(), moves:[] };
+  const baseClock = TC_CLOCK[t.tc] || TC_CLOCK.blitz;
+  const job = {
+    tId:t.id, idWhite, idBlack, bw, bb, game:new Chess(), moves:[],
+    clock: { w: baseClock, b: baseClock }, turnStartedAt: null, timeoutSide: null,
+    worker: createEngineWorker()
+  };
   activeJobs.push(job);
   runJobLoop(job); // fire-and-forget: this game now plays independently alongside any others
 }
 
 function abortJob(job){
   busyBots.delete(job.idWhite); busyBots.delete(job.idBlack);
+  if(job.worker){ try{ job.worker.terminate(); }catch(e){} }
   activeJobs = activeJobs.filter(j=>j!==job);
+}
+
+// Live remaining time for a clock, including the portion of the current move already "spent"
+// while a bot is thinking - so the on-screen clock ticks smoothly instead of jumping only once
+// per move.
+function jobClockValue(job, color){
+  let t = job.clock[color];
+  if(job.game.turn()===color && job.turnStartedAt){
+    t -= (Date.now() - job.turnStartedAt);
+  }
+  return Math.max(0, t);
 }
 
 async function runJobLoop(job){
@@ -1086,11 +1326,23 @@ async function runJobLoop(job){
     }
     const game = job.game;
     if(game.game_over() || job.moves.length>=160) break;
-    const bot = game.turn()==='w' ? job.bw : job.bb;
+    const sideKey = game.turn();
+    if(job.clock[sideKey] <= 0){ job.timeoutSide = sideKey; break; } // already flagged before this move
+    const bot = sideKey==='w' ? job.bw : job.bb;
+    const budget = computeThinkBudget(bot.thinkTime||300, job.clock[sideKey], 30);
+    job.turnStartedAt = Date.now();
     let mv = null;
-    try{ mv = await getBotMoveAsync(game, bot, bot.thinkTime||300); }
+    try{ mv = await getBotMoveAsync(game, bot, budget, job.worker); }
     catch(e){ console.error('Zugberechnung fehlgeschlagen:', e); }
     if(!activeJobs.includes(job)) return; // job was cancelled while we were "thinking"
+    job.turnStartedAt = null;
+    job.clock[sideKey] = Math.max(0, job.clock[sideKey] - budget);
+    if(job.clock[sideKey] <= 0){
+      job.timeoutSide = sideKey;
+      if(mv){ game.move(mv); job.moves.push(mv); }
+      refreshOpenViews(false);
+      break;
+    }
     if(mv){ game.move(mv); job.moves.push(mv); } else { break; }
     refreshOpenViews(false);
     await sleep((turboMode && Date.now()<turboUntil) ? 0 : PLY_YIELD_MS);
@@ -1100,13 +1352,20 @@ async function runJobLoop(job){
 
 function finalizeJob(job){
   busyBots.delete(job.idWhite); busyBots.delete(job.idBlack);
+  if(job.worker){ try{ job.worker.terminate(); }catch(e){} }
   activeJobs = activeJobs.filter(j=>j!==job);
   const t = state.tournaments[job.tId];
   if(!t || getTStatus(t)!=='live'){ fillSlots(); return; }
   const game = job.game;
-  let result;
-  if(game.in_checkmate()) result = game.turn()==='w' ? '0-1' : '1-0';
-  else result = '1/2-1/2';
+  let result, byTimeout=false;
+  if(job.timeoutSide){
+    result = job.timeoutSide==='w' ? '0-1' : '1-0';
+    byTimeout = true;
+  } else if(game.in_checkmate()){
+    result = game.turn()==='w' ? '0-1' : '1-0';
+  } else {
+    result = '1/2-1/2';
+  }
   const plies = job.moves.length;
   t.standings[job.idWhite] = t.standings[job.idWhite] || {score:0,games:0};
   t.standings[job.idBlack] = t.standings[job.idBlack] || {score:0,games:0};
@@ -1115,7 +1374,7 @@ function finalizeJob(job){
   else if(result==='0-1'){ t.standings[job.idBlack].score+=2; job.bb.wins++; job.bw.losses++; }
   else { t.standings[job.idWhite].score+=1; t.standings[job.idBlack].score+=1; job.bw.draws++; job.bb.draws++; }
   updateElo(t, job.idWhite, job.idBlack, result);
-  t.gamesLog.push({ gid: uid(), white: job.bw.name, black: job.bb.name, result, plies, moves: job.moves.slice(), ts: Date.now() });
+  t.gamesLog.push({ gid: uid(), white: job.bw.name, black: job.bb.name, result, plies, byTimeout, moves: job.moves.slice(), ts: Date.now() });
   if(t.gamesLog.length > MAX_LOGS_PER_TOURNAMENT) t.gamesLog.shift();
   state.gamesPlayed++;
   saveState(false);
@@ -1140,12 +1399,37 @@ function refreshOpenViews(force){
    "wrong". These are simple original vector shapes (viewBox 0 0 45 45) so colors and sizing are
    always exactly what we say, on every device. */
 const PIECE_PATHS = {
-  p: '<circle cx="22.5" cy="14" r="6.5"/><path d="M16,33 C16,26 19,22.5 22.5,22.5 C26,22.5 29,26 29,33 Z"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>',
-  r: '<rect x="13" y="10" width="4" height="6"/><rect x="20.5" y="10" width="4" height="6"/><rect x="28" y="10" width="4" height="6"/><rect x="12" y="16" width="21" height="4"/><path d="M15,20 L30,20 L28,33 L17,33 Z"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>',
-  n: '<path d="M11,33 C11,33 12,24 17,20 C15.5,18 14.5,15 15.5,12.5 C16.3,10.5 18.5,10 19.2,11.7 C19.2,11.7 21.5,9.5 25,9.5 C30.5,9.5 34,14 34,20 L34,33 Z"/><circle cx="17.3" cy="13.6" r="1" fill="rgba(0,0,0,.55)" stroke="none"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>',
-  b: '<circle cx="22.5" cy="8.5" r="2.3"/><path d="M22.5,11.5 L27.5,19.5 C29.5,23.5 28.5,27.5 25,29.5 C29,30.6 31,32.5 31,32.5 L14,32.5 C14,32.5 16,30.6 20,29.5 C16.5,27.5 15.5,23.5 17.5,19.5 Z"/><line x1="18.5" y1="19" x2="26.5" y2="19" stroke-width="1.4"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>',
-  q: '<circle cx="12" cy="11" r="2.2"/><circle cx="22.5" cy="8" r="2.4"/><circle cx="33" cy="11" r="2.2"/><circle cx="17.2" cy="11.5" r="1.8"/><circle cx="27.8" cy="11.5" r="1.8"/><path d="M12,13.5 L33,13.5 L30.5,29.5 L14.5,29.5 Z"/><rect x="11" y="30.5" width="23" height="3.3" rx="1"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>',
-  k: '<rect x="21" y="5" width="3" height="8"/><rect x="18" y="8" width="9" height="3"/><path d="M14,16 L31,16 L29,32 L16,32 Z"/><rect x="10" y="35" width="25" height="4" rx="1.2"/>'
+  p: '<circle cx="22.5" cy="10" r="5"/>'
+   + '<path d="M22.5,15 C25.5,15 27,17.8 25.7,20.6 C28,22 30,25 29,28.3 C31.3,29.8 32.7,32 32.2,34.3 L12.8,34.3 C12.3,32 13.7,29.8 16,28.3 C15,25 17,22 19.3,20.6 C18,17.8 19.5,15 22.5,15 Z"/>'
+   + '<rect x="10" y="34.3" width="25" height="4.2" rx="1.6"/>',
+  r: '<rect x="11.5" y="8.5" width="4.2" height="5.5"/>'
+   + '<rect x="20.4" y="8.5" width="4.2" height="5.5"/>'
+   + '<rect x="29.3" y="8.5" width="4.2" height="5.5"/>'
+   + '<path d="M11.5,14 L33.5,14 L33.5,18 L11.5,18 Z"/>'
+   + '<path d="M13.7,18 L31.3,18 L29.6,30.8 L15.4,30.8 Z"/>'
+   + '<rect x="13.8" y="20.5" width="17.4" height="1.7" fill="rgba(0,0,0,.16)" stroke="none"/>'
+   + '<rect x="14.6" y="25.3" width="15.8" height="1.7" fill="rgba(0,0,0,.16)" stroke="none"/>'
+   + '<rect x="10" y="30.8" width="25" height="4.2" rx="1.6"/>',
+  n: '<path d="M10,34.3 C10.4,28.6 12.1,24.7 15,22 C13.3,19.6 12.2,16.6 13.2,14 C14.1,11.6 16.7,11.5 17.8,13.6 C19,11.7 21.2,10.3 23.5,9.7 C22.6,7.9 23,5.9 24.8,4.9 C27.2,3.6 30.3,4.7 31,7.1 C33.6,7.5 35.7,9.6 36.7,12.1 C38.2,15.9 38,20.3 38,24.3 L38,34.3 Z"/>'
+   + '<circle cx="16.9" cy="15.5" r="1.15" fill="rgba(0,0,0,.55)" stroke="none"/>'
+   + '<path d="M19.5,16.3 C21.6,17.7 24.3,18 26.9,17.3" fill="none" stroke-width="1.2"/>'
+   + '<rect x="10" y="34.3" width="28" height="4.2" rx="1.6"/>',
+  b: '<circle cx="22.5" cy="6.3" r="2.1"/>'
+   + '<path d="M22.5,8.7 L22.5,11.5" stroke-width="1.6"/>'
+   + '<path d="M22.5,11.5 C27.8,14.6 31,19.9 28.8,25.3 C27.7,28 25.4,29.7 22.5,30.3 C19.6,29.7 17.3,28 16.2,25.3 C14,19.9 17.2,14.6 22.5,11.5 Z"/>'
+   + '<line x1="18.2" y1="18.7" x2="26.8" y2="18.7" stroke-width="1.3"/>'
+   + '<path d="M16.8,30.3 C18.9,31.7 26.1,31.7 28.2,30.3 L29.4,33 C24.9,34.6 20.1,34.6 15.6,33 Z"/>'
+   + '<rect x="10" y="34.3" width="25" height="4.2" rx="1.6"/>',
+  q: '<circle cx="11" cy="11" r="1.9"/><circle cx="17.3" cy="7.6" r="1.9"/><circle cx="22.5" cy="6.4" r="2"/><circle cx="27.7" cy="7.6" r="1.9"/><circle cx="34" cy="11" r="1.9"/>'
+   + '<path d="M11,13 L34,13 L31.3,18 C29,16.6 25.9,15.9 22.5,15.9 C19.1,15.9 16,16.6 13.7,18 Z"/>'
+   + '<path d="M13.7,18 C15.8,21.2 17.5,25 16.6,28.7 C19.1,27.5 25.9,27.5 28.4,28.7 C27.5,25 29.2,21.2 31.3,18 C29,19.4 25.9,20.1 22.5,20.1 C19.1,20.1 16,19.4 13.7,18 Z"/>'
+   + '<path d="M16.6,28.7 C19.1,29.9 25.9,29.9 28.4,28.7 L29.7,32.4 C25.2,34 19.8,34 15.3,32.4 Z"/>'
+   + '<rect x="10" y="34.3" width="25" height="4.2" rx="1.6"/>',
+  k: '<rect x="21" y="4.3" width="3" height="7.5"/><rect x="18.2" y="7" width="8.6" height="3"/>'
+   + '<path d="M14,15 L31,15 L28.6,20.5 C26.6,19.3 24.6,18.7 22.5,18.7 C20.4,18.7 18.4,19.3 16.4,20.5 Z"/>'
+   + '<path d="M16.4,20.5 C18.5,23.5 20,27 19,30.6 C21.4,29.5 23.6,29.5 26,30.6 C25,27 26.5,23.5 28.6,20.5 C26.6,21.7 24.6,22.3 22.5,22.3 C20.4,22.3 18.4,21.7 16.4,20.5 Z"/>'
+   + '<path d="M19,30.6 C21.4,31.8 23.6,31.8 26,30.6 L27.3,34.3 L17.7,34.3 Z"/>'
+   + '<rect x="10" y="34.3" width="25" height="4.2" rx="1.6"/>'
 };
 function pieceMarkup(type, color){
   const fill = color==='w' ? '#f7f5ef' : '#2b2926';
@@ -1204,6 +1488,40 @@ function closeReplay(){
 
 /* ===================== PLAY VS BOT ===================== */
 let playGame=null, playBot=null, selectedSq=null, lastMoveSquares=[];
+let playWorker=null, playClock=null, playTurnStartedAt=null, playGameOver=false;
+
+function startPlayClockTurn(){ playTurnStartedAt = Date.now(); }
+
+function playClockValue(color){
+  if(!playClock) return 0;
+  let t = playClock[color];
+  if(!playGameOver && playGame && playGame.turn()===color && playTurnStartedAt){
+    t -= (Date.now() - playTurnStartedAt);
+  }
+  return Math.max(0, t);
+}
+
+function updatePlayClockDisplay(){
+  if(!playClock) return;
+  const wEl=document.getElementById('play-clock-w-time'), bEl=document.getElementById('play-clock-b-time');
+  const wBox=document.getElementById('play-clock-w'), bBox=document.getElementById('play-clock-b');
+  if(!wEl || !bEl) return;
+  const wv = playClockValue('w'), bv = playClockValue('b');
+  wEl.textContent = fmtClock(wv);
+  bEl.textContent = fmtClock(bv);
+  const turn = playGame ? playGame.turn() : 'w';
+  wBox.classList.toggle('active', !playGameOver && turn==='w');
+  bBox.classList.toggle('active', !playGameOver && turn==='b');
+  wBox.classList.toggle('low', wv<CLOCK_LOW_THRESHOLD);
+  bBox.classList.toggle('low', bv<CLOCK_LOW_THRESHOLD);
+}
+
+function finishPlayByTimeout(side){
+  playGameOver = true;
+  updatePlayClockDisplay();
+  const el = document.getElementById('play-status');
+  el.textContent = side==='w' ? 'Du hast die Zeit überschritten — Bot gewinnt!' : 'Bot hat die Zeit überschritten — Du gewinnst!';
+}
 
 function renderPlayPicker(){
   const wrap = document.getElementById('play-bot-list');
@@ -1218,6 +1536,7 @@ function renderPlayPicker(){
 function backToPicker(){
   document.getElementById('play-pick').style.display='block';
   document.getElementById('play-area').style.display='none';
+  if(playWorker){ try{ playWorker.terminate(); }catch(e){} playWorker=null; }
   playBot=null;
 }
 
@@ -1234,6 +1553,11 @@ function resetPlayGame(){
   playGame = new Chess();
   selectedSq = null;
   lastMoveSquares = [];
+  playGameOver = false;
+  playClock = { w: TC_CLOCK[playBot.tc]||TC_CLOCK.blitz, b: TC_CLOCK[playBot.tc]||TC_CLOCK.blitz };
+  if(playWorker){ try{ playWorker.terminate(); }catch(e){} }
+  playWorker = createEngineWorker();
+  document.getElementById('play-clock-b-name').textContent = `${playBot.flag||''} ${playBot.name}`;
   document.getElementById('play-opponent-info').innerHTML = `
     <div class="stat-row"><span>Name</span><b>${playBot.flag||''} ${escapeHtml(playBot.name)}</b></div>
     <div class="stat-row"><span>Level</span><b>${playBot.level}/8</b></div>
@@ -1243,6 +1567,8 @@ function resetPlayGame(){
   document.getElementById('play-history').innerHTML='';
   renderBoard();
   updatePlayStatus();
+  startPlayClockTurn();
+  updatePlayClockDisplay();
 }
 
 function renderBoard(){
@@ -1272,7 +1598,7 @@ function renderBoard(){
 }
 
 function onSquareClick(sqName){
-  if(playGame.game_over() || playGame.turn()!=='w') return;
+  if(playGame.game_over() || playGame.turn()!=='w' || playGameOver) return;
   const piece = playGame.get(sqName);
   if(selectedSq){
     const moves = playGame.moves({square:selectedSq, verbose:true});
@@ -1281,10 +1607,20 @@ function onSquareClick(sqName){
       playGame.move({from:selectedSq, to:sqName, promotion:'q'});
       lastMoveSquares=[selectedSq, sqName];
       selectedSq=null;
+      if(playClock){
+        const elapsed = Date.now() - (playTurnStartedAt||Date.now());
+        playClock.w = Math.max(0, playClock.w - elapsed);
+      }
       renderBoard();
       logHistory();
       updatePlayStatus();
+      updatePlayClockDisplay();
+      if(playClock && playClock.w<=0 && !playGameOver){
+        finishPlayByTimeout('w');
+        return;
+      }
       if(!playGame.game_over()){
+        startPlayClockTurn(); // bot's clock starts running now
         doBotMove(); // think-time delay is now handled inside getBotMoveAsync itself
       }
       return;
@@ -1299,8 +1635,15 @@ function onSquareClick(sqName){
 async function doBotMove(){
   if(playGame.game_over()){ updatePlayStatus(); return; }
   const gameRef = playGame, bot = playBot;
-  const m = await getBotMoveAsync(gameRef, bot, Math.max(300, bot.speed*1000));
+  const configuredMs = Math.max(300, bot.speed*1000);
+  const budget = computeThinkBudget(configuredMs, playClock ? playClock.b : undefined, 30);
+  const m = await getBotMoveAsync(gameRef, bot, budget, playWorker);
   if(playGame !== gameRef) return; // user reset/changed the game while the bot was "thinking"
+  if(playClock){
+    playClock.b = Math.max(0, playClock.b - budget);
+    updatePlayClockDisplay();
+    if(playClock.b<=0 && !playGameOver){ finishPlayByTimeout('b'); return; }
+  }
   if(m){
     const verbose = playGame.moves({verbose:true}).find(v=>v.san===m);
     playGame.move(m);
@@ -1309,6 +1652,7 @@ async function doBotMove(){
   renderBoard();
   logHistory();
   updatePlayStatus();
+  if(!playGame.game_over() && !playGameOver){ startPlayClockTurn(); updatePlayClockDisplay(); }
 }
 
 function logHistory(){
@@ -1325,8 +1669,10 @@ function logHistory(){
 function updatePlayStatus(){
   const el = document.getElementById('play-status');
   if(playGame.in_checkmate()){
+    playGameOver = true;
     el.textContent = (playGame.turn()==='w' ? 'Bot gewinnt' : 'Du gewinnst') + ' durch Schachmatt!';
   } else if(playGame.in_draw() || playGame.in_stalemate()){
+    playGameOver = true;
     el.textContent = 'Remis.';
   } else if(playGame.in_check()){
     el.textContent = (playGame.turn()==='w'?'Du stehst':'Bot steht') + ' im Schach.';
