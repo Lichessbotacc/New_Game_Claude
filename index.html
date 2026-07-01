@@ -173,6 +173,30 @@ tr:last-child td{border-bottom:none;}
   .logo{font-size:17px;} nav button{padding:7px 9px; font-size:12.5px;}
   .form-grid, .form-grid.three{grid-template-columns:1fr;}
 }
+/* ---- new feature styles ---- */
+.sound-btn{background:var(--bg3); border:1px solid var(--line); color:var(--text); font-size:13px; padding:6px 9px; border-radius:4px; cursor:pointer; margin-left:8px;}
+.sound-btn:hover{background:var(--line); color:var(--text-bright);}
+.sound-btn.muted{color:var(--muted);}
+.captured-row{display:flex; flex-wrap:wrap; align-items:center; gap:1px; min-height:22px; padding:2px 0;}
+.captured-row .cap-piece{width:18px; height:18px; opacity:.92;}
+.captured-row .cap-piece svg{width:100%; height:100%;}
+.captured-row .cap-diff{font-size:11px; color:var(--accent-bright); font-weight:700; margin-left:4px;}
+.quote-bubble{background:var(--bg3); border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-size:12.5px; color:var(--text-bright); margin-top:8px; font-style:italic; position:relative; min-height:18px;}
+.quote-bubble::before{content:'💬'; margin-right:6px; font-style:normal;}
+.quote-bubble.empty-quote{display:none;}
+.opening-tag{display:inline-block; background:var(--accent-dark); color:#fff; font-size:11px; padding:2px 8px; border-radius:9px; margin-top:6px;}
+.eb-btn{background:none; border:1px solid var(--line); color:var(--accent-bright); font-size:11px; padding:3px 9px; border-radius:9px; cursor:pointer;}
+.eb-btn:hover{background:var(--bg3);}
+.elo-chart-modal .modal-box{max-width:520px;}
+.elo-chart-svg{width:100%; height:220px; background:var(--bg3); border-radius:5px; margin-top:10px;}
+.puzzle-header{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;}
+.puzzle-stat-pill{background:var(--bg3); border:1px solid var(--line); border-radius:14px; padding:5px 12px; font-size:12.5px; color:var(--text-bright);}
+.puzzle-feedback{margin-top:10px; padding:9px 12px; border-radius:5px; font-size:13.5px; display:none;}
+.puzzle-feedback.correct{display:block; background:#1f3a12; border:1px solid var(--accent); color:var(--accent-bright);}
+.puzzle-feedback.wrong{display:block; background:#3a1414; border:1px solid var(--danger); color:#ff8a8a;}
+.puzzle-feedback.solved{display:block; background:#2a2410; border:1px solid var(--gold); color:var(--gold);}
+#puzzle-board{width:100%; aspect-ratio:1; display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr); border:3px solid var(--bg3); border-radius:3px; overflow:hidden;}
+#puzzle-board .sq{display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none; position:relative;}
 </style>
 </head>
 <body>
@@ -183,6 +207,7 @@ tr:last-child td{border-bottom:none;}
     <span class="perf-led" id="perf-led"><i></i><span id="perf-led-text">Engine bereit</span></span>
     <span class="save-led" id="save-led">●</span>
     <button class="pause-btn" id="pause-btn" onclick="toggleSimPause()">⏸ Pause</button>
+    <button class="sound-btn" id="sound-btn" onclick="toggleSound()">🔊 Sound</button>
   </div>
   <nav id="nav">
     <button data-view="lobby" class="active">Lobby</button>
@@ -190,6 +215,7 @@ tr:last-child td{border-bottom:none;}
     <button data-view="tournaments">Turniere</button>
     <button data-view="leaderboard">Rangliste</button>
     <button data-view="play">Spielen</button>
+    <button data-view="puzzle">Puzzles</button>
   </nav>
 </header>
 
@@ -391,22 +417,63 @@ tr:last-child td{border-bottom:none;}
           <div class="clock" id="play-clock-b"><div class="clock-label" id="play-clock-b-name">Bot</div><div class="clock-time" id="play-clock-b-time">5:00</div></div>
           <div class="clock" id="play-clock-w"><div class="clock-label">Du (Weiß)</div><div class="clock-time" id="play-clock-w-time">5:00</div></div>
         </div>
+        <div class="captured-row" id="play-captured-by-w"></div>
         <div id="board"></div>
+        <div class="captured-row" id="play-captured-by-b"></div>
         <div style="margin-top:10px;" class="small" id="play-status"></div>
+        <div id="play-opening-tag"></div>
         <button class="btn secondary" style="margin-top:10px;" onclick="resetPlayGame()">Neues Spiel</button>
         <button class="btn secondary" style="margin-top:10px;" onclick="backToPicker()">Anderen Bot wählen</button>
       </div>
       <div class="side-panel card">
         <h2>Gegner</h2>
         <div id="play-opponent-info"></div>
+        <div class="quote-bubble empty-quote" id="play-quote-bubble"></div>
         <h2 style="margin-top:18px;">Zugverlauf</h2>
         <div id="play-history" class="small" style="max-height:240px; overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+  <!-- PUZZLE -->
+  <div class="view" id="view-puzzle">
+    <h1>Taktik-Puzzles</h1>
+    <div class="subtitle">Finde den besten Zug! Matt-Puzzles zählen jeden Zug, der zum Matt führt — es gibt manchmal mehrere Lösungen.</div>
+    <div class="puzzle-header">
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <span class="puzzle-stat-pill">Gelöst: <b id="pz-solved">0</b></span>
+        <span class="puzzle-stat-pill">Serie: <b id="pz-streak">0</b></span>
+        <span class="puzzle-stat-pill" id="pz-rating-pill">Puzzle-Elo: <b id="pz-elo">1200</b></span>
+      </div>
+      <div>
+        <button class="btn secondary" onclick="puzzleHint()">💡 Hinweis</button>
+        <button class="btn secondary" onclick="puzzleSkip()">Nächstes Puzzle →</button>
+      </div>
+    </div>
+    <div class="board-wrap">
+      <div class="board-col">
+        <div id="puzzle-board"></div>
+        <div class="puzzle-feedback" id="puzzle-feedback"></div>
+      </div>
+      <div class="side-panel card">
+        <h2 id="pz-title">Puzzle</h2>
+        <div class="stat-row"><span>Thema</span><b id="pz-theme">—</b></div>
+        <div class="stat-row"><span>Schwierigkeit</span><b id="pz-diff">—</b></div>
+        <div class="stat-row"><span>Am Zug</span><b id="pz-turn">—</b></div>
+        <div class="small" style="margin-top:10px;" id="pz-instructions">Ziehe die Figur, die die Lösung einleitet.</div>
       </div>
     </div>
   </div>
 
 </main>
 
+<!-- ELO CHART MODAL -->
+<div class="modal-overlay elo-chart-modal" id="elo-modal" style="display:none;">
+  <div class="modal-box">
+    <div class="flex-between"><h2 id="elo-modal-title" style="font-size:15px; margin:0;">Elo-Verlauf</h2><button class="btn secondary" onclick="closeEloModal()">✕</button></div>
+    <div class="tab-row" id="elo-modal-tabs" style="margin-top:12px;"></div>
+    <svg class="elo-chart-svg" id="elo-modal-svg" viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+</div>
 <!-- REPLAY MODAL -->
 <div class="modal-overlay" id="replay-modal" style="display:none;">
   <div class="modal-box">
@@ -444,9 +511,162 @@ const PAUSED_TICK_MS = 500;
 const ROUND_BUILD_INTERVAL_MS = 8000;
 const REFRESH_THROTTLE_MS = 900;
 const MAX_CONCURRENT_BOARDS = 6; // how many bot-vs-bot games may run at the same time, across all tournaments
+let soundEnabled = true;
+
+/* ===================== BOT QUOTES ===================== */
+const QUOTES = {
+  solid: {
+    move: ["Ruhig bleiben, solide weiterspielen.", "Kein Grund zur Eile.", "Struktur vor allem.", "Ich sichere erstmal meine Stellung."],
+    capture: ["Sauber genommen.", "Ein fairer Tausch.", "Das war einzukalkulieren."],
+    check: ["Schach — aber kontrolliert.", "Ich bleibe konzentriert."],
+    win: ["Geduld zahlt sich aus.", "Solide gewonnen.", "Kein Risiko, dafür der Sieg."],
+    loss: ["Da war wohl doch eine Lücke.", "Ich analysiere das nochmal.", "Respekt, gut gespielt."],
+    draw: ["Ein gerechtes Remis.", "Beide Seiten sicher gespielt."]
+  },
+  aggressive: {
+    move: ["Los geht's, ich greife an!", "Zeit für Druck!", "Keine halben Sachen.", "Ich suche die Attacke."],
+    capture: ["Genommen! Weiter geht's.", "Material und Initiative!", "Das tat sicher weh."],
+    check: ["Schach! Lauf, wenn du kannst.", "Ich komme näher!"],
+    win: ["So macht man das!", "Angriff war die richtige Wahl.", "Nie zurückhalten, immer nach vorne!"],
+    loss: ["Zu riskant gespielt, verdammt.", "Nächstes Mal treffe ich schärfer.", "Mutig verloren ist besser als feige gewonnen."],
+    draw: ["Schade, ich wollte mehr!", "Fast hätte ich durchgebrochen."]
+  },
+  chaotic: {
+    move: ["Mal sehen was passiert 🤪", "Warum nicht?!", "Chaos ist auch ein Plan.", "Überraschung!"],
+    capture: ["Ups, war das gut?", "Genommen, keine Ahnung warum.", "Zufallstreffer? Vielleicht Absicht!"],
+    check: ["Schach, glaube ich?", "Wild wird's!"],
+    win: ["Hah, hat tatsächlich geklappt!", "Selbst ich bin überrascht.", "Chaos siegt!"],
+    loss: ["Naja, war einen Versuch wert.", "Das ging nach hinten los.", "Klassisches Chaos-Resultat."],
+    draw: ["Irgendwie logisch bei mir.", "Remis im Chaos, passt."]
+  }
+};
+function pickQuote(style, event){
+  const s = QUOTES[style] || QUOTES.solid;
+  const arr = s[event] || s.move;
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+
+/* ===================== OPENING NAMES (SAN-prefix matched) ===================== */
+const OPENINGS = [
+  {name:"Italienische Partie", moves:["e4","e5","Nf3","Nc6","Bc4"]},
+  {name:"Spanische Partie (Ruy Lopez)", moves:["e4","e5","Nf3","Nc6","Bb5"]},
+  {name:"Läuferspiel", moves:["e4","e5","Bc4"]},
+  {name:"Königsgambit", moves:["e4","e5","f4"]},
+  {name:"Schottische Partie", moves:["e4","e5","Nf3","Nc6","d4"]},
+  {name:"Petroffs Verteidigung", moves:["e4","e5","Nf3","Nf6"]},
+  {name:"Philidor-Verteidigung", moves:["e4","e5","Nf3","d6"]},
+  {name:"Ungarische Verteidigung", moves:["e4","e5","Nf3","Nc6","Bc4","Be7"]},
+  {name:"Sizilianische Verteidigung", moves:["e4","c5"]},
+  {name:"Französische Verteidigung", moves:["e4","e6"]},
+  {name:"Caro-Kann-Verteidigung", moves:["e4","c6"]},
+  {name:"Skandinavische Verteidigung", moves:["e4","d5"]},
+  {name:"Aljechin-Verteidigung", moves:["e4","Nf6"]},
+  {name:"Pirc-Verteidigung", moves:["e4","d6"]},
+  {name:"Damengambit", moves:["d4","d5","c4"]},
+  {name:"Damengambit angenommen", moves:["d4","d5","c4","dxc4"]},
+  {name:"Slawische Verteidigung", moves:["d4","d5","c4","c6"]},
+  {name:"Königsindische Verteidigung", moves:["d4","Nf6","c4","g6"]},
+  {name:"Nimzowitsch-Indisch", moves:["d4","Nf6","c4","e6","Nc3","Bb4"]},
+  {name:"Grünfeld-Indisch", moves:["d4","Nf6","c4","g6","Nc3","d5"]},
+  {name:"Holländische Verteidigung", moves:["d4","f5"]},
+  {name:"Londoner System", moves:["d4","d5","Nf3","Nf6","Bf4"]},
+  {name:"Réti-Eröffnung", moves:["Nf3","d5","c4"]},
+  {name:"Englische Eröffnung", moves:["c4"]},
+  {name:"Bird-Eröffnung", moves:["f4"]}
+];
+function detectOpening(sanMoves){
+  let best = null;
+  for(const o of OPENINGS){
+    if(o.moves.length > sanMoves.length) continue;
+    let match = true;
+    for(let i=0;i<o.moves.length;i++){ if(sanMoves[i]!==o.moves[i]){ match=false; break; } }
+    if(match && (!best || o.moves.length>best.moves.length)) best = o;
+  }
+  return best ? best.name : null;
+}
+
+/* ===================== CAPTURED PIECES ===================== */
+// Replays a move list and returns { w:[types captured FROM white], b:[types captured FROM black] }
+function getCapturedFromMoves(moves){
+  const g = new Chess();
+  const capturedFromWhite = [], capturedFromBlack = [];
+  for(const san of moves){
+    const verbose = g.moves({verbose:true}).find(m=>m.san===san);
+    if(verbose && verbose.captured){
+      if(verbose.color==='w') capturedFromBlack.push(verbose.captured);
+      else capturedFromWhite.push(verbose.captured);
+    }
+    const res = g.move(san);
+    if(!res) break;
+  }
+  return { w: capturedFromWhite, b: capturedFromBlack };
+}
+const CAP_VALUE = {p:1,n:3,b:3,r:5,q:9,k:0};
+function renderCapturedRow(elId, capturedTypes, byColor, diff){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  const order = {q:0,r:1,b:2,n:3,p:4};
+  const sorted = [...capturedTypes].sort((a,b)=>order[a]-order[b]);
+  let html = sorted.map(t=>`<span class="cap-piece">${pieceMarkup(t, byColor)}</span>`).join('');
+  if(diff>0) html += `<span class="cap-diff">+${diff}</span>`;
+  el.innerHTML = html;
+}
+function updateCapturedDisplay(moves, elWonByWhite, elWonByBlack){
+  const cap = getCapturedFromMoves(moves);
+  const wVal = cap.w.reduce((s,t)=>s+CAP_VALUE[t],0);
+  const bVal = cap.b.reduce((s,t)=>s+CAP_VALUE[t],0);
+  // pieces captured FROM black are shown as white's trophies (rendered as black pieces), and vice versa
+  renderCapturedRow(elWonByWhite, cap.b, 'b', Math.max(0, wVal-bVal));
+  renderCapturedRow(elWonByBlack, cap.w, 'w', Math.max(0, bVal-wVal));
+}
+
+/* ===================== SOUND EFFECTS (synthesized, no external audio files) ===================== */
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+  }
+  if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume().catch(()=>{}); }
+  return audioCtx;
+}
+function beep(freq, startOffset, dur, type, gainPeak){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const t0 = ctx.currentTime + startOffset;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type||'sine';
+  osc.frequency.setValueAtTime(freq, t0);
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(gainPeak||0.12, t0+0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(t0); osc.stop(t0+dur+0.02);
+}
+function playSound(kind){
+  if(!soundEnabled) return;
+  try{
+    if(kind==='move'){ beep(520, 0, 0.09, 'triangle', 0.09); }
+    else if(kind==='capture'){ beep(300, 0, 0.08, 'square', 0.08); beep(200, 0.05, 0.1, 'square', 0.07); }
+    else if(kind==='check'){ beep(700, 0, 0.08, 'sawtooth', 0.09); beep(880, 0.09, 0.12, 'sawtooth', 0.08); }
+    else if(kind==='win'){ beep(523,0,0.13,'triangle',0.11); beep(659,0.13,0.13,'triangle',0.11); beep(784,0.26,0.22,'triangle',0.12); }
+    else if(kind==='loss'){ beep(392,0,0.16,'sawtooth',0.09); beep(311,0.16,0.16,'sawtooth',0.09); beep(261,0.32,0.28,'sawtooth',0.09); }
+    else if(kind==='draw'){ beep(440,0,0.12,'sine',0.09); beep(440,0.15,0.12,'sine',0.09); }
+    else if(kind==='wrong'){ beep(220,0,0.18,'sawtooth',0.1); }
+    else if(kind==='correct'){ beep(660,0,0.1,'triangle',0.11); beep(880,0.1,0.16,'triangle',0.11); }
+  }catch(e){ /* audio not available - fail silently */ }
+}
+function toggleSound(){
+  soundEnabled = !soundEnabled;
+  const btn = document.getElementById('sound-btn');
+  btn.textContent = soundEnabled ? '🔊 Sound' : '🔇 Stumm';
+  btn.classList.toggle('muted', !soundEnabled);
+  if(soundEnabled) getAudioCtx();
+}
+
 
 /* ===================== STATE ===================== */
-let state = { bots:{}, tournaments:{}, lastHourlyBucket:null, gamesPlayed:0, lastActiveTs:null };
+let state = { bots:{}, tournaments:{}, lastHourlyBucket:null, gamesPlayed:0, lastActiveTs:null, puzzleStats:{solved:0, streak:0, elo:1200, seenIds:[]} };
 
 // --- live scheduling state (transient, not persisted) ---
 let activeJobs = [];      // [{tId, idWhite, idBlack, bw, bb, game, moves:[]}, ...] - REAL concurrency, not a single slot
@@ -516,7 +736,12 @@ function migrateState(){
     if(!b.opening) b.opening='any';
     if(!b.color) b.color='#a3d160';
     if(!b.thinkTime) b.thinkTime=300;
+    if(!b.eloHistory){
+      b.eloHistory = {};
+      TC_LIST.forEach(tc=>{ b.eloHistory[tc] = [{ts:b.created||Date.now(), rating:botRating(b,tc)}]; });
+    }
   });
+  if(!state.puzzleStats) state.puzzleStats = {solved:0, streak:0, elo:1200, seenIds:[]};
   Object.values(state.tournaments).forEach(t=>{
     if(!TC_LIST.includes(t.tc)) t.tc='blitz';
     if(!t.gamesLog) t.gamesLog=[];
@@ -585,6 +810,7 @@ function switchView(name){
   if(name==='tournaments') renderTournaments();
   if(name==='leaderboard') renderLeaderboard();
   if(name==='play') renderPlayPicker();
+  if(name==='puzzle') openPuzzleView();
 }
 document.getElementById('nav').addEventListener('click', e=>{
   if(e.target.tagName==='BUTTON') switchView(e.target.dataset.view);
@@ -624,7 +850,9 @@ function createBot(){
   // every bot starts at exactly 1500 in every time control, like a fresh Lichess account
   const ratings = {};
   TC_LIST.forEach(t=>{ ratings[t] = START_ELO; });
-  state.bots[id] = { id, name, level, speed, thinkTime, flag, style, opening, color, tc, ratings, created: Date.now(), wins:0, draws:0, losses:0 };
+  const eloHistory = {};
+  TC_LIST.forEach(t=>{ eloHistory[t] = [{ts:Date.now(), rating:START_ELO}]; });
+  state.bots[id] = { id, name, level, speed, thinkTime, flag, style, opening, color, tc, ratings, eloHistory, created: Date.now(), wins:0, draws:0, losses:0 };
   let joined=0;
   Object.values(state.tournaments).forEach(t=>{
     if(getTStatus(t)==='finished') return;
@@ -689,6 +917,7 @@ function renderBots(){
       </div>
       <div style="margin-top:10px; display:flex; gap:8px;">
         <button class="btn secondary" style="flex:1;" onclick="pickBotForPlay('${b.id}')">Spielen</button>
+        <button class="eb-btn" onclick="openEloModal('${b.id}')">📈 Verlauf</button>
         <button class="btn danger" onclick="deleteBot('${b.id}')">✕</button>
       </div>
     </div>`;
@@ -848,18 +1077,26 @@ function renderTDetail(){
     document.getElementById('td-live-grid').innerHTML = jobs.map((job,idx)=>{
       const turn = job.game.turn();
       const wv = jobClockValue(job,'w'), bv = jobClockValue(job,'b');
+      const opening = detectOpening(job.moves);
       return `
       <div class="bot-card">
         <div class="small"><b>${escapeHtml(job.bw.name)}</b> vs <b>${escapeHtml(job.bb.name)}</b></div>
         <div class="small" style="margin-top:2px;">Zug ${Math.ceil(job.moves.length/2)} (${job.moves.length} Halbzüge)</div>
+        ${opening ? `<span class="opening-tag">${escapeHtml(opening)}</span>` : ''}
         <div class="board-clock-row">
           <div class="clock ${turn==='b'?'active':''} ${bv<CLOCK_LOW_THRESHOLD?'low':''}"><div class="clock-label">${escapeHtml(job.bb.name)}</div><div class="clock-time" id="td-clock-b-${idx}">${fmtClock(bv)}</div></div>
           <div class="clock ${turn==='w'?'active':''} ${wv<CLOCK_LOW_THRESHOLD?'low':''}"><div class="clock-label">${escapeHtml(job.bw.name)}</div><div class="clock-time" id="td-clock-w-${idx}">${fmtClock(wv)}</div></div>
         </div>
+        <div class="captured-row" id="td-cap-w-${idx}"></div>
         <div class="mini-board" id="td-live-board-${idx}"></div>
+        <div class="captured-row" id="td-cap-b-${idx}"></div>
+        ${job.lastQuote ? `<div class="quote-bubble">${escapeHtml(job.lastQuote)}</div>` : ''}
       </div>`;
     }).join('');
-    jobs.forEach((job,idx)=>renderMiniBoardFromMoves('td-live-board-'+idx, job.moves));
+    jobs.forEach((job,idx)=>{
+      renderMiniBoardFromMoves('td-live-board-'+idx, job.moves);
+      updateCapturedDisplay(job.moves, 'td-cap-w-'+idx, 'td-cap-b-'+idx);
+    });
   } else {
     liveCard.style.display='none';
   }
@@ -1206,6 +1443,14 @@ function updateElo(t, idWhite, idBlack, result){
   const scoreB = 1 - scoreW;
   bw.ratings[tc] = rw + K*(scoreW-expW);
   bb.ratings[tc] = rb + K*(scoreB-expB);
+  if(!bw.eloHistory) bw.eloHistory = {};
+  if(!bb.eloHistory) bb.eloHistory = {};
+  if(!bw.eloHistory[tc]) bw.eloHistory[tc] = [];
+  if(!bb.eloHistory[tc]) bb.eloHistory[tc] = [];
+  bw.eloHistory[tc].push({ts:Date.now(), rating:Math.round(bw.ratings[tc])});
+  bb.eloHistory[tc].push({ts:Date.now(), rating:Math.round(bb.ratings[tc])});
+  if(bw.eloHistory[tc].length>300) bw.eloHistory[tc].shift();
+  if(bb.eloHistory[tc].length>300) bb.eloHistory[tc].shift();
 }
 
 /* ============= TOURNAMENT SIMULATION =====================================================
@@ -1343,7 +1588,16 @@ async function runJobLoop(job){
       refreshOpenViews(false);
       break;
     }
-    if(mv){ game.move(mv); job.moves.push(mv); } else { break; }
+    if(mv){
+      const verboseMv = game.moves({verbose:true}).find(v=>v.san===mv);
+      game.move(mv);
+      job.moves.push(mv);
+      const movingBot = sideKey==='w' ? job.bw : job.bb;
+      if(verboseMv && verboseMv.captured){ job.lastQuote = pickQuote(movingBot.style, 'capture'); }
+      else if(game.in_checkmate()){ job.lastQuote = pickQuote(movingBot.style, 'win'); }
+      else if(game.in_check()){ job.lastQuote = pickQuote(movingBot.style, 'check'); }
+      else if(Math.random()<0.25){ job.lastQuote = pickQuote(movingBot.style, 'move'); }
+    } else { break; }
     refreshOpenViews(false);
     await sleep((turboMode && Date.now()<turboUntil) ? 0 : PLY_YIELD_MS);
   }
@@ -1486,6 +1740,55 @@ function closeReplay(){
   replayState=null;
 }
 
+/* ===================== ELO HISTORY CHART ===================== */
+let eloModalBotId = null, eloModalTc = 'blitz';
+function openEloModal(botId){
+  const b = state.bots[botId];
+  if(!b) return;
+  eloModalBotId = botId;
+  eloModalTc = b.tc || 'blitz';
+  document.getElementById('elo-modal-title').textContent = `${b.flag||''} ${b.name} — Elo-Verlauf`;
+  document.getElementById('elo-modal-tabs').innerHTML = TC_LIST.map(tc=>
+    `<button class="${tc===eloModalTc?'active':''}" onclick="setEloModalTc('${tc}')">${TC_SHORT[tc]}</button>`).join('');
+  document.getElementById('elo-modal').style.display='flex';
+  renderEloModalChart();
+}
+function setEloModalTc(tc){
+  eloModalTc = tc;
+  document.querySelectorAll('#elo-modal-tabs button').forEach(btn=>btn.classList.toggle('active', btn.textContent===TC_SHORT[tc]));
+  renderEloModalChart();
+}
+function closeEloModal(){
+  document.getElementById('elo-modal').style.display='none';
+  eloModalBotId = null;
+}
+function renderEloModalChart(){
+  const b = state.bots[eloModalBotId];
+  const svg = document.getElementById('elo-modal-svg');
+  if(!b){ svg.innerHTML=''; return; }
+  const hist = (b.eloHistory && b.eloHistory[eloModalTc] && b.eloHistory[eloModalTc].length) ? b.eloHistory[eloModalTc] : [{ts:b.created||Date.now(), rating:START_ELO}];
+  const W=500, H=220, padL=42, padR=14, padT=14, padB=24;
+  const ratings = hist.map(p=>p.rating);
+  let min = Math.min(...ratings, START_ELO-20), max = Math.max(...ratings, START_ELO+20);
+  if(max-min < 40){ min-=20; max+=20; }
+  const x = i => padL + (hist.length<=1 ? 0 : i/(hist.length-1) * (W-padL-padR));
+  const y = r => padT + (H-padT-padB) - ((r-min)/(max-min)) * (H-padT-padB);
+  let gridLines='';
+  const steps=4;
+  for(let i=0;i<=steps;i++){
+    const val = min + (max-min)*i/steps;
+    const yy = y(val);
+    gridLines += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)" stroke-width="1"/>`;
+    gridLines += `<text x="4" y="${yy+4}" font-size="10" fill="var(--muted)">${Math.round(val)}</text>`;
+  }
+  let path = hist.map((p,i)=>`${i===0?'M':'L'}${x(i).toFixed(1)},${y(p.rating).toFixed(1)}`).join(' ');
+  const startLine = `<line x1="${padL}" y1="${y(START_ELO)}" x2="${W-padR}" y2="${y(START_ELO)}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3,3"/>`;
+  const lastPt = hist[hist.length-1];
+  svg.innerHTML = `${gridLines}${startLine}<path d="${path}" fill="none" stroke="var(--accent-bright)" stroke-width="2.5"/>` +
+    `<circle cx="${x(hist.length-1)}" cy="${y(lastPt.rating)}" r="4" fill="var(--accent-bright)"/>` +
+    `<text x="${Math.max(padL,x(hist.length-1)-30)}" y="${y(lastPt.rating)-10}" font-size="12" fill="var(--text-bright)" font-weight="700">${lastPt.rating}</text>`;
+}
+
 /* ===================== PLAY VS BOT ===================== */
 let playGame=null, playBot=null, selectedSq=null, lastMoveSquares=[];
 let playWorker=null, playClock=null, playTurnStartedAt=null, playGameOver=false;
@@ -1565,6 +1868,11 @@ function resetPlayGame(){
     <div class="stat-row"><span>Tempo</span><b>${playBot.speed.toFixed(1)}s/Zug</b></div>
     <div class="tc-pill-row">${TC_LIST.map(tc=>`<span class="tc-pill">${TC_SHORT[tc]} ${botRating(playBot,tc)}</span>`).join('')}</div>`;
   document.getElementById('play-history').innerHTML='';
+  document.getElementById('play-captured-by-w').innerHTML='';
+  document.getElementById('play-captured-by-b').innerHTML='';
+  document.getElementById('play-opening-tag').innerHTML='';
+  const qb = document.getElementById('play-quote-bubble');
+  qb.textContent=''; qb.classList.add('empty-quote');
   renderBoard();
   updatePlayStatus();
   startPlayClockTurn();
@@ -1604,9 +1912,14 @@ function onSquareClick(sqName){
     const moves = playGame.moves({square:selectedSq, verbose:true});
     const match = moves.find(m=>m.to===sqName);
     if(match){
-      playGame.move({from:selectedSq, to:sqName, promotion:'q'});
+      const moveResult = playGame.move({from:selectedSq, to:sqName, promotion:'q'});
       lastMoveSquares=[selectedSq, sqName];
       selectedSq=null;
+      if(moveResult){
+        if(moveResult.captured) playSound('capture'); else playSound('move');
+        if(playGame.in_checkmate()) playSound('win');
+        else if(playGame.in_check()) playSound('check');
+      }
       if(playClock){
         const elapsed = Date.now() - (playTurnStartedAt||Date.now());
         playClock.w = Math.max(0, playClock.w - elapsed);
@@ -1648,6 +1961,10 @@ async function doBotMove(){
     const verbose = playGame.moves({verbose:true}).find(v=>v.san===m);
     playGame.move(m);
     if(verbose) lastMoveSquares=[verbose.from, verbose.to];
+    if(verbose && verbose.captured){ playSound('capture'); showPlayQuote('capture'); }
+    else { playSound('move'); showPlayQuote('move'); }
+    if(playGame.in_checkmate()) playSound('loss');
+    else if(playGame.in_check()) playSound('check');
   }
   renderBoard();
   logHistory();
@@ -1664,21 +1981,236 @@ function logHistory(){
   }
   wrap.innerHTML = html;
   wrap.scrollTop = wrap.scrollHeight;
+  updateCapturedDisplay(hist, 'play-captured-by-w', 'play-captured-by-b');
+  const opening = detectOpening(hist);
+  document.getElementById('play-opening-tag').innerHTML = opening ? `<span class="opening-tag">${escapeHtml(opening)}</span>` : '';
+}
+function showPlayQuote(event){
+  if(!playBot) return;
+  const qb = document.getElementById('play-quote-bubble');
+  qb.textContent = pickQuote(playBot.style, event);
+  qb.classList.remove('empty-quote');
 }
 
 function updatePlayStatus(){
   const el = document.getElementById('play-status');
   if(playGame.in_checkmate()){
     playGameOver = true;
-    el.textContent = (playGame.turn()==='w' ? 'Bot gewinnt' : 'Du gewinnst') + ' durch Schachmatt!';
+    const botWon = playGame.turn()==='w';
+    el.textContent = (botWon ? 'Bot gewinnt' : 'Du gewinnst') + ' durch Schachmatt!';
+    showPlayQuote(botWon ? 'win' : 'loss');
   } else if(playGame.in_draw() || playGame.in_stalemate()){
     playGameOver = true;
     el.textContent = 'Remis.';
+    playSound('draw');
+    showPlayQuote('draw');
   } else if(playGame.in_check()){
     el.textContent = (playGame.turn()==='w'?'Du stehst':'Bot steht') + ' im Schach.';
   } else {
     el.textContent = playGame.turn()==='w' ? 'Du bist am Zug (Weiß).' : 'Bot denkt nach...';
   }
+}
+
+/* ===================== PUZZLE MODE =====================================================
+   All FEN positions below were programmatically verified against this exact chess.js version
+   (mate-in-1 candidates confirmed via game.in_checkmate(); the tactic puzzle's move sequence
+   was replayed move-by-move to confirm legality) before being hardcoded here. */
+const PUZZLES = [
+  { id:'p1', fen:'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
+    theme:'Eröffnungsfalle — Schäfermatt', diff:'Leicht', rating:900, mode:'mate1' },
+  { id:'p2', fen:'rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2',
+    theme:'Narrenmatt', diff:'Leicht', rating:750, mode:'mate1' },
+  { id:'p3', fen:'6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1',
+    theme:'Grundreihenmatt', diff:'Leicht', rating:900, mode:'mate1' },
+  { id:'p4', fen:'7k/8/6R1/8/8/8/8/6RK w - - 0 1',
+    theme:'Turm-Leitermatt', diff:'Mittel', rating:1000, mode:'mate1' },
+  { id:'p5', fen:'6k1/5ppp/8/8/8/8/5PPP/3QR1K1 w - - 0 1',
+    theme:'Grundreihenmatt (Dame+Turm)', diff:'Mittel', rating:1000, mode:'mate1' },
+  { id:'p6', fen:'rn1qkbnr/ppp2p1p/3p2p1/4p3/2B1P1b1/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 0 5',
+    theme:'Materialgewinn — Legal-Falle', diff:'Schwer', rating:1300, mode:'sequence',
+    steps:[{from:'f3',to:'e5'},{auto:true,from:'d6',to:'e5'},{from:'d1',to:'g4'}] }
+];
+let pzGame=null, pzPuzzle=null, pzSelectedSq=null, pzStepIdx=0, pzSolved=false, pzLastMoveSquares=[];
+
+function openPuzzleView(){
+  updatePuzzleStatsDisplay();
+  if(!pzPuzzle) loadPuzzle(pickNextPuzzleId());
+}
+function updatePuzzleStatsDisplay(){
+  const ps = state.puzzleStats || {solved:0,streak:0,elo:1200};
+  document.getElementById('pz-solved').textContent = ps.solved||0;
+  document.getElementById('pz-streak').textContent = ps.streak||0;
+  document.getElementById('pz-elo').textContent = Math.round(ps.elo||1200);
+}
+function pickNextPuzzleId(){
+  const seen = (state.puzzleStats && state.puzzleStats.seenIds) || [];
+  const unseen = PUZZLES.filter(p=>!seen.includes(p.id));
+  const pool = unseen.length ? unseen : PUZZLES;
+  return pool[Math.floor(Math.random()*pool.length)].id;
+}
+function loadPuzzle(id){
+  const p = PUZZLES.find(x=>x.id===id) || PUZZLES[0];
+  pzPuzzle = p;
+  pzGame = new Chess(p.fen);
+  pzSelectedSq = null;
+  pzStepIdx = 0;
+  pzSolved = false;
+  pzLastMoveSquares = [];
+  document.getElementById('pz-title').textContent = p.mode==='mate1' ? 'Finde das Matt!' : 'Finde den besten Zug!';
+  document.getElementById('pz-theme').textContent = p.theme;
+  document.getElementById('pz-diff').textContent = p.diff + ' (' + p.rating + ')';
+  document.getElementById('pz-turn').textContent = pzGame.turn()==='w' ? 'Weiß' : 'Schwarz';
+  document.getElementById('pz-instructions').textContent = p.mode==='mate1'
+    ? 'Ziehe die Figur, die Schachmatt setzt.'
+    : 'Finde den stärksten Zug — es folgt eine erzwungene Fortsetzung.';
+  const fb = document.getElementById('puzzle-feedback');
+  fb.className = 'puzzle-feedback'; fb.textContent='';
+  renderPuzzleBoard();
+}
+function puzzleSkip(){
+  const seen = state.puzzleStats.seenIds || (state.puzzleStats.seenIds=[]);
+  if(pzPuzzle && !seen.includes(pzPuzzle.id)) seen.push(pzPuzzle.id);
+  if(seen.length>=PUZZLES.length) state.puzzleStats.seenIds=[];
+  saveState(false);
+  loadPuzzle(pickNextPuzzleId());
+}
+function puzzleHint(){
+  if(!pzPuzzle || pzSolved) return;
+  const fb = document.getElementById('puzzle-feedback');
+  let hintSq = null;
+  if(pzPuzzle.mode==='mate1'){
+    const moves = pzGame.moves({verbose:true});
+    for(const m of moves){
+      pzGame.move(m.san);
+      const isMate = pzGame.in_checkmate();
+      pzGame.undo();
+      if(isMate){ hintSq = m.from; break; }
+    }
+  } else {
+    const step = pzPuzzle.steps[pzStepIdx];
+    if(step) hintSq = step.from;
+  }
+  fb.className = 'puzzle-feedback wrong';
+  fb.textContent = hintSq ? `Hinweis: Schau dir das Feld ${hintSq.toUpperCase()} an.` : 'Kein Hinweis verfügbar.';
+}
+function renderPuzzleBoard(){
+  const boardEl = document.getElementById('puzzle-board');
+  boardEl.innerHTML='';
+  const board = pzGame.board();
+  const legalTargets = pzSelectedSq ? pzGame.moves({square:pzSelectedSq, verbose:true}).map(m=>m.to) : [];
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const file='abcdefgh'[c], rank=8-r, sqName=file+rank;
+      const piece = board[r][c];
+      const div = document.createElement('div');
+      div.className = 'sq ' + (((r+c)%2===0)?'light':'dark');
+      if(pzSelectedSq===sqName) div.classList.add('selected');
+      if(pzLastMoveSquares.includes(sqName)) div.classList.add('lastmove');
+      if(legalTargets.includes(sqName)){ div.classList.add('legal'); if(piece) div.classList.add('capture'); }
+      if(piece) div.innerHTML = pieceMarkup(piece.type, piece.color);
+      div.onclick = ()=>onPuzzleSquareClick(sqName);
+      boardEl.appendChild(div);
+    }
+  }
+}
+function onPuzzleSquareClick(sqName){
+  if(!pzPuzzle || pzSolved) return;
+  const piece = pzGame.get(sqName);
+  const sideToMove = pzGame.turn();
+  if(pzSelectedSq){
+    const moves = pzGame.moves({square:pzSelectedSq, verbose:true});
+    const match = moves.find(m=>m.to===sqName);
+    if(match){
+      attemptPuzzleMove(pzSelectedSq, sqName);
+      pzSelectedSq=null;
+      return;
+    }
+    pzSelectedSq = (piece && piece.color===sideToMove) ? sqName : null;
+  } else {
+    if(piece && piece.color===sideToMove) pzSelectedSq = sqName;
+  }
+  renderPuzzleBoard();
+}
+function attemptPuzzleMove(from, to){
+  const fb = document.getElementById('puzzle-feedback');
+  const beforeFen = pzGame.fen();
+  const moveResult = pzGame.move({from, to, promotion:'q'});
+  if(!moveResult) return;
+  pzLastMoveSquares=[from,to];
+  if(pzPuzzle.mode==='mate1'){
+    if(pzGame.in_checkmate()){
+      playSound('correct');
+      finishPuzzleSolved();
+      renderPuzzleBoard();
+      return;
+    } else {
+      playSound('wrong');
+      pzGame.undo();
+      pzLastMoveSquares=[];
+      fb.className='puzzle-feedback wrong';
+      fb.textContent='Das ist noch nicht Schachmatt — versuch es nochmal.';
+      registerPuzzleAttemptFailed();
+      renderPuzzleBoard();
+      return;
+    }
+  } else {
+    const step = pzPuzzle.steps[pzStepIdx];
+    if(step && step.from===from && step.to===to){
+      playSound('correct');
+      fb.className='puzzle-feedback correct';
+      fb.textContent='Richtig!';
+      pzStepIdx++;
+      renderPuzzleBoard();
+      maybePlayAutoStep();
+    } else {
+      playSound('wrong');
+      pzGame.undo();
+      pzLastMoveSquares=[];
+      fb.className='puzzle-feedback wrong';
+      fb.textContent='Nicht der stärkste Zug — versuch es nochmal.';
+      registerPuzzleAttemptFailed();
+      renderPuzzleBoard();
+    }
+  }
+}
+function maybePlayAutoStep(){
+  const step = pzPuzzle.steps[pzStepIdx];
+  if(step && step.auto){
+    setTimeout(()=>{
+      const mv = pzGame.move({from:step.from, to:step.to, promotion:'q'});
+      if(mv){ pzLastMoveSquares=[step.from, step.to]; playSound(mv.captured?'capture':'move'); }
+      pzStepIdx++;
+      renderPuzzleBoard();
+      if(pzStepIdx>=pzPuzzle.steps.length){ finishPuzzleSolved(); }
+      else { maybePlayAutoStep(); }
+    }, 550);
+  } else if(pzStepIdx>=pzPuzzle.steps.length){
+    finishPuzzleSolved();
+  }
+}
+function registerPuzzleAttemptFailed(){
+  state.puzzleStats.streak = 0;
+  state.puzzleStats.elo = Math.max(600, (state.puzzleStats.elo||1200) - 8);
+  updatePuzzleStatsDisplay();
+  saveState(false);
+}
+function finishPuzzleSolved(){
+  if(pzSolved) return;
+  pzSolved = true;
+  const fb = document.getElementById('puzzle-feedback');
+  fb.className='puzzle-feedback solved';
+  fb.textContent='🎉 Gelöst! ' + (pzPuzzle.mode==='mate1' ? 'Schachmatt!' : 'Stärkster Zug gefunden.');
+  const ps = state.puzzleStats;
+  ps.solved = (ps.solved||0)+1;
+  ps.streak = (ps.streak||0)+1;
+  const gain = 10 + Math.max(0, Math.round((pzPuzzle.rating - (ps.elo||1200))/20));
+  ps.elo = (ps.elo||1200) + gain;
+  if(!ps.seenIds) ps.seenIds=[];
+  if(!ps.seenIds.includes(pzPuzzle.id)) ps.seenIds.push(pzPuzzle.id);
+  if(ps.seenIds.length>=PUZZLES.length) ps.seenIds=[];
+  updatePuzzleStatsDisplay();
+  saveState(true);
+  setTimeout(()=>{ loadPuzzle(pickNextPuzzleId()); }, 1600);
 }
 
 /* ===================== INIT ===================== */
