@@ -153,6 +153,17 @@ tr:last-child td{border-bottom:none;}
 .tc-pill{font-size:10.5px; padding:2px 7px; border-radius:9px; background:var(--bg3); color:var(--muted); border:1px solid var(--line);}
 .mini-board{width:100%; aspect-ratio:1; display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr); border:2px solid var(--bg3); border-radius:3px; overflow:hidden; flex-shrink:0; margin-top:8px;}
 .mini-board .sq{cursor:default;}
+.mini-board .sq.lastmove-from{box-shadow:inset 0 0 0 999px rgba(255,213,0,.30);}
+.mini-board .sq.lastmove-to{box-shadow:inset 0 0 0 999px rgba(255,183,0,.42);}
+.mini-board .sq.lastmove-to .piece-svg{animation:pieceDrop .32s ease-out;}
+@keyframes pieceDrop{0%{transform:scale(.5); opacity:.15;} 60%{transform:scale(1.12); opacity:1;} 100%{transform:scale(1); opacity:1;}}
+.mover-row{display:flex; align-items:center; gap:6px; margin-top:7px; font-size:12px; color:var(--muted); min-height:16px;}
+.mover-dot{width:8px; height:8px; border-radius:50%; background:var(--muted); flex-shrink:0; transition:background .15s;}
+.mover-dot.w{background:#f0d9b5;}
+.mover-dot.b{background:#3a3733; border:1px solid #6b6660;}
+.mover-row.pulsing .mover-dot{animation:moverPulse 1s ease-in-out infinite;}
+@keyframes moverPulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.mover-row .mover-text b{color:var(--text-bright);}
 .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.65); display:flex; align-items:center; justify-content:center; z-index:200; padding:16px;}
 .modal-box{background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:18px; max-width:380px; width:100%; max-height:90vh; overflow-y:auto;}
 .replay-controls{display:flex; gap:8px; justify-content:center; margin-top:12px;}
@@ -1090,12 +1101,14 @@ function renderTDetail(){
         <div class="captured-row" id="td-cap-w-${idx}"></div>
         <div class="mini-board" id="td-live-board-${idx}"></div>
         <div class="captured-row" id="td-cap-b-${idx}"></div>
+        <div class="mover-row pulsing" id="td-mover-${idx}"></div>
         ${job.lastQuote ? `<div class="quote-bubble">${escapeHtml(job.lastQuote)}</div>` : ''}
       </div>`;
     }).join('');
     jobs.forEach((job,idx)=>{
       renderMiniBoardFromMoves('td-live-board-'+idx, job.moves);
       updateCapturedDisplay(job.moves, 'td-cap-w-'+idx, 'td-cap-b-'+idx);
+      updateMoverRow('td-mover-'+idx, job);
     });
   } else {
     liveCard.style.display='none';
@@ -1636,7 +1649,26 @@ function finalizeJob(job){
   refreshOpenViews(true);
 }
 
+// Updates only the already-existing live mini-boards (no full grid rebuild) so that
+// EVERY single ply gets shown - this bypasses the heavier throttle below on purpose,
+// otherwise several moves could happen "invisibly" between two throttled redraws and
+// it would look like pieces teleport / both sides moved at once instead of alternating.
+function updateLiveBoardsInstant(){
+  if(!document.getElementById('view-tdetail').classList.contains('active') || !currentTId) return;
+  const jobs = activeJobs.filter(j=>j.tId===currentTId);
+  jobs.forEach((job,idx)=>{
+    if(!document.getElementById('td-live-board-'+idx)) return; // grid not built for this slot yet
+    renderMiniBoardFromMoves('td-live-board-'+idx, job.moves);
+    updateCapturedDisplay(job.moves, 'td-cap-w-'+idx, 'td-cap-b-'+idx);
+    updateMoverRow('td-mover-'+idx, job);
+    const bEl=document.getElementById('td-clock-b-'+idx), wEl=document.getElementById('td-clock-w-'+idx);
+    if(bEl) bEl.textContent = fmtClock(jobClockValue(job,'b'));
+    if(wEl) wEl.textContent = fmtClock(jobClockValue(job,'w'));
+  });
+}
+
 function refreshOpenViews(force){
+  updateLiveBoardsInstant();
   const now = Date.now();
   if(!force && now - lastRefresh < REFRESH_THROTTLE_MS) return;
   lastRefresh = now;
@@ -1691,24 +1723,56 @@ function pieceMarkup(type, color){
   return `<svg class="piece-svg" viewBox="0 0 45 45"><g fill="${fill}" stroke="${stroke}" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">${PIECE_PATHS[type]||''}</g></svg>`;
 }
 
-/* ===================== MINI BOARD (live + replay) ===================== */
+/* ===================== MINI BOARD (live + replay) =====================
+   Renders the board AND figures out which square the last ply moved from/to,
+   so that ply gets a clear highlight plus a small "drop in" animation on the
+   destination square. That way each individual half-move is visually obvious,
+   instead of the position just silently changing between refreshes. */
 function renderMiniBoardFromMoves(elId, moves, uptoIdx){
   const game = new Chess();
   const n = (uptoIdx===undefined) ? moves.length : uptoIdx;
-  for(let i=0;i<n;i++){ if(moves[i]) game.move(moves[i]); }
+  let lastMoveVerbose = null;
+  for(let i=0;i<n;i++){
+    if(!moves[i]) continue;
+    const mv = game.move(moves[i]);
+    if(i===n-1) lastMoveVerbose = mv;
+  }
   const el = document.getElementById(elId);
   if(!el) return;
   el.innerHTML='';
   const board = game.board();
   for(let r=0;r<8;r++){
     for(let c=0;c<8;c++){
+      const file='abcdefgh'[c], rank=8-r, sqName=file+rank;
       const piece = board[r][c];
       const div = document.createElement('div');
       div.className = 'sq ' + (((r+c)%2===0)?'light':'dark');
+      if(lastMoveVerbose){
+        if(sqName===lastMoveVerbose.from) div.classList.add('lastmove-from');
+        if(sqName===lastMoveVerbose.to) div.classList.add('lastmove-to');
+      }
       if(piece) div.innerHTML = pieceMarkup(piece.type, piece.color);
       el.appendChild(div);
     }
   }
+  return lastMoveVerbose;
+}
+
+// Small text line under a live mini-board: whose move it currently is (pulsing dot),
+// and, once at least one ply has been played, what the last move actually was and by whom.
+function updateMoverRow(elId, job){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  const turn = job.game.turn();
+  const turnName = turn==='w' ? job.bw.name : job.bb.name;
+  let lastMoveHtml = '';
+  if(job.moves.length){
+    const lastSan = job.moves[job.moves.length-1];
+    const moverColor = job.moves.length % 2 === 1 ? 'w' : 'b';
+    const moverName = moverColor==='w' ? job.bw.name : job.bb.name;
+    lastMoveHtml = ` &middot; zuletzt: <b>${escapeHtml(moverName)}</b> ${escapeHtml(lastSan)}`;
+  }
+  el.innerHTML = `<span class="mover-dot ${turn}"></span><span class="mover-text">${escapeHtml(turnName)} ist am Zug${lastMoveHtml}</span>`;
 }
 
 /* ===================== GAME REPLAY ===================== */
