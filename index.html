@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>TURBO DASH GP</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ====================== LOADING SCREEN ====================== -->
+<div id="screen-loading" class="screen active">
+  <div class="loading-wrap">
+    <div class="logo-mark">TURBO<span>DASH</span>GP</div>
+    <div class="loading-bar-track"><div id="loading-bar-fill" class="loading-bar-fill"></div></div>
+    <div id="loading-label" class="loading-label">Warming up engines…</div>
+  </div>
+</div>
+
+<!-- ====================== TITLE SCREEN ====================== -->
+<div id="screen-title" class="screen">
+  <div class="title-bg-glow"></div>
+  <div class="title-logo">TURBO<span>DASH</span><small>GP</small></div>
+  <div class="title-prompt">TAP TO START</div>
+  <div class="title-footer">v1.0 · an original arcade kart racer</div>
+</div>
+
+<!-- ====================== MAIN MENU ====================== -->
+<div id="screen-main" class="screen">
+  <div class="panel-header"><h1>MAIN MENU</h1></div>
+  <div class="menu-stack">
+    <button class="menu-btn" data-action="mode-select">Grand Prix / Race</button>
+    <button class="menu-btn" data-action="time-trial-select">Time Trial</button>
+    <button class="menu-btn" data-action="battle-select">Balloon Battle</button>
+    <button class="menu-btn" data-action="stats">Garage &amp; Stats</button>
+    <button class="menu-btn" data-action="settings">Settings</button>
+  </div>
+  <div class="profile-badge" id="profile-badge">PROFILE: —</div>
+</div>
+
+<!-- ====================== MODE SELECT ====================== -->
+<div id="screen-mode" class="screen">
+  <div class="panel-header"><h1>SELECT MODE</h1><button class="back-btn" data-back="screen-main">◀ Back</button></div>
+  <div class="menu-stack">
+    <button class="menu-btn" data-action="cup-select" data-mode="gp">Grand Prix (3 races, CPU field)</button>
+    <button class="menu-btn" data-action="cup-select" data-mode="vs">VS Race (single race, CPU field)</button>
+  </div>
+  <div class="cc-select" id="cc-select">
+    <div class="cc-label">Engine Class</div>
+    <div class="cc-options">
+      <button class="cc-btn active" data-cc="100">100cc</button>
+      <button class="cc-btn" data-cc="150">150cc</button>
+      <button class="cc-btn" data-cc="200">200cc Mirror</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== CUP / TRACK SELECT ====================== -->
+<div id="screen-cup" class="screen">
+  <div class="panel-header"><h1 id="cup-title">SELECT CUP</h1><button class="back-btn" data-back="screen-mode">◀ Back</button></div>
+  <div id="cup-grid" class="cup-grid"></div>
+</div>
+
+<!-- ====================== TIME TRIAL TRACK SELECT ====================== -->
+<div id="screen-tt-select" class="screen">
+  <div class="panel-header"><h1>TIME TRIAL — SELECT TRACK</h1><button class="back-btn" data-back="screen-main">◀ Back</button></div>
+  <div id="tt-grid" class="cup-grid"></div>
+</div>
+
+<!-- ====================== BATTLE SELECT ====================== -->
+<div id="screen-battle-select" class="screen">
+  <div class="panel-header"><h1>BALLOON BATTLE</h1><button class="back-btn" data-back="screen-main">◀ Back</button></div>
+  <div class="menu-stack">
+    <button class="menu-btn" data-action="char-select" data-mode="battle">Start Battle (3 CPU rivals)</button>
+  </div>
+</div>
+
+<!-- ====================== CHARACTER SELECT ====================== -->
+<div id="screen-char" class="screen">
+  <div class="panel-header"><h1>SELECT RACER</h1><button class="back-btn" data-back-dynamic>◀ Back</button></div>
+  <div class="char-layout">
+    <div id="char-grid" class="char-grid"></div>
+    <div class="char-detail">
+      <div id="char-portrait" class="char-portrait"></div>
+      <div id="char-name" class="char-name">—</div>
+      <div id="char-class" class="char-class">—</div>
+      <div class="stat-bars" id="char-stats"></div>
+      <button class="menu-btn confirm-btn" data-action="kart-select">Confirm Racer ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== KART SELECT ====================== -->
+<div id="screen-kart" class="screen">
+  <div class="panel-header"><h1>SELECT KART</h1><button class="back-btn" data-back="screen-char">◀ Back</button></div>
+  <div class="char-layout">
+    <div id="kart-grid" class="char-grid"></div>
+    <div class="char-detail">
+      <div id="kart-portrait" class="char-portrait kart-portrait"></div>
+      <div id="kart-name" class="char-name">—</div>
+      <div class="stat-bars" id="kart-stats"></div>
+      <button class="menu-btn confirm-btn" data-action="start-race">Race! ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== RACE LOADING ====================== -->
+<div id="screen-race-loading" class="screen">
+  <div class="loading-wrap">
+    <div id="race-loading-track" class="rl-track-name">TRACK</div>
+    <div class="loading-bar-track"><div id="race-loading-fill" class="loading-bar-fill"></div></div>
+    <div class="rl-tip" id="rl-tip">Tip: Hold drift then release for a Mini-Turbo!</div>
+  </div>
+</div>
+
+<!-- ====================== HUD (in-race) ====================== -->
+<div id="screen-hud" class="screen hud-screen">
+  <canvas id="gl-canvas"></canvas>
+
+  <div class="hud-top-left">
+    <div id="hud-position" class="hud-position">1<span>st</span></div>
+    <div id="hud-lap" class="hud-lap">LAP 1/3</div>
+  </div>
+  <div class="hud-top-right" id="hud-timer">00:00.000</div>
+
+  <div class="hud-item-slot" id="hud-item-slot"><div class="item-icon" id="hud-item-icon"></div></div>
+  <div class="hud-minimap" id="hud-minimap"><canvas id="minimap-canvas" width="150" height="150"></canvas></div>
+
+  <div id="hud-message" class="hud-message"></div>
+  <div id="hud-lap-banner" class="hud-lap-banner"></div>
+
+  <button id="btn-pause" class="btn-pause">II</button>
+
+  <!-- touch controls -->
+  <div id="touch-controls" class="touch-controls">
+    <div class="joystick-zone" id="joystick-zone">
+      <div class="joystick-base">
+        <div class="joystick-stick" id="joystick-stick"></div>
+      </div>
+    </div>
+    <div class="action-zone">
+      <button class="ctl-btn ctl-item" id="btn-item">🎁</button>
+      <button class="ctl-btn ctl-trick" id="btn-trick">TRICK</button>
+      <button class="ctl-btn ctl-drift" id="btn-drift">DRIFT</button>
+      <button class="ctl-btn ctl-brake" id="btn-brake">▼</button>
+      <button class="ctl-btn ctl-accel" id="btn-accel">▲</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== PAUSE MENU ====================== -->
+<div id="screen-pause" class="screen overlay-screen">
+  <div class="pause-panel">
+    <h1>PAUSED</h1>
+    <button class="menu-btn" data-action="resume">Resume</button>
+    <button class="menu-btn" data-action="restart-race">Restart</button>
+    <button class="menu-btn" data-action="settings">Settings</button>
+    <button class="menu-btn" data-action="quit-race">Quit to Menu</button>
+  </div>
+</div>
+
+<!-- ====================== RESULTS SCREEN ====================== -->
+<div id="screen-results" class="screen">
+  <div class="panel-header"><h1 id="results-title">RACE RESULTS</h1></div>
+  <div id="results-table" class="results-table"></div>
+  <button class="menu-btn confirm-btn" id="results-continue" data-action="results-continue">Continue ▶</button>
+</div>
+
+<!-- ====================== TROPHY CEREMONY ====================== -->
+<div id="screen-trophy" class="screen">
+  <div class="trophy-wrap">
+    <div class="trophy-icon" id="trophy-icon">🏆</div>
+    <div id="trophy-text" class="trophy-text">GOLD TROPHY!</div>
+    <div id="trophy-cup" class="trophy-cup">—</div>
+  </div>
+  <button class="menu-btn confirm-btn" data-action="to-main">Continue ▶</button>
+</div>
+
+<!-- ====================== STATS / GARAGE ====================== -->
+<div id="screen-stats" class="screen">
+  <div class="panel-header"><h1>GARAGE &amp; STATS</h1><button class="back-btn" data-back="screen-main">◀ Back</button></div>
+  <div id="stats-body" class="stats-body"></div>
+</div>
+
+<!-- ====================== SETTINGS ====================== -->
+<div id="screen-settings" class="screen">
+  <div class="panel-header"><h1>SETTINGS</h1><button class="back-btn" data-back-dynamic>◀ Back</button></div>
+  <div class="settings-list" id="settings-list"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/save.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/track.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/items.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/input.js"></script>
+<script src="js/rendering.js"></script>
+<script src="js/network.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
